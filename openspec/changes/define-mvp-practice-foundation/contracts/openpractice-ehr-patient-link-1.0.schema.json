@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:openpractice:contract:openpractice-ehr-patient-link:1.0",
+  "title": "openpractice-ehr-patient-link 1.0",
+  "description": "Canonical message schema for the patient-link contract between openPractice and a linked EHR. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation; referenced by digest from opensoft/openChart-spec change define-openpractice-boundary. Every reason is a code; no field carries free text except the patient-reported gender-identity and pronoun text inside a snapshot or correction proposal. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
+  "oneOf": [
+    { "$ref": "#/$defs/linkRequest" },
+    { "$ref": "#/$defs/linkResult" },
+    { "$ref": "#/$defs/demographicsUpdated" },
+    { "$ref": "#/$defs/demographicsAck" },
+    { "$ref": "#/$defs/demographicsHoldRejected" },
+    { "$ref": "#/$defs/correctionRequested" },
+    { "$ref": "#/$defs/correctionAck" },
+    { "$ref": "#/$defs/correctionResolved" },
+    { "$ref": "#/$defs/linkReviewResolved" },
+    { "$ref": "#/$defs/linkRevoked" },
+    { "$ref": "#/$defs/messageAck" }
+  ],
+  "$defs": {
+    "uuid": { "type": "string", "format": "uuid" },
+    "issuer": {
+      "description": "A deployment's configured, stable issuer identifier, unique across deployments and never derived from a host path.",
+      "type": "string", "minLength": 3, "maxLength": 255
+    },
+    "patientRef": {
+      "description": "A patient reference is always the triple (issuer, namespace, value) and is compared as a triple.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issuer", "namespace", "value"],
+      "properties": {
+        "issuer": { "$ref": "#/$defs/issuer" },
+        "namespace": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,63}$", "examples": ["openpractice", "openchart"] },
+        "value": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "openpracticeRef": {
+      "allOf": [ { "$ref": "#/$defs/patientRef" }, { "properties": { "namespace": { "const": "openpractice" } } } ]
+    },
+    "envelope": {
+      "type": "object",
+      "required": ["contract", "contract_version", "message_id", "message_type", "issued_at", "issuer", "link_id", "subject"],
+      "properties": {
+        "contract": { "const": "openpractice-ehr-patient-link" },
+        "contract_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+        "message_id": { "$ref": "#/$defs/uuid" },
+        "message_type": { "type": "string" },
+        "issued_at": { "type": "string", "format": "date-time" },
+        "issuer": { "$ref": "#/$defs/issuer" },
+        "link_id": { "description": "Minted by openPractice in link.request; identifies one link for its whole life. Version counters are tracked per link.", "$ref": "#/$defs/uuid" },
+        "correlation_id": { "$ref": "#/$defs/uuid" },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["openpractice_patient"],
+          "properties": {
+            "openpractice_patient": { "$ref": "#/$defs/openpracticeRef" },
+            "ehr_patient": { "oneOf": [ { "$ref": "#/$defs/patientRef" }, { "type": "null" } ] }
+          }
+        }
+      }
+    },
+    "actorRef": { "description": "Opaque reference to a Roster entry or integration identity; carries no name.", "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,128}$" },
+    "codedText": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "code": { "type": "string", "maxLength": 64 }, "text": { "type": "string", "maxLength": 128 } }
+    },
+    "period": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "start": { "type": "string", "format": "date" }, "end": { "type": "string", "format": "date" } }
+    },
+    "legalName": {
+      "description": "Structured legal name. A single-name person carries only that name, in given or family, with no placeholder. Projection into a single display string (for example openChart OC Patient.patient_name): given names joined by single spaces, then the family name, then the suffix, all separated by single spaces, with absent parts omitted.",
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [ { "required": ["family"] }, { "required": ["given"] } ],
+      "properties": {
+        "family": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "given": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1, "maxLength": 128 } },
+        "suffix": { "type": "string", "maxLength": 32 }
+      }
+    },
+    "telecom": {
+      "type": "object", "additionalProperties": false,
+      "required": ["system", "value"],
+      "properties": {
+        "system": { "enum": ["phone", "email"] },
+        "use": { "enum": ["home", "work", "mobile", "other"] },
+        "value": { "type": "string", "minLength": 1, "maxLength": 254 },
+        "preferred": { "type": "boolean" },
+        "period": { "$ref": "#/$defs/period" }
+      }
+    },
+    "address": {
+      "type": "object", "additionalProperties": false,
+      "required": ["use"],
+      "properties": {
+        "use": { "enum": ["home", "mailing"] },
+        "lines": { "type": "array", "items": { "type": "string", "maxLength": 128 } },
+        "city": { "type": "string", "maxLength": 64 },
+        "state": { "type": "string", "maxLength": 64 },
+        "postal_code": { "type": "string", "maxLength": 16 },
+        "country": { "type": "string", "maxLength": 2 },
+        "preferred": { "type": "boolean" },
+        "period": { "$ref": "#/$defs/period" }
+      }
+    },
+    "confidentialCommunication": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "alternate_address": { "$ref": "#/$defs/address" },
+        "alternate_telecom": { "type": "array", "items": { "$ref": "#/$defs/telecom" } },
+        "restrictions": { "type": "array", "uniqueItems": true, "items": { "enum": ["no_voicemail", "no_home_mail", "no_text_messages", "no_email", "alternate_channel_only"] } }
+      }
+    },
+    "snapshot": {
+      "description": "Full current administrative demographics, compatible with FHIR R4 Patient. Excludes guarantor, coverage, financial data, deactivation reason and internal notes.",
+      "type": "object", "additionalProperties": false,
+      "required": ["legal_name", "birth_date", "administrative_sex", "administrative_status"],
+      "properties": {
+        "legal_name": { "$ref": "#/$defs/legalName" },
+        "preferred_name": { "type": "string", "maxLength": 128 },
+        "birth_date": { "type": "string", "format": "date" },
+        "administrative_sex": { "enum": ["female", "male", "other", "unknown"] },
+        "gender_identity": { "$ref": "#/$defs/codedText" },
+        "pronouns": { "$ref": "#/$defs/codedText" },
+        "preferred_language": { "description": "BCP 47 language tag.", "type": "string", "pattern": "^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$" },
+        "telecom": { "type": "array", "items": { "$ref": "#/$defs/telecom" } },
+        "address": { "type": "array", "items": { "$ref": "#/$defs/address" } },
+        "confidential_communication": { "$ref": "#/$defs/confidentialCommunication" },
+        "administrative_status": { "enum": ["active", "inactive"] }
+      }
+    },
+    "demographicField": { "enum": ["legal_name", "preferred_name", "birth_date", "administrative_sex", "gender_identity", "pronouns", "preferred_language", "telecom", "address", "confidential_communication", "administrative_status"] },
+    "provenanceReason": { "enum": ["new_registration", "patient_reported_change", "staff_correction", "correction_request_accepted", "import", "status_change", "reassertion_after_hold_rejected", "republish_after_review"] },
+    "rejectReason": { "enum": ["schema_invalid", "unsupported_major_version", "version_content_conflict", "link_revoked", "link_superseded", "link_unknown", "unauthorized"] },
+    "reviewReason": { "enum": ["issuer_value_active_elsewhere", "second_active_link_same_issuer", "demographics_disagree", "date_of_birth_empty", "date_of_birth_change_held", "reported_by_peer"] },
+    "revokeReason": { "enum": ["identity_review_revoked", "wrong_patient", "duplicate_record", "second_active_link_same_issuer", "deployment_retired", "peer_request"] },
+    "correctionDeclineReason": { "enum": ["source_value_verified", "insufficient_evidence", "not_an_administrative_field", "superseded_by_later_change"] },
+    "linkRequest": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "link.request" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["mode", "demographic_version", "snapshot"],
+            "properties": {
+              "mode": { "enum": ["create_new", "link_existing"] },
+              "demographic_version": { "type": "integer", "minimum": 1 },
+              "snapshot": { "$ref": "#/$defs/snapshot" },
+              "confirmed_by": { "$ref": "#/$defs/actorRef" }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "linkResult": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "link.result" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["result"],
+            "properties": {
+              "result": { "enum": ["linked", "identity_review", "refused"] },
+              "applied_version": { "type": "integer", "minimum": 1 },
+              "review_id": { "$ref": "#/$defs/uuid" },
+              "review_reason": { "$ref": "#/$defs/reviewReason" },
+              "refuse_reason": { "$ref": "#/$defs/rejectReason" }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "demographicsUpdated": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "demographics.updated" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["demographic_version", "changed_fields", "identity_significant", "provenance", "snapshot"],
+            "properties": {
+              "demographic_version": { "description": "Strictly increasing per openPractice patient record; each receiver compares it with the last version applied on this link_id.", "type": "integer", "minimum": 1 },
+              "changed_fields": { "type": "array", "items": { "$ref": "#/$defs/demographicField" } },
+              "identity_significant": { "type": "boolean" },
+              "correction_request_id": { "$ref": "#/$defs/uuid" },
+              "provenance": {
+                "type": "object", "additionalProperties": false,
+                "required": ["actor_ref", "source", "reason"],
+                "properties": {
+                  "actor_ref": { "$ref": "#/$defs/actorRef" },
+                  "source": { "enum": ["staff", "patient_self_service", "import", "integration"] },
+                  "reason": { "$ref": "#/$defs/provenanceReason" }
+                }
+              },
+              "snapshot": { "$ref": "#/$defs/snapshot" }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "demographicsAck": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "demographics.ack" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["acked_message_id", "demographic_version", "result"],
+            "properties": {
+              "acked_message_id": { "$ref": "#/$defs/uuid" },
+              "demographic_version": { "type": "integer", "minimum": 1 },
+              "result": { "description": "applied: version greater than the last applied on this link. duplicate: message_id already applied, or the same version with identical content under a new message_id. stale: version lower than the last applied; nothing changes. rejected: same version with different content, unsupported MAJOR, or a revoked, superseded or unknown link. identity_review: the link is in review or this update is held; review_id names the review.", "enum": ["applied", "duplicate", "stale", "rejected", "identity_review"] },
+              "review_id": { "$ref": "#/$defs/uuid" },
+              "review_reason": { "$ref": "#/$defs/reviewReason" },
+              "reject_reason": { "$ref": "#/$defs/rejectReason" }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "demographicsHoldRejected": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "demographics.hold_rejected" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["review_id", "held_versions", "reason"],
+            "properties": {
+              "review_id": { "$ref": "#/$defs/uuid" },
+              "held_versions": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } },
+              "reason": { "const": "date_of_birth_not_confirmed" }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "correctionRequested": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "demographics.correction_requested" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["request_id", "fields", "source"],
+            "properties": {
+              "request_id": { "$ref": "#/$defs/uuid" },
+              "fields": { "type": "array", "minItems": 1, "items": { "enum": ["legal_name", "birth_date"] } },
+              "proposed": {
+                "type": "object", "additionalProperties": false,
+                "properties": { "legal_name": { "$ref": "#/$defs/legalName" }, "birth_date": { "type": "string", "format": "date" } }
+              },
+              "source": { "enum": ["ehr_staff_edit", "intake_submission"] }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "correctionAck": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "correction.ack" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["request_id", "result"],
+            "properties": { "request_id": { "$ref": "#/$defs/uuid" }, "result": { "enum": ["received", "rejected"] }, "reject_reason": { "$ref": "#/$defs/rejectReason" } }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "correctionResolved": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "correction.resolved" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["request_id", "outcome"],
+            "properties": {
+              "request_id": { "$ref": "#/$defs/uuid" },
+              "outcome": { "enum": ["applied", "declined"] },
+              "demographic_version": { "type": "integer", "minimum": 1 },
+              "decline_reason": { "$ref": "#/$defs/correctionDeclineReason" }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "linkReviewResolved": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "link.review_resolved" },
+          "payload": {
+            "description": "Sent only by the side that raised the review. confirmed is forbidden when review_reason is second_active_link_same_issuer.",
+            "type": "object", "additionalProperties": false,
+            "required": ["review_id", "outcome", "resolved_by"],
+            "properties": {
+              "review_id": { "$ref": "#/$defs/uuid" },
+              "outcome": { "enum": ["confirmed", "revoked"] },
+              "applied_version": { "type": "integer", "minimum": 1 },
+              "resolved_by": { "$ref": "#/$defs/actorRef" }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "linkRevoked": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "link.revoked" },
+          "payload": {
+            "description": "Either side may revoke. Revocation wins over any concurrent or later confirmation of the same link_id.",
+            "type": "object", "additionalProperties": false,
+            "required": ["reason", "revoked_by"],
+            "properties": { "reason": { "$ref": "#/$defs/revokeReason" }, "revoked_by": { "$ref": "#/$defs/actorRef" } }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "messageAck": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "message.ack" },
+          "payload": {
+            "description": "Acknowledges link.review_resolved, link.revoked, demographics.hold_rejected and correction.resolved.",
+            "type": "object", "additionalProperties": false,
+            "required": ["acked_message_id", "result"],
+            "properties": { "acked_message_id": { "$ref": "#/$defs/uuid" }, "result": { "enum": ["received", "rejected"] }, "reject_reason": { "$ref": "#/$defs/rejectReason" } }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    }
+  }
+}

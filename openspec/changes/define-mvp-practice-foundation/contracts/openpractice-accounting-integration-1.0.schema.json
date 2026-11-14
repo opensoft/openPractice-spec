@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:openpractice:contract:openpractice-accounting-integration:1.0",
+  "title": "openpractice-accounting-integration 1.0",
+  "description": "Canonical schema for the accounting integration contract between openPractice core and every destination adapter. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation. A released batch is frozen; content_digest is the SHA-256 of the RFC 8785 (JCS) canonical JSON of the batch with content_digest removed. Delivery state (per-posting status, destination document references, recorded/sync timestamps) is NOT batch content and is never an accounting date. No key, line or label carries a person's name, a full bank account or routing number, or any per-person identifier other than an opaque guarantor account number in patient-level mode. Adapters accept any 1.x and reject any other MAJOR.",
+  "oneOf": [
+    { "$ref": "#/$defs/patientLevelBatch" },
+    { "$ref": "#/$defs/summaryBatch" },
+    { "$ref": "#/$defs/bankLinesResult" }
+  ],
+  "$defs": {
+    "uuid": { "type": "string", "format": "uuid" },
+    "destinationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "money": { "description": "Decimal amount as a string; sign carried explicitly.", "type": "string", "pattern": "^-?[0-9]{1,13}\\.[0-9]{2}$" },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "date": { "type": "string", "format": "date" },
+    "neutralLabel": {
+      "description": "Fixed neutral financial labels. They never reveal the type of service, a diagnosis or a procedure.",
+      "enum": ["patient_services_revenue", "expected_contractual_adjustment", "contractual_adjustment", "contractual_adjustment_true_up", "patient_responsibility_transfer", "write_off", "payment_received", "unapplied_payment", "payment_application", "refund", "chargeback", "returned_item", "payer_takeback", "payer_interest", "payer_forwarding_balance", "merchant_fee", "virtual_card_fee", "chargeback_fee", "bank_fee", "unidentified_receipt", "unidentified_receipt_reclassified", "legacy_collections", "deposit_clearing_release"]
+    },
+    "mappingVersion": {
+      "description": "Account mapping version, scoped to one destination AND one posting mode.",
+      "type": "object", "additionalProperties": false,
+      "required": ["destination_id", "posting_mode", "version"],
+      "properties": { "destination_id": { "$ref": "#/$defs/destinationId" }, "posting_mode": { "enum": ["patient_level", "summary"] }, "version": { "type": "integer", "minimum": 1 } }
+    },
+    "batchHeader": {
+      "type": "object",
+      "required": ["contract", "contract_version", "destination_id", "batch_seq", "posting_mode", "mapping_version", "released_by", "released_at", "content_digest"],
+      "properties": {
+        "contract": { "const": "openpractice-accounting-integration" },
+        "contract_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+        "destination_id": { "$ref": "#/$defs/destinationId" },
+        "batch_seq": { "type": "integer", "minimum": 1 },
+        "posting_mode": { "enum": ["patient_level", "summary"] },
+        "mapping_version": { "$ref": "#/$defs/mappingVersion" },
+        "released_by": { "description": "Opaque actor reference; no name.", "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,128}$" },
+        "released_at": { "type": "string", "format": "date-time" },
+        "content_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "customer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind"],
+      "oneOf": [
+        { "properties": { "kind": { "const": "guarantor_account" } }, "required": ["account_number"] },
+        { "properties": { "kind": { "const": "payer" } }, "required": ["payer_id", "payer_name"] }
+      ],
+      "properties": {
+        "kind": { "enum": ["guarantor_account", "payer"] },
+        "account_number": { "description": "Opaque openPractice guarantor account number. The only customer identifier for patient balances; never a name.", "type": "string", "pattern": "^[A-Za-z0-9-]{1,32}$" },
+        "payer_id": { "type": "string", "maxLength": 64 },
+        "payer_name": { "type": "string", "maxLength": 128 }
+      }
+    },
+    "line": {
+      "type": "object", "additionalProperties": false,
+      "required": ["reason_category", "label", "amount"],
+      "properties": {
+        "reason_category": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "label": { "$ref": "#/$defs/neutralLabel" },
+        "amount": { "$ref": "#/$defs/money" },
+        "service_date": { "description": "Date of service. Required on every invoice, debit-note and credit-note line in patient-level mode.", "$ref": "#/$defs/date" }
+      }
+    },
+    "posting": {
+      "type": "object", "additionalProperties": false,
+      "required": ["posting_id", "idempotency_key", "operation", "posting_date", "currency", "lines"],
+      "properties": {
+        "posting_id": { "description": "Minted at batch assembly; opaque.", "$ref": "#/$defs/uuid" },
+        "idempotency_key": { "description": "<destination_id>:<posting_id>", "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}:[0-9a-f-]{36}$" },
+        "operation": { "enum": ["customer.upsert", "invoice.post", "debit_note.post", "credit_note.post", "payment.post", "payment.apply", "reversal.post", "refund.post", "deposit.post", "journal.post"] },
+        "supersedes": { "description": "posting_id of an earlier posting this one replaces (for example after a destination period-lock refusal).", "$ref": "#/$defs/uuid" },
+        "applies_to": { "description": "posting_id of the invoice, payment or posting this one adjusts, applies to or reverses.", "$ref": "#/$defs/uuid" },
+        "back_reference": { "type": "object", "additionalProperties": false, "required": ["batch_seq", "posting_id"], "properties": { "batch_seq": { "type": "integer", "minimum": 1 }, "posting_id": { "$ref": "#/$defs/uuid" } } },
+        "customer": { "$ref": "#/$defs/customer" },
+        "posting_date": { "description": "General-ledger date: the date of service when that period is open in the destination, otherwise the first open date.", "$ref": "#/$defs/date" },
+        "invoice_date": { "description": "Charge-finalization date (invoices).", "$ref": "#/$defs/date" },
+        "due_date": { "description": "From the statement terms that apply to the customer.", "$ref": "#/$defs/date" },
+        "late_charge": { "description": "True when posting_date differs from the service date because that period was closed.", "type": "boolean" },
+        "deposit_bank_line_ref": { "description": "Opaque reference to the explained bank line a deposit.post equals.", "type": "string", "maxLength": 128 },
+        "currency": { "$ref": "#/$defs/currency" },
+        "lines": { "type": "array", "items": { "$ref": "#/$defs/line" } }
+      }
+    },
+    "summaryLine": {
+      "type": "object", "additionalProperties": false,
+      "required": ["idempotency_key", "line_no", "posting_date", "reason_category", "label", "amount", "currency"],
+      "properties": {
+        "idempotency_key": { "description": "<destination_id>:<batch_seq>:<line_no>", "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}:[0-9]+:[0-9]+$" },
+        "line_no": { "type": "integer", "minimum": 1 },
+        "journal_group": { "description": "Lines sharing a group form one journal entry (one explained bank line, or one day).", "type": "integer", "minimum": 1 },
+        "posting_date": { "$ref": "#/$defs/date" },
+        "reason_category": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "label": { "$ref": "#/$defs/neutralLabel" },
+        "amount": { "$ref": "#/$defs/money" },
+        "currency": { "$ref": "#/$defs/currency" },
+        "deposit_bank_line_ref": { "type": "string", "maxLength": 128 }
+      }
+    },
+    "patientLevelBatch": {
+      "allOf": [ { "$ref": "#/$defs/batchHeader" }, {
+        "properties": { "posting_mode": { "const": "patient_level" }, "postings": { "type": "array", "items": { "$ref": "#/$defs/posting" } } },
+        "required": ["postings"]
+      } ]
+    },
+    "summaryBatch": {
+      "allOf": [ { "$ref": "#/$defs/batchHeader" }, {
+        "properties": { "posting_mode": { "const": "summary" }, "summary_lines": { "type": "array", "items": { "$ref": "#/$defs/summaryLine" } } },
+        "required": ["summary_lines"]
+      } ]
+    },
+    "bankLinesResult": {
+      "description": "Result of bank_lines.read: revenue-related lines read from the destination (or from an uploaded statement as fallback). Lines outside the revenue categories are labelled accounting_system and are never reconciled by openPractice.",
+      "type": "object", "additionalProperties": false,
+      "required": ["contract", "contract_version", "destination_id", "source", "lines"],
+      "properties": {
+        "contract": { "const": "openpractice-accounting-integration" },
+        "contract_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+        "destination_id": { "$ref": "#/$defs/destinationId" },
+        "source": { "enum": ["destination", "statement_upload"] },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["bank_line_ref", "practice_bank_account_ref", "posted_date", "amount", "category"],
+            "properties": {
+              "bank_line_ref": { "type": "string", "maxLength": 128 },
+              "practice_bank_account_ref": { "description": "Reference to the practice bank account register entry; never a full account number.", "type": "string", "maxLength": 64 },
+              "posted_date": { "$ref": "#/$defs/date" },
+              "amount": { "$ref": "#/$defs/money" },
+              "category": { "enum": ["deposit", "chargeback", "payer_takeback", "processor_fee", "accounting_system"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

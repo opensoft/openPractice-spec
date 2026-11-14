@@ -2,79 +2,134 @@ Status: draft
 
 ## Why
 
-openPractice has no ratified statement of what its minimum viable product must contain at the seams it shares with other systems. The ideation packet sequences a small-practice beta in six slices, but it leaves four boundaries implicit: what an administrative patient record is and how it is maintained, where the line falls between openPractice and a connected electronic health record (EHR), where billing ends and accounting begins, and how money reaches the practice's books. Two of those are tracked as open items in the packet. Risk R-7 says the EHR boundary is specified in one direction only. The scope document also leaves the accounting destination open.
+openPractice has no ratified statement of what its minimum viable product must contain at the boundaries it shares with other systems. The ideation packet sequences a small-practice beta into six slices, but it leaves four boundaries implicit:
 
-The product owner, Brett Heap, settled these boundaries on 2026-11-14. This change records his decisions as governed requirements before any runtime exists, so the first Speckit features build against a stated boundary instead of discovering one.
+- what an administrative patient record is and how it is kept;
+- where openPractice ends and a connected electronic health record (EHR) begins;
+- where billing ends and accounting begins;
+- how money reaches the practice's books.
 
-All ideation paths below are relative to the root of `opensoft/openPractice-spec`. Every ideation document cited is `Status: brainstorm` except the framing decisions FD-1 to FD-11 in [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md), which were ratified on 2026-08-27. This change does not contradict any of them.
+Two of these are tracked as open items in the packet. Risk R-7 says the EHR boundary is specified in one direction only. The packet also leaves the accounting destination open.
+
+Brett Heap, the product owner, settled these boundaries on 2026-11-14 and ruled on 24 follow-up design questions the same day. The rulings are recorded in `design.md` under "Owner rulings (2026-11-14)". This change records the decisions and rulings as governed requirements before any runtime exists. **Rulings are not ratification:** the change stays draft until the owner completes `owner-ratification.md`.
+
+All ideation paths below are relative to the root of `opensoft/openPractice-spec`. Every cited ideation document is `Status: brainstorm`, except the framing decisions FD-1 to FD-11 in [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md), which were ratified on 2026-08-27. This change contradicts none of them, with one exception: it adds tier-4 gates beyond FD-5's list. That exception is deliberate, was ruled by the owner, and is recorded as tension T-13 in `design.md`.
 
 ## The refined MVP statement
 
-The openPractice MVP SHALL include, in addition to whatever beta scope is ratified:
+The openPractice MVP SHALL include the following, in addition to whatever beta scope is ratified:
 
-1. **simple administrative patient CRUD**: create, read, update and deactivate an administrative patient record holding name, date of birth, administrative sex, gender identity and pronouns, contacts and address, a guarantor, and one or more prioritized insurance coverages, with audit and provenance on every change;
-2. **a defined openChart/EHR boundary**: each system owns its own patient record, the two records are linked by cross-references that each side stores, openPractice publishes administrative demographic changes through a versioned contract, and the clinical facts openPractice needs for charge capture come from the EHR through versioned FHIR R4-compatible contracts;
-3. **a defined billing-versus-accounting boundary**: openPractice owns billing and the receivables; the accounting system is the books of record; openPractice never becomes a general ledger or ERP;
-4. **an accounting integration contract**: one versioned contract covering ERPNext Accounts, QuickBooks Online and Microsoft Dynamics 365 Business Central, of which the MVP builds only the ERPNext adapter.
+1. **Simple administrative patient CRUD.** Create, read, update and deactivate an administrative patient record. The record holds:
+   - name, preferred name and preferred language;
+   - date of birth;
+   - administrative sex, gender identity and pronouns;
+   - contacts and address, with confidential-communication instructions;
+   - a guarantor;
+   - zero or more prioritized insurance coverages.
+
+   Every change and every read is audited.
+2. **A defined openChart/EHR boundary.** Each system owns its own patient record, and the two are linked by issuer-qualified cross-references that each side stores. openPractice publishes administrative demographic changes through a versioned contract with a canonical schema. The clinical facts that charge capture needs come from the EHR through a versioned, FHIR R4-compatible contract.
+3. **A defined billing-versus-accounting boundary.** openPractice owns billing, the receivables and the explanation of deposits. The accounting system is the books of record, including bank balances and the full bank reconciliation. openPractice never becomes a general ledger or an ERP.
+4. **An accounting integration contract.** One versioned contract with a canonical schema covers ERPNext Accounts, QuickBooks Online and Microsoft Dynamics 365 Business Central. The MVP builds only the ERPNext adapter, and that adapter reaches ERPNext through its REST API only.
 
 ### How it maps onto the beta slices
 
-The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md) remains a non-normative hypothesis. This change does not ratify it. It states where the four items fall within it:
+The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md) is still a non-normative hypothesis, and this change does not ratify it.
 
 | MVP item | Slice | Why there |
 |---|---|---|
-| (a) patient CRUD | **Slice 0** | The patient, guarantor and subscriber records are part of Slice 0's "party and place register", the substrate every later slice references. |
-| (b) EHR boundary: patient linkage and demographic publication | **Slice 0** | Linkage is a property of the patient record and must exist before Slice 1 books against a linked patient. |
-| (b) EHR boundary: clinical facts for charge capture | defined here, **consumed in Slice 3** | Slice 3 creates charges "from a completed-event or EHR charge-derivation reference"; R-7 asks for the boundary to be settled before Slice 3. |
-| (c) billing-versus-accounting boundary | **Slice 0** | Slice 0's "Immutable Money Ledger And Reason Taxonomy" is defined before anything posts because the taxonomy is "the join key to the general ledger". |
-| (d) accounting integration contract and ERPNext adapter | **Slice 4** | Slice 4 carries "Accounting Export, QuickBooks-Shaped" with "Export-Batch Freeze". This change replaces that capability with the contract and the ERPNext adapter. |
+| (a) patient CRUD | **Slice 0** | Slice 0's "party and place register" is the substrate that every later slice references. |
+| (b) EHR boundary: linkage and demographic publication | **Slice 0** | Slice 1 books appointments against linked patients, so linkage must exist first. |
+| (b) EHR boundary: clinical facts for charge capture | defined here, **consumed in Slice 3** | Slice 3 creates charges from EHR references, and R-7 asks for the boundary to be settled before Slice 3. |
+| (c) billing-versus-accounting boundary, including the bank register and payer deposit links | **Slice 0** (taxonomy, register) and **Slice 4** (deposit reconciliation) | The reason taxonomy is "the join key to the general ledger" and must exist before anything posts. Slice 4 is where the money ties out. |
+| (d) accounting contract and ERPNext adapter | **Slice 4** | This replaces Slice 4's "Accounting Export, QuickBooks-Shaped". |
 
 ## What Changes
 
-- Add a `patient-registry` capability: the administrative patient record and its fields, defined carefully for administrative sex, gender identity and pronouns; contacts and addresses with history; exactly one current guarantor (self or another person); zero or more prioritized coverages with versioning; exact-match search before create with no scoring; delete as deactivation; hard delete only for a record created in error with no linked activity, reconciled with `add-reimbursement-retention-control`; audit of every change and every PHI read; synthetic-only fixtures.
-- Add an `ehr-boundary` capability: separate, linked patient records; explicit and human-confirmed link creation; an identity-review state for linkage conflicts; demographic publication under the contract `openpractice-ehr-patient-link/1.0`; clinical facts for charge capture under `openpractice-ehr-clinical-facts/1.0` (FHIR R4-compatible); forward-only clinical corrections; no direct database access in either direction; operation with no EHR; appointment authority explicitly left undecided.
-- Add a `billing-accounting-boundary` capability: openPractice owns claims, patient statements, payer and patient receivables, payment allocation, refunds, collections and financial audit lineage, and is the receivable source of truth. The accounting system owns the general ledger, bank accounts, taxes, payroll, payables and the final financial statements, and mirrors openPractice. The change also covers immutability at post time, dated reversals, versioned immutable export batches (FD-3, generalized to any destination), the reason taxonomy as the general-ledger join key, and no money movement originated through the integration.
-- Add an `accounting-integration` capability: one contract, `openpractice-accounting-integration/1.0`, with these operations: customer upsert, invoice, payment, credit note, reversal, refund, deposit, summary journal, batch export and reconciliation report. It also defines deterministic idempotency keys, versioned immutable batches, explicit human release, error and retry semantics, posting mode as a per-destination setting, a BAA gate before patient-level mode, PHI minimization, isolated adapters with no import-time ERPNext dependency, and contract tests.
-- Record the companion change in openChart's spec leg: `opensoft/openChart-spec`, change `define-openpractice-boundary`. It specifies openChart's side of the same two EHR contracts, using the same contract names, versions and identifier namespaces.
-- Require an unconditional owner ratification (`owner-ratification.md`) after strict validation and before any Speckit feature is created.
+- **`patient-registry`.** Adds the administrative record:
+  - separate administrative sex, gender identity and pronouns;
+  - preferred name and preferred language, with sex assigned at birth and sexual orientation excluded;
+  - typed contacts kept as history;
+  - confidential-communication instructions that every contact function must honor;
+  - exactly one current guarantor, identified by an opaque guarantor account number;
+  - zero or more coverages, prioritized and versioned.
+
+  It also defines exact-match search before create; a tamper-evident audit of every change and read; deactivation that still lets services already given be charged; and a tier-4 hard delete limited to records created in error with no linked activity. Such records sit outside every retention record family, and the removal scope is stated exactly. Fixtures are synthetic only.
+- **`ehr-boundary`.** Adds:
+  - links as (issuer, namespace, value) triples with a configured issuer on each side;
+  - one canonical schema per EHR contract, identified by digest;
+  - explicit links, with `link_existing` confirmed by a person at tier 2;
+  - identity review with a single resolver, where revocation wins;
+  - demographic publication under `openpractice-ehr-patient-link/1.0`, with a link-level suspension while the EHR holds an update;
+  - correction requests from the EHR;
+  - clinical facts under `openpractice-ehr-clinical-facts/1.0`, including a capability result;
+  - manual charge entry, marked manual, while no billable facts are available;
+  - the FD-5 deadline escape;
+  - no PHI in diagnostics, and no direct database access;
+  - appointment authority explicitly left undecided.
+- **`billing-accounting-boundary`.** Records that openPractice owns billing and the receivables and is their source of truth, and that the accounting system owns the ledger, bank balances and the full bank reconciliation. It also covers:
+  - FD-3 extended to every destination;
+  - a reason taxonomy mapped per destination and mode;
+  - a practice bank account register, with full account and routing numbers encrypted and role-restricted;
+  - payer deposit links per payer and billing entity;
+  - an expected-account check and a re-enrollment worklist;
+  - deposit-only reconciliation;
+  - a mapped account for the legacy share of a mixed deposit;
+  - closed destination periods never edited, with late charges flagged.
+- **`accounting-integration`.** Adds `openpractice-accounting-integration/1.0` and its canonical schema, with operations, posting IDs and keys free of personal data, batches released by a person and frozen, delivery states, and a reconciliation report. It also covers:
+  - posting mode fixed before a destination's first released batch;
+  - customers identified by guarantor account number or by payer only;
+  - accounting dates, and accrual valuation with an expected contractual adjustment;
+  - the full set of money events;
+  - a BAA gate, or an operator attestation for practice-operated destinations;
+  - neutral labels;
+  - revenue bank lines read from the destination;
+  - per-destination verification before go-live;
+  - contract tests.
+- **Companion change.** `opensoft/openChart-spec` change `define-openpractice-boundary` is openChart's side of both EHR contracts. It references this change's canonical schemas by path and digest.
+- **Owner ratification.** An unconditional owner ratification (`owner-ratification.md`) is required after strict validation and before any Speckit feature is created.
 
 ## What this supersedes or resolves
 
-- **Supersedes the deposit-level summary export as the default.** [`ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md) §8 "The export, and the only lock in the product" (around line 577) and the "Accounting Export, QuickBooks-Shaped" row of the feature-normalization register make one journal entry per bank deposit, cash basis, the default. Brett Heap chose **patient-level invoices** as the default posting granularity on 2026-11-14, knowing this puts PHI in the accounting system. A deposit-level, no-PHI **summary mode** survives only as the per-destination fallback for a destination without a verified Business Associate Agreement (BAA). The "cash basis by default" sentence is affected too. Posting invoices puts receivables in the books, so whether the practice can still *report* on a cash basis becomes a per-destination question (see design, Open Questions).
-- **Resolves the open question on the accounting destination for the MVP.** The scope-and-sequencing document asks which "accounting destination define[s] the first contract-test suite", and [`ideation/brainstorm/openpractice-small-practice-beta-financial-control-and-accounting-bridge.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-financial-control-and-accounting-bridge.md) asks which accounting system "should receive the first beta export". The answer is **ERPNext Accounts first**. QuickBooks Online and Business Central follow after the MVP against the same contract.
-- **Generalizes FD-3's export-batch freeze** from "exported to QuickBooks" to any accounting destination. Every other part of FD-3 is kept unchanged: immutability at post time, dated reversals, as-of queries, the daily balanced day, and corrections landing in the next batch with back-references.
-- **Settles the patient-identity half of R-7**: each system owns its own record, and the two are linked. **The appointment-authority half of R-7 stays open** and is recorded as an open question; this change does not decide it.
-- **Partly supersedes the direction of flow** in [`ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md`](../../../ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md), which has openPractice consuming Patient and Coverage resources from openChart. Under this change openPractice is the source of the administrative patient and its coverage and *publishes* demographics. It consumes only the clinical facts that charge capture needs.
-- **Departs from the recommendation for the first staged proposal.** Scope-and-sequencing recommends that the first OpenSpec proposal be one vertical thread through Slices 0 to 4, after the Thread contract. This change stages boundaries first. It does not author the Thread contract (FD-7), and it requires that the Thread contract exist before the accounting adapter feature starts (see `tasks.md`).
+- **Supersedes the deposit-level, cash-basis summary export as the default.** The default is described in §8 of [`ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md), around line 577, and in the register row "Accounting Export, QuickBooks-Shaped". The new default is **patient-level invoices**, valued on an accrual basis with an expected contractual adjustment at the date of service. The summary mode is kept only as the fallback for destinations whose BAA gate is not satisfied.
+- **Supersedes the money-lines brainstorm's bank sources and labels.** openPractice now reads revenue bank lines from the accounting system through the adapter, with statement upload as the fallback. Lines that are not revenue are labelled "accounting system's", replacing "not ours to explain".
+- **Resolves the open question of the accounting destination for the MVP:** ERPNext first.
+- **Generalizes FD-3's export-batch freeze** from QuickBooks to any destination. This change does not alter or specify the other parts of FD-3.
+- **Settles the patient-identity half of R-7.** The appointment-authority half stays open.
+- **Partly supersedes the direction of flow** in [`ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md`](../../../ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md). openPractice publishes demographics and consumes only clinical facts.
+- **Departs from the first-staged-proposal recommendation.** That recommendation (a vertical thread first) is not followed. This change stages the boundaries first, does not author the Thread contract (FD-7), and gates Features 3 and 4 on it.
 
 ## Non-goals
 
-- **Duplicate scoring and the merge queue.** The MVP registry shows exact matches only and never merges. See "Identity-safe record creation" in [`ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md`](../../../ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md) and "Patient Merge Aftermath And Reversal" in the feature-normalization register.
-- **Insurance-card OCR.** See "Coverage capture from cards" in the registration feature list.
-- **Household modeling.** See "Household And Family Coordination" and "Minor-To-Adult Authority Transition" in [`ideation/brainstorm/openpractice-small-practice-beta-feature-normalization.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-feature-normalization.md).
-- **QuickBooks Online and Business Central adapters.** The contract covers them; building them is post-MVP.
-- **Deciding which system is authoritative for appointments** (R-7).
-- **Authoring the Thread contract** (FD-7), the reason taxonomy's categories, or any posting automation beyond explicit human release.
-- **Any general-ledger, payables, payroll, tax or financial-statement function inside openPractice.**
-- **Asserting that any accounting vendor will or will not sign a BAA.** That must be verified per vendor.
-- **Runtime code, dependencies, or changes to another repository.** openChart's side is governed by its own change.
+- **Duplicate scoring and a merge queue.** See [`ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md`](../../../ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md) and "Patient Merge Aftermath And Reversal" in the normalization register.
+- **Insurance-card OCR.**
+- **Household modeling and the minor-to-adult transition.** See [`ideation/brainstorm/openpractice-small-practice-beta-feature-normalization.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-feature-normalization.md).
+- **QuickBooks Online and Business Central adapters.** These come after the MVP.
+- **In-process calls into ERPNext.** These depend on counsel.
+- **Appointment authority (R-7).** Not decided here.
+- **The Thread contract, the reason taxonomy's categories, and automatic batch release.**
+- **Membership agreements, subscription renewals, retail sales and other non-medical commerce invoicing** (ruling 24). Their routing and ownership are being worked out in the brainstorm packet `openpractice-customer-financial-separation`, which is in progress and will be linked when it lands. Self-pay and direct healthcare charges (FD-4) are medical billing and stay in scope. The no-name customer rule (ruling 3) governs only the customers this contract creates.
+- **Any general-ledger, payables, payroll, tax, financial-statement or full bank-reconciliation function in openPractice.**
+- **Any claim about a vendor's BAA availability.**
+- **Runtime code and other repositories.**
 
 ## Capabilities
 
 ### New Capabilities
-- `patient-registry`: The administrative patient record owned by openPractice. It covers demographics with distinct administrative-sex, gender-identity and pronoun attributes; contacts and addresses; the guarantor; prioritized and versioned coverages; exact-match search before create; deactivation as delete; tightly bounded hard delete; and audit of every change and read.
-- `ehr-boundary`: Separate, linked patient records. It covers human-confirmed link creation, identity review for conflicts, demographic publication under `openpractice-ehr-patient-link/1.0`, clinical facts for charge capture under `openpractice-ehr-clinical-facts/1.0`, forward corrections, no direct database access, operation with no EHR, and appointment authority left undecided.
-- `billing-accounting-boundary`: The split between billing ownership and the books of record. It covers openPractice as receivable source of truth, the accounting system as mirror, immutability and dated reversals, versioned immutable batches, the reason taxonomy as join key, the bank-line division of labour, and no money movement through the integration.
-- `accounting-integration`: The contract `openpractice-accounting-integration/1.0` and its adapters. It covers operations, idempotency, batches, explicit release, retries, reconciliation, per-destination posting modes, the BAA gate, PHI minimization, adapter isolation, credentials and contract tests.
+- `patient-registry` (PR-01 to PR-14): the administrative patient record, its fields, confidential-communication instructions, guarantor, coverages, search, audit, deactivation and bounded hard delete.
+- `ehr-boundary` (EB-01 to EB-20): linked records, issuers, canonical schemas, identity review, demographic publication and suspension, correction requests, clinical facts, manual entry, deadline escape and no-PHI diagnostics.
+- `billing-accounting-boundary` (BAB-01 to BAB-15): billing ownership, the books of record, FD-3, the taxonomy, the bank register and deposit links, deposit-only reconciliation, legacy share and late charges.
+- `accounting-integration` (AI-01 to AI-22): the contract and schema, adapters, keys, batches, mode, customers created by this contract, dates, accrual, money events, BAA gate, PHI minimization, bank lines, verification, tests, and no posting to records the contract does not own.
 
 ### Modified Capabilities
 
-None. openPractice has no canonical capability specs yet. This change does not modify `add-reimbursement-retention-control`; it depends on that change for hard-delete gating.
+None. This change depends on, and does not modify, `add-reimbursement-retention-control`. When that change is ratified, it must exclude records created in error with no linked activity from its retention record families (ruling 9).
 
 ## Impact
 
-- Establishes the first openPractice data contracts for the patient, guarantor, coverage, EHR link, demographic outbox, export batch, posting-mode setting and BAA record. It also fixes three external contract identifiers that openChart and future adapters will implement.
-- Puts PHI into a third party's system when a destination runs in patient-level mode. That widens the attack surface and the business-associate footprint. Constitution Principle II's security review and the living risk analysis must cover every destination before patient-level mode is enabled for it.
-- Requires contract tests at three new integration boundaries (EHR patient link, EHR clinical facts, accounting destination), all using synthetic fixtures and contract doubles (Principle III).
-- Commits openChart to new work, governed in `opensoft/openChart-spec` change `define-openpractice-boundary`: accepting links and demographic updates, holding conflicts in identity review, and publishing clinical facts. openChart cannot publish billable clinical facts until it has a governed clinical-encounter capability; until then, charge capture against openChart waits.
-- Adds no runtime code, dependencies, vendor selections beyond the ERPNext-first decision, legal rules, or BAA claims.
+- **New openPractice data contracts:** patient, guarantor account, coverage, confidential-communication instructions, EHR link, demographic outbox, practice bank account register, payer deposit link, export batch, posting mode and the BAA or attestation record.
+- **External contracts:** three contracts are fixed, with canonical schemas in `contracts/` (`SHA256SUMS` included).
+- **PHI exposure:** a patient-level destination receives PHI, limited to account numbers, dates of service, amounts and neutral labels. Each destination needs a security review and a risk-analysis entry under Principle II.
+- **Contract tests:** required at three boundaries, using synthetic fixtures only.
+- **Commitments for openChart:** governed by `define-openpractice-boundary`. Until openChart has a clinical-encounter capability, it reports no billable-facts support, and charges for linked patients are entered manually.
+- **Runtime:** no runtime code, dependencies or BAA claims are added.

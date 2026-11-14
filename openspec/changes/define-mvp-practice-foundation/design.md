@@ -1,437 +1,367 @@
 ## Context
 
-openPractice is an assembly root with an empty code leg. The Frappe application `open_practice` does not exist yet. The repository constitution (`.specify/memory/constitution.md` in `opensoft/openPractice`, v1.0.0, ratified 2026-08-24) is in force. Its principles shape this design throughout:
-- I: HIPAA by design;
-- II: security review for PHI, money, authorization and credentials;
-- III: test-first, with contract tests at every integration boundary;
-- IV: clinical boundary and original implementation;
-- V: versioned integration contracts only;
-- VI: deployment portability.
+openPractice is an assembly root whose code leg is empty. The Frappe application `open_practice` does not exist yet. Constitution v1.0.0 (`.specify/memory/constitution.md` in `opensoft/openPractice`, ratified 2026-08-24) is in force. Its principles are:
 
-Brett Heap, the product owner, made six decisions on 2026-11-14. This change encodes them:
-1. the MVP must include patient CRUD, a defined EHR boundary, a defined billing-versus-accounting boundary, and an accounting integration contract;
-2. openPractice owns billing, and the accounting system is the books of record;
-3. one contract covers ERPNext Accounts, QuickBooks Online and Business Central, and only the ERPNext adapter ships in the MVP;
-4. patient-level invoices are the posting granularity, behind a per-destination BAA gate;
-5. each system owns its own patient record and the records are linked;
-6. the patient CRUD scope (fields, delete semantics, non-goals, audit, synthetic fixtures).
+- I: HIPAA by design
+- II: security review for PHI, money, authorization and credentials
+- III: test-first development, with contract tests at every integration boundary
+- IV: clinical boundary and original implementation
+- V: versioned integration contracts only
+- VI: deployment portability
 
-Where this design goes beyond those decisions, the text says so and flags the point for owner review. Each flagged point is collected under Open Questions.
+The product owner, Brett Heap, made six boundary decisions on 2026-11-14. Later the same day he ruled on 24 follow-up questions; see "Owner rulings (2026-11-14)" below. **Rulings are not ratification.** This change stays `Status: draft` and `owner-ratification.md` stays PENDING until the owner completes it.
 
-All ideation paths are relative to the root of `opensoft/openPractice-spec` and are `Status: brainstorm`, except FD-1 to FD-11, which were ratified on 2026-08-27.
+Requirement IDs (`PR-nn`, `EB-nn`, `BAB-nn`, `AI-nn`) prefix every requirement name in the four spec deltas.
 
-Sources this design builds on:
-- [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md): FD-1 to FD-11, ratified. Most used here are FD-3 (always-closed books, export-batch freeze), FD-5 (four governance tiers), FD-7 (the Thread contract before any consumer), FD-9 (open-items migration, old-system balance) and FD-11 (licensed overlay).
-- [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md): Slices 0 to 5; risks R-2, R-6 and R-7; the open question on the accounting destination.
+Ideation paths are relative to the root of `opensoft/openPractice-spec`. All of those documents are `Status: brainstorm`, except FD-1 to FD-11, which were ratified on 2026-08-27. Sources:
+
+- [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md): FD-1 to FD-11 (ratified). The most relevant are FD-2 (learned baseline), FD-3 (always-closed books and export-batch freeze), FD-5 (four tiers and deadline escapes), FD-7 (Thread contract first), FD-9 (old-system balance) and FD-11 (licensed overlay).
+- [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md): Slices 0–5 and risks R-2, R-6 and R-7.
 - [`ideation/brainstorm/openpractice-small-practice-beta-feature-normalization.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-feature-normalization.md): the party register (A-4), the six nouns, FR-1 to FR-8, and the capability register.
-- [`ideation/brainstorm/openpractice-small-practice-beta-financial-control-and-accounting-bridge.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-financial-control-and-accounting-bridge.md): the subledger shape and the accounting boundary.
-- [`ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md): the Bank Line Inbox, the twelve kinds, and the export and certificate (§8).
-- [`ideation/brainstorm/openpractice-small-practice-beta-visit-thread.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-visit-thread.md): the clinical boundary, what the Thread freezes, the forward correction loop, and the waiting-on-clinical hold.
-- [`ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md`](../../../ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md): registration scope and the deferred identity features.
-- [`ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md`](../../../ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md): the contracted EHR boundary, with no direct database reads.
-- [`ideation/review/openpractice-feat-review-synthesis.md`](../../../ideation/review/openpractice-feat-review-synthesis.md): §2(m) "The clinical boundary has no waiting state, no correction loop, and no outage behavior", §6.7 period close, and §6.11 append-only versus deletion.
+- [`ideation/brainstorm/openpractice-small-practice-beta-financial-control-and-accounting-bridge.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-financial-control-and-accounting-bridge.md): the subledger and the accounting boundary.
+- [`ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md): the bank-line inbox, the twelve kinds, and the export (§8).
+- [`ideation/brainstorm/openpractice-small-practice-beta-visit-thread.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-visit-thread.md): the clinical boundary, what a thread freezes, forward corrections, and waiting-on-clinical.
+- [`ideation/brainstorm/openpractice-small-practice-beta-enrollment-gated-billing.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-enrollment-gated-billing.md) and [`ideation/brainstorm/openpractice-small-practice-beta-provider-enrollment-and-directory.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-provider-enrollment-and-directory.md): the participation tuple and enrollment cases.
+- [`ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md`](../../../ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md) and [`ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md`](../../../ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md).
+- [`ideation/review/openpractice-feat-review-synthesis.md`](../../../ideation/review/openpractice-feat-review-synthesis.md): §2(m) clinical boundary, §6.7 period close, and §6.11 append-only integrity versus deletion.
+- Brainstorm packet `openpractice-customer-financial-separation`, cited by topic anchor only; in progress, to be linked when it lands. It covers how membership, subscription and retail invoicing are routed and owned, separately from medical billing (ruling 24).
 
-Stakeholders:
-- front-desk staff and the office manager, who maintain patients;
-- the biller, in-house or external (FD-1);
-- the owner-physician;
-- the bookkeeper or accountant, who works in the accounting system;
-- the clinical staff of the linked EHR;
-- privacy and security reviewers;
-- adapter implementers;
-- the companion openChart change, `opensoft/openChart-spec` change `define-openpractice-boundary`.
+## Owner rulings (2026-11-14)
+
+Every row has the same source: **Brett Heap, 2026-11-14, authoring session.** The requirement text matches each ruling.
+
+| # | Ruling | Governs |
+|---|---|---|
+| 1 | Handoff shape **A**: an ordered multi-feature exception. Pre-stated as the owner's ruling; the field in `owner-ratification.md` is left for him to confirm. | `tasks.md` §1.2, §2 |
+| 2 | Accounting customers are the guarantor account (patient balances) and each payer (insurance balances). | AI-10 |
+| 3 | A patient-balance customer is identified by account number only. No guarantor or patient name ever reaches the destination, on customers or invoice lines. With guarantor = self, a guarantor-named customer would be the patient's name. | AI-10, AI-16, PR-06 |
+| 4 | Dates: line date of service; GL date = date of service if that period is open, otherwise the first open date with a late-charge flag (FD-3); invoice date = finalization date; due date from statement terms; sync timestamp kept separately and never an accounting date; each adapter verifies line service dates and cash-basis support before go-live. | AI-11, AI-07, AI-20, BAB-15 |
+| 5 | Banks: a register of all practice accounts; payer deposit links per payer × billing entity (TIN + NPI) with method, account, enrollment status and evidence; an expected-account check; a re-enrollment worklist; these feed the enrollment lifecycle. openPractice reconciles deposits only, reading revenue bank lines from the destination with statement upload as fallback. Other lines are labelled "accounting system's". One deposit entry per explained deposit. The accounting system owns bank balances and the full reconciliation. | BAB-02, BAB-09, BAB-11, BAB-12, BAB-13, BAB-14, AI-17 |
+| 6 | A practice-operated destination (for example self-hosted ERPNext) satisfies the BAA gate with an attestation naming the operator. | AI-14 |
+| 7 | Posting mode is chosen before a destination's first released batch. Every destination starts in summary and may move to patient-level only before the first release, after the BAA gate. After that, any mode change is refused until the owner ratifies a continuity procedure. Mapping is versioned per destination and mode. The "fall back to summary" mitigation is dropped. A BAA lapse halts delivery with no silent conversion. | AI-09, BAB-06, AI-14 |
+| 8 | The MVP calls ERPNext only through its REST API, same-site or remote, with no in-process calls. In-process use stays conditional on counsel. The remote topology alone satisfies MVP acceptance. | AI-04, `tasks.md` §2.3 |
+| 9 | A record created in error with no linked activity is outside every retention record family. Hard delete is tier 4 and removes the live content and the PHI values in that record's audit trail, leaving a PHI-free tombstone. Backups age out under backup retention. No unscoped "permanent" claim. `add-reimbursement-retention-control` must carry this exclusion when ratified. | PR-12, PR-13, PR-10 |
+| 10 | Confidential-communication instructions are in the MVP registry. | PR-05, EB-06 |
+| 11 | Preferred language is added. Preferred name stays. Sex assigned at birth and sexual orientation stay out (clinical; owned by openChart). | PR-03, EB-06 |
+| 12 | Tier 4 applies only to hard delete and to enabling patient-level mode, as a conscious FD-5 exception (T-13). `link_existing` and review resolution are tier 2. The FD-5 deadline escape is stated for gates. | PR-12, AI-14, EB-04, EB-05, EB-18 |
+| 13 | Coverage is not in link contract 1.0; it may come in a later MINOR. | EB-06 |
+| 14 | The date-of-birth hold is accepted, implemented as a link-level suspension. | EB-05, EB-08 (openChart PL-08) |
+| 15 | The "agree" check for `link_existing` is accepted and made deterministic against the built DocType. | EB-05 (openChart PL-05) |
+| 16 | The applied legal name and date of birth are projected onto `OC Patient`, with history. `sex_recorded` is never overwritten. | openChart PL-09 |
+| 17 | openChart refuses direct edits to a linked patient's projected fields and routes them to openPractice as correction requests; intake flows included. | EB-09 (openChart PL-10) |
+| 18 | The openChart integration role is named and scoped in planning, narrower than System Manager. | openChart PL-05 |
+| 19 | Namespace tokens `openpractice` and `openchart` are confirmed. | EB-01 |
+| 20 | Coverages are zero or more; self-pay patients have none. | PR-07, `proposal.md` |
+| 21 | Manual charge entry is allowed for a linked patient while that EHR reports no billable-facts capability. It is marked manual, with provenance. | EB-17 |
+| 22 | Accrual valuation: post the billed charge plus an expected contractual adjustment at the date of service, from the payer's observed history (FD-2), and true up at remittance. Fall back to gross at date of service, with the adjustment at remittance, when no history exists. | AI-12 |
+| 23 | Full bank account and routing numbers are stored encrypted, visible only to owner and billing-admin roles, masked elsewhere, every view audited, and never in logs, errors, exports, postings or keys. | BAB-10, AI-16, AI-19 |
+| 24 | Membership agreements, subscription renewals, retail sales and other non-medical commerce invoicing are out of scope. Their routing and ownership are being worked out in the `openpractice-customer-financial-separation` brainstorm packet (in progress; to be linked when it lands). Ruling 3 is scoped to customers created by this contract from medical billing: guarantor accounts (including self-pay and direct healthcare charges under FD-4) and payers. It does not govern membership or retail customer records. The contract never copies care linkage or PHI into a customer record it does not own, and never posts membership or retail obligations. How the two kinds of receivable coexist in one destination is an open question. | AI-10, AI-16, AI-22, `proposal.md` non-goals, Open Question 7 |
 
 ## Goals / Non-Goals
 
-**Goals:**
+**Goals**
 
-- Define the administrative patient record and its maintenance precisely enough that the first Speckit feature can build it test-first.
-- Make the EHR boundary bidirectional and explicit: separate records, explicit links, identity review, demographic publication and the clinical-fact feed. This closes the patient-identity half of R-7.
-- Fix the billing-versus-accounting split so that openPractice never drifts into being a ledger.
-- Specify one accounting contract that three destinations can implement, and build the ERPNext adapter against it in the MVP.
-- Make PHI in the accounting system a gated, per-destination decision, and minimize what flows when it is allowed.
-- Keep FD-3 (always-closed books, export-batch freeze) intact and destination-neutral.
+- Specify the administrative patient record precisely enough that the first feature can be built test-first.
+- Make the EHR boundary bidirectional and explicit: links, issuers, single-resolver identity review, demographic publication, correction requests and clinical facts. This closes the patient-identity half of R-7.
+- Fix the split between billing and accounting so that openPractice never becomes a ledger.
+- Specify one accounting contract for three destinations, and build the ERPNext adapter in the MVP.
+- Gate PHI in the accounting system per destination, and minimize what is sent.
 
-**Non-Goals:**
+**Non-Goals**
 
-- Duplicate scoring, a merge queue, card OCR, household modeling and the minor-to-adult transition. These are covered by the registration feature list and the normalization register.
+- Duplicate scoring, a merge queue, card OCR and household modeling.
 - Deciding appointment authority (R-7).
-- Building QuickBooks Online or Business Central adapters.
-- Authoring the Thread contract (FD-7) or the reason taxonomy's categories.
-- Asserting any vendor's BAA availability, API capability or pricing.
-- Any change to another repository's runtime.
+- QuickBooks Online and Business Central adapters.
+- Authoring the Thread contract or the reason taxonomy.
+- Membership agreements, subscription renewals, retail sales and other non-medical commerce invoicing (ruling 24; `openpractice-customer-financial-separation`, in progress).
+- Making vendor BAA or API claims.
+- Changing another repository's runtime.
 
 ## Ownership matrix
 
-"Source" means the authoritative owner. "Mirror" means a copy kept in step through a contract. "Reference" means an identifier pointing at the owner.
-
-| Object or function | openPractice | EHR (openChart or another) | Accounting system |
+| Object or function | openPractice | EHR | Accounting system |
 |---|---|---|---|
-| Administrative patient: name, date of birth, administrative sex, gender identity, pronouns | **Source** | Mirror via `openpractice-ehr-patient-link/1.0` | — (patient-level mode: opaque reference only) |
-| Contacts and addresses | **Source** | Mirror via the same contract | — |
-| Guarantor | **Source** | — (not published, minimum necessary) | Guarantor display name as customer (patient-level mode only) |
-| Insurance coverage | **Source** | — (not published in 1.0) | — |
-| Clinical patient anchor (for example `OC Patient`) | Reference (EHR link) | **Source** | — |
-| Encounters, diagnoses, procedures, signed documentation | Reference, plus the frozen claim-as-submitted copy | **Source**; published via `openpractice-ehr-clinical-facts/1.0` | — |
+| Administrative demographics, contacts, confidential-communication instructions, preferred language | **Source** | Mirror (link contract) | — |
+| Guarantor, coverage | **Source** | — | Guarantor account number as customer (patient-level only) |
+| Clinical patient anchor; encounters, diagnoses, procedures, documentation | References and claim-as-submitted copies | **Source** | — |
 | Notes, medications, results, orders | — | **Source** | — |
 | Appointments | **OPEN (R-7)** | **OPEN (R-7)** | — |
-| Charges, claims, remittance posting | **Source** | — | Mirror (patient-level) or aggregate (summary) |
-| Patient statements and collections | **Source** | — | — |
-| Payer and patient receivables, payment allocation | **Source** | — | Mirror (patient-level) or aggregate (summary) |
-| Refund decisions and the refund register | **Source** (tier-4 approval) | — | Record of an issued refund |
-| Financial audit lineage | **Source** | — | — |
-| Reason taxonomy (the general-ledger join key) | **Source** | — | Accounts mapped per destination |
-| General ledger, chart of accounts, financial statements | — | — | **Source** |
-| Bank accounts and their reconciliation | Explains practice-revenue lines (see Decision 10) | — | **Source** |
-| Taxes, payroll, payables | — | — | **Source** |
-| Card rails and PCI scope | — (processor-hosted pages) | — | — |
-| Identity linkage | Stores the EHR reference | Stores the openPractice reference | — |
+| Charges, claims, statements, collections, payer and patient receivables, allocation, refunds, financial audit lineage | **Source** | — | Mirror (patient-level) or aggregate (summary) |
+| Reason taxonomy | **Source** | — | Accounts mapped per destination and mode |
+| Practice bank account register; payer deposit links | **Source** | — | Mapped bank accounts |
+| Revenue bank-line explanation (deposits, chargebacks, takebacks, processor fees) | **Owner** | — | Supplies the lines |
+| Bank balances and full bank reconciliation | — | — | **Source** |
+| General ledger, chart of accounts, taxes, payroll, payables, financial statements | — | — | **Source** |
+| Identity linkage | Stores (EHR issuer, namespace, value) | Stores (openPractice issuer, `openpractice`, value) | — |
+| Membership, subscription and retail invoicing, with their named commerce customers | **Out of scope** (ruling 24): never posted by this contract, which never copies care linkage into these records | — | Governed elsewhere (`openpractice-customer-financial-separation`, in progress) |
 
 ## Decisions
 
-### 1. Each system owns its own patient record; links are stored on both sides
+### 1. Separate records, linked by triples with configured issuers
 
-openPractice owns the administrative patient. The EHR owns its clinical patient. Neither replaces, merges or deletes the other's record.
+Each side stores the other side's reference as an (issuer, namespace, value) triple and compares references as triples (EB-01, EB-02). Every openPractice deployment and every openChart deployment configures a stable issuer that is unique across deployments. This is why two openChart sites that both have `OC-PAT-00001` never collide.
 
-The link is stored on both sides using the identifier model openChart already ships: issuer or endpoint, namespace, value, status and effective interval.
-- **Namespace strings.** openChart stores the openPractice patient reference under namespace **`openpractice`**. openPractice stores an openChart patient reference under namespace **`openchart`**. Both follow the product-name token convention already used by the vendored identity binding in openChart (`identifier_namespace: openchart`). A non-openChart EHR uses its own namespace token, recorded on the link.
-- **Issuer.** Each openPractice deployment has a stable issuer identifier, configured at install and never derived from a host path. openChart records it in `issuer_or_endpoint`. This keeps two openPractice deployments from colliding on the same value.
-- **Status.** Links use openChart's existing vocabulary: `active`, `superseded`, `revoked` and `identity_review`.
+Namespaces are `openpractice` and `openchart` (ruling 19), following the product-name convention already in openChart's vendored identity binding. Every message carries a `link_id`, minted by openPractice, that names one link for its whole life. Version comparisons are made per `link_id` (EB-07).
 
-*Design call for owner review:* choosing `openpractice` and `openchart` as namespace tokens, rather than record-type-qualified forms such as `openpractice.patient`.
+### 2. The patient record
 
-### 2. Patient record shape, with the sex and gender fields defined
-
-| Attribute | Required | Definition |
-|---|---|---|
-| Legal name | yes (at least one part) | Family name, one or more given names, optional suffix. A single-name person is recorded without a placeholder. |
-| Preferred name | no | The name the patient asks to be called; staff-facing only *(design call; not in the decision list)* |
-| Date of birth | yes | Calendar date |
-| **Administrative sex** | yes (`unknown` allowed) | `female`, `male`, `other` or `unknown`, aligned with FHIR R4 administrative gender. It is used for payer, eligibility and administrative transactions and is mapped to whatever code set a payer transaction requires. |
-| **Gender identity** | no | Patient-reported. Coded value set plus free text, selected in Speckit planning. Never derived and never sent to payers. |
-| **Pronouns** | no | Patient-reported. Never derived and never sent to payers. |
-| Telephones, emails, postal addresses | no | Typed and preferred, kept as dated history |
-| Guarantor | yes (defaults to self) | Exactly one current guarantor; another person is recorded in the party register |
-| Coverages | zero or more | Payer, member identifier, group number, subscriber and relationship, effective dates, priority; versioned |
-
-Sex assigned at birth, sexual orientation, preferred language, interpreter needs and confidential-communication instructions are **not** in the MVP field list. The last of these is raised as an open question, because a statement sent to the wrong address is a privacy harm (Open Question 12).
-
-### 3. Delete is deactivate; hard delete is narrow and defers to retention control
-
-Deactivation stops new activity and preserves everything else. Hard delete applies only to a record created in error that has no linked activity. Linked activity is defined broadly, and it explicitly includes any EHR link or accounting posting, because content already published to another system cannot be recalled from it. Hard delete is a tier-4 hard stop and leaves a non-PHI tombstone.
-
-**Reconciliation with `add-reimbursement-retention-control`:**
-- while that control is in force, every hard delete passes its disposition gate;
-- an active hold always blocks a hard delete;
-- audit records about the deleted record stay under retention control and survive the hard delete.
-
-*Tension:* that change makes an unselected jurisdiction block disposition, and a gate that cannot resolve applicability refuses. A practice that has not selected a jurisdiction could therefore never hard-delete a created-in-error record. Whether "a record created in error with no linked activity" falls inside any retention record family at all is for the owner to decide (Open Question 11). Until then, the requirement fails closed.
-
-### 4. The linkage and demographic contract: `openpractice-ehr-patient-link/1.0`
-
-Transport is versioned REST with published schemas (Principle V), over TLS, between authenticated integration identities. Each identity is scoped by subject, tenant, purpose and role, matching openChart's ratified API requirement. Patient snapshots use a representation compatible with FHIR R4 Patient. Where FHIR R4 has no native element, as for gender identity and pronouns, the profile extension is chosen during Speckit planning and recorded in the contract schema.
-
-**Envelope (every message):**
-
-| Field | Meaning |
+| Attribute | Rule |
 |---|---|
-| `contract` | `openpractice-ehr-patient-link` |
-| `contract_version` | `1.0` |
-| `message_id` | Unique identifier; the idempotency key; reused on every retry |
-| `message_type` | One of the types below |
-| `issued_at` | UTC timestamp |
-| `issuer` | The sending deployment's issuer identifier |
-| `correlation_id` | Links a response to its request |
-| `subject` | `openpractice_patient` {namespace `openpractice`, issuer, value}; `ehr_patient` {namespace, issuer, value} or null before linking |
+| Legal name | At least one part. A single-name person is recorded without a placeholder. |
+| Preferred name; preferred language (BCP 47) | Optional (ruling 11) |
+| Date of birth | Required |
+| Administrative sex | `female`, `male`, `other` or `unknown`. Used for payer and administrative transactions. |
+| Gender identity; pronouns | Optional and patient-reported. Never derived. Never sent to payers. |
+| Contacts and addresses | Typed, preferred, kept as dated history |
+| Confidential-communication instructions | Alternate address and channel, plus the coded restrictions in PR-05 (ruling 10). Every contact function must honor them. |
+| Guarantor | Exactly one current guarantor, defaulting to self. Each has an opaque guarantor account number. |
+| Coverages | Zero or more (ruling 20), prioritized and versioned |
+| Not carried | Sex assigned at birth and sexual orientation (clinical; ruling 11) |
 
-**Message types:**
+### 3. Delete, deactivate and hard delete
 
-| Message | Direction | Content | Answer |
-|---|---|---|---|
-| `link.request` | openPractice to EHR | `mode` (`create_new` or `link_existing`), the demographic snapshot, the EHR patient reference for `link_existing`, the confirming actor (opaque reference) | `link.result` |
-| `link.result` | EHR to openPractice | `linked` (EHR reference), `identity_review` (review reference and reason) or `refused` (reason) | — |
-| `demographics.updated` | openPractice to EHR | `demographic_version`, `changed_fields`, `identity_significant`, `administrative_status`, `provenance`, full `snapshot` | `demographics.ack` |
-| `demographics.ack` | EHR to openPractice | `applied`, `duplicate`, `stale`, `rejected` (with reason) or `identity_review` | — |
-| `link.review_resolved` | raising side to the other | `confirmed` or `revoked`, actor, reason | acknowledgement |
-| `link.revoked` | either side | Link ended; both sides keep the link record with status `revoked` | acknowledgement |
+Deactivation (PR-11) refuses only activity dated after the deactivation date. Services already given, including to a patient who has since died, stay chargeable. The wording is neutral about appointment authority (R-7).
 
-**Versioning and ordering:**
-- `demographic_version` starts at 1 when the record is created and increases on every published change.
-- Snapshots are complete, so receivers do not need contiguous versions and out-of-order delivery is safe: a lower version is `stale`.
-- The same version with different content is `rejected`. This signals an integrity defect and creates work.
-- MINOR versions add optional fields only. A receiver rejects a MAJOR version it does not support.
+Hard delete (PR-12, PR-13) applies only to a record created in error with no linked activity. Such records are outside every retention record family (ruling 9). Hard delete is tier 4 and removes the live content and the PHI values in that record's audit trail, leaving a PHI-free tombstone. Backup copies age out under backup retention, and no unscoped "permanent" claim is made.
 
-**Idempotency and delivery:**
-- The outbox row is written in the same transaction as the demographic change. This mirrors the outbox pattern in `add-reimbursement-retention-control`.
-- Delivery is asynchronous, with backoff.
-- Retries reuse `message_id`.
-- An exhausted retry policy produces work owned by a Roster entry.
-- An EHR outage never blocks registration.
+**Dependency.** When `add-reimbursement-retention-control` is ratified, it must carry this exclusion. This is a dependency note only; this change does not edit that one.
 
-**Identity review.** A conflicting link enters `identity_review`, and resolution never merges. On the openChart side, `define-openpractice-boundary` adds two further holds:
-- a `link_existing` request whose demographics disagree with openChart's record goes to identity review;
-- an applied update that changes date of birth is held for review before it takes effect. This guards against propagating demographics across a wrong-patient link.
+**New tension T-14.** PR-10 makes audit records tamper-evident and editable by no one, but PR-13 removes PHI values from one record's audit trail. The design that satisfies both keeps audit values outside the tamper-evident chain, which records only a keyed commitment to each value. The sanctioned removal deletes the value and its key, and appends a redaction event. The Speckit plan must choose the mechanism.
 
-*Design calls for owner review:*
-- guarantor and coverage are excluded from publication on minimum-necessary grounds;
-- the deactivation reason is excluded and only the status is published;
-- the hold on date-of-birth changes on the EHR side;
-- tier 4 for `link_existing`.
+### 4. The patient-link contract: `openpractice-ehr-patient-link/1.0`
 
-### 5. The clinical-fact contract: `openpractice-ehr-clinical-facts/1.0`
+The canonical schema is `contracts/openpractice-ehr-patient-link-1.0.schema.json`, SHA-256 `76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802`. Transport is versioned REST over TLS between integration identities scoped by subject, tenant, purpose and role. The snapshot is compatible with FHIR R4 Patient.
 
-The EHR produces this contract and openPractice consumes it. It has two parts:
-- **Pointer-only notifications**, carrying resource references and no clinical content: `encounter.documentation_final`, `clinical_fact.corrected` and `clinical_fact.entered_in_error`.
-- **Authorized FHIR R4-compatible reads**, limited to linked patients and the billing purpose:
-  - Encounter: identifier, status, type, period, location and participating practitioners;
-  - Condition, encounter-diagnosis category: code system, code, rank and encounter reference;
-  - Procedure: code system, code, quantity where documented, performed time, performer and encounter reference;
-  - a documentation-final indicator with signer reference and signed time.
+| Message | Direction | Purpose |
+|---|---|---|
+| `link.request` | openPractice → EHR | Mode `create_new` or `link_existing`, with snapshot and version. Mints the `link_id`. |
+| `link.result` | EHR → openPractice | `linked`, `identity_review` or `refused`, with a coded reason |
+| `demographics.updated` | openPractice → EHR | Full snapshot, `demographic_version`, changed fields, coded provenance |
+| `demographics.ack` | EHR → openPractice | `applied`, `duplicate` (same message, or same version with identical content), `stale`, `rejected` (content conflict, unsupported MAJOR, or revoked, superseded or unknown link) or `identity_review` |
+| `demographics.hold_rejected` | EHR → openPractice | A held date-of-birth change was rejected. Lists the held versions. |
+| `demographics.correction_requested` | EHR → openPractice | A proposed change to legal name or date of birth, from EHR staff or intake (ruling 17) |
+| `correction.ack` | openPractice → EHR | `received` or `rejected` |
+| `correction.resolved` | openPractice → EHR | `applied` (with the new version) or `declined` (coded reason) |
+| `link.review_resolved` | raising side → other | `confirmed` or `revoked`. Only the raiser sends it, and `confirmed` is forbidden for case 2. |
+| `link.revoked` | either side | Revocation always wins |
+| `message.ack` | either side | Acknowledges review resolutions, revocations, hold rejections and correction resolutions |
 
-Note text, medication lists, results and orders are out of scope.
+**Single resolver** (EB-05). The side that raised a review resolves it. Revocation wins over any confirmation. Case 2 (two active `openpractice` links on one EHR patient) can never resolve as `confirmed`.
 
-Coding follows FD-11. The contract carries code-system identifiers and code values only, never licensed descriptor text. Fixtures use license-free or synthetic codes, so no CPT content enters the repository. Modifier and unit derivation stays with openPractice charge capture unless the EHR documents them.
+**Date-of-birth hold** (EB-08 and openChart PL-08). The hold is a link-level suspension. The EHR compares each incoming snapshot's date of birth with its currently applied value, so a later full snapshot cannot bypass the hold. While a hold is open, every later version is held too, and openPractice suspends delivery on that link.
+- **Confirm:** the EHR applies the latest held snapshot.
+- **Reject:** the EHR sends `demographics.hold_rejected`. Delivery stays suspended until openPractice staff correct the date of birth or re-assert it. This cannot deadlock, because confirming applies the latest held snapshot and rejecting needs a human act on one side to resume.
 
-A correction is a new version that references the version it supersedes. A retraction is explicit. openPractice turns either one into a dated event and a corrected-claim action; it never rewinds the Thread.
+**Deterministic "agree"** (openChart PL-05). The structured legal name is projected to a single string: given names, then family name, then suffix, joined by single spaces. That string and `OC Patient.patient_name` are each normalized (Unicode NFKC, case-folded, trimmed, internal whitespace collapsed) and compared. Dates of birth must be equal. An empty `OC Patient.date_of_birth` sends the request to identity review.
 
-*Dependency:* openChart has no clinician-authored encounter, diagnosis or procedure records today. Its intake capability holds patient-reported statements only, and its ratified spec forbids treating those as diagnoses. openChart can therefore publish no billable facts until a governed clinical-encounter capability exists in openChart. The companion change records the same dependency.
+**No PHI in diagnostics** (EB-12). Reasons are always codes from the schema.
 
-### 6. Billing versus accounting
+### 5. The clinical-facts contract: `openpractice-ehr-clinical-facts/1.0`
 
-openPractice owns claims, statements, payer and patient receivables, allocation, refunds, collections and financial audit lineage. It is the receivable source of truth. The accounting system owns the general ledger, chart of accounts, bank accounts, taxes, payroll, payables and the final statements, and it **mirrors** what openPractice posts. A destination-side edit is a reconciliation exception, never truth. This sharpens the boundary already drawn in the financial-control brainstorm ("openPractice remains the source for healthcare receivable lineage. The connected accounting system remains the source for the general ledger ...") and in the money-lines brainstorm ("It is not an accounting system").
+The canonical schema is `contracts/openpractice-ehr-clinical-facts-1.0.schema.json`, SHA-256 `6b2071fe61693d144aa91f4fc68e51d0cd7563d66b5cd2086f281a959f7e69ec`. The contract has three parts:
+- pointer-only notifications;
+- a `capability.result` stating whether the EHR supports billable facts;
+- `facts.result` reads limited to the billing subset.
 
-FD-3 holds unchanged, except that its export-batch freeze now applies to every destination: immutability at post time, dated reversals, as-of queries, no openPractice period close, and frozen batches with back-referenced corrections. When the destination closes a period, a late correction posts to the destination's open period with a back-reference.
+Codings carry a system and a code only, never descriptor text (FD-11). openChart has no clinician encounters yet. Until it does, it reports `billable_facts_supported: false`, and linked patients' charges are entered manually (EB-17, ruling 21).
+
+**Deadline escape** (EB-18). If a link in identity review would stall billing past the filing threshold, the claim is released from that gate. Staff are notified, the charge is entered manually, and the claim proceeds at tier 3. The link is never auto-confirmed.
+
+### 6. The billing–accounting boundary and banks
+
+openPractice owns billing and the receivables. The accounting system owns the ledger, bank balances and the full bank reconciliation (BAB-01, BAB-02). FD-3 holds, generalized to every destination: immutable postings, dated reversals, frozen batches, and no openPractice period close (BAB-04, BAB-05). This change does not specify the daily balanced day and claims nothing about it.
+
+Banks (ruling 5) are covered by these requirements:
+- BAB-09: a register of every practice account.
+- BAB-10: full numbers encrypted and role-restricted (ruling 23).
+- BAB-11: payer deposit links per payer × billing entity (TIN + NPI).
+- BAB-12: the expected-account check.
+- BAB-13: a re-enrollment worklist when bank accounts change.
+- BAB-14: openPractice reconciles deposits only.
+- AI-17: revenue lines are read from the destination, with statement upload as fallback.
+
+**Reconciling 5(e) with the enrollment brainstorms.** The provider-enrollment brainstorm keys enrollment cases by "participation purpose". Deposit enrollment is modeled as a separate purpose with the same case lifecycle and evidence. The enrollment-gated-billing brainstorm makes participation the only claim gate. Deposit enrollment therefore never holds a claim. An active deposit link sets the expected payment method and expected account instead. This is an interpretation of ruling 5(e) and is recorded as such.
 
 ### 7. The accounting contract: `openpractice-accounting-integration/1.0`
 
-| Operation | Purpose | Modes |
-|---|---|---|
-| `customer.upsert` | Create or update a guarantor-account customer or a payer customer | patient-level |
-| `invoice.post` | Raise a receivable against a customer | patient-level |
-| `payment.post` | Record a receipt into the clearing account and apply it to invoices | patient-level |
-| `credit_note.post` | Reduce a receivable: contractual adjustment, responsibility transfer, write-off | patient-level |
-| `reversal.post` | Dated reversal of a previously posted document, with a back-reference | both |
-| `refund.post` | Record an issued refund against a customer credit | patient-level |
-| `deposit.post` | Move an explained bank line's amount from the clearing account to the bank account | patient-level |
-| `journal.post` | Account-level journal entry: summary-mode deposit or day entries, and non-customer items such as fees, unidentified receipts and interest | both |
-| `batch.export` | Deliver a released batch | both |
-| `reconciliation.report` | Read destination totals for keyed documents and compare them with openPractice | both |
+The canonical schema is `contracts/openpractice-accounting-integration-1.0.schema.json`, SHA-256 `04125b91f66abcd5ae4df62ba0413cb1f524be2227b6f49326a86bc5161f758c`.
 
-- **Idempotency key:** `<destination_id>:<operation>:<source_entry_id>:<source_entry_version>`. After an indeterminate outcome, look the entry up by its key before any retry.
-- **Batch identity:** a sequence per destination, the contract version, the mapping version, the posting mode, the releasing actor, the release time and a SHA-256 content digest over the canonical content. Content is frozen at release; delivery state is tracked per entry, separately from content.
-- **Release:** an explicit action by an authorized person. In practice it is expected to sit in the End-of-Day Close or the bookkeeper's routine. Scheduled automatic release is off by default (Principle II), which also keeps this change clear of R-2.
-- **Release refusals:** an unmapped reason category; patient-level mode without a satisfied BAA gate; a deposit that cites an unexplained bank line.
-- **Entry states:** `pending`, `posted` (destination document reference recorded), `failed_transient`, `failed_permanent`, `indeterminate` and `superseded`.
-  - Transient failures retry with backoff and the same key.
-  - Indeterminate outcomes are resolved by lookup.
-  - Permanent failures become work. They are resolved either by redelivering the unchanged entry once the destination-side cause is fixed, or by a superseding correction in a later batch.
-- **Reconciliation report:** produced after each delivery and on demand as of any date. It compares totals by reason category, and by customer in patient-level mode. It lists missing, unexpected, mismatched and destination-edited documents. It states its exclusions: unidentified receipts, "not ours to explain" lines and old-system collections. It is the successor to the brainstorm's one-page reconciliation certificate.
+**Operations** (AI-01): `customer.upsert`, `invoice.post`, `debit_note.post`, `credit_note.post`, `payment.post`, `payment.apply`, `reversal.post`, `refund.post`, `deposit.post`, `journal.post`, `batch.export`, `bank_lines.read` and `reconciliation.report`. Versions are compatible when they share a MAJOR.
 
-### 8. Posting modes and the BAA gate
+**Keys** (AI-05). Each posting gets a `posting_id` minted at assembly, and its key is `<destination_id>:<posting_id>`. A replacement gets a new `posting_id` with a `supersedes` link. Summary lines use `<destination_id>:<batch_seq>:<line_no>`. Keys never carry personal or account data.
 
-Posting mode is a per-destination setting, and each batch records the mode it was released under.
-- **`patient_level`** is the intended default granularity. It requires a verified BAA. Enabling it is a tier-4 hard stop.
-- **`summary`** carries no PHI. It posts one journal entry per explained bank deposit, or per day, split by reason category, with fees and refunds as their own lines. This is the brainstorm's shape, kept as the fallback.
+**Batches** (AI-06). A person releases each batch explicitly. Release freezes the batch and records a digest computed over its RFC 8785 canonical JSON. Delivery state, including sync timestamps, is stored apart from batch content and is never an accounting date (AI-07).
 
-A destination is created in `summary` mode and moves to `patient_level` only through the gated act. A mode change takes effect at a batch boundary.
+**Mode** (AI-09, ruling 7). Mode is chosen before a destination's first released batch. After that, changes are refused until the owner ratifies a continuity procedure.
 
-The BAA record captures the counterparty, the execution date, effective and renewal or expiry dates, a scope statement covering the accounting service, an owner-local document reference, the verifying person and the verification time. When the BAA expires or is revoked:
-- patient-level delivery halts;
-- pending patient-level work is held, not converted;
-- an authorized person receives the work.
+**ERPNext** (AI-04, ruling 8). The adapter uses the REST API only, whether ERPNext is same-site or remote. The remote topology satisfies acceptance.
 
-This change makes **no claim** about whether ERPNext's hosting providers, Intuit or Microsoft offer or will sign a BAA. That must be verified per vendor and per hosting arrangement before patient-level mode is enabled. The gate consumes the "BAA-Gated Vendor Activation" capability that the normalization register places in Slice 0.
+**Scope of customers** (AI-10, AI-22, ruling 24). This contract creates and posts to two kinds of customer only, both from medical billing:
+- guarantor accounts, including self-pay and direct healthcare charges (FD-4);
+- payers.
 
-### 9. Proposed posting map and customer model (flagged for owner review)
+Ruling 3's no-name rule governs those customers. It is not a ban on named commerce customers that other governance may define in the same destination. This contract never copies care linkage or PHI into such a record, and never posts membership, subscription or retail obligations. Each obligation is therefore posted by exactly one route.
 
-**Customer model proposal:**
-- The accounting customer for patient receivables is the **guarantor account**, not the patient. A guarantor who covers several patients is one customer, and a minor's balance is not booked in the minor's name.
-- Each **payer is a customer** for insurance receivables. Payer names are not PHI.
-- Invoices carry an opaque openPractice patient or visit reference, and **omit the patient's name by default**, as a minimum-necessary choice.
-- *Alternative:* the patient as customer. This is simpler to explain, but it splits a family's balance, books minors' debts in their own names, and exposes every patient's name in the books.
+### 8. The posting map (patient-level mode)
 
-**Proposed posting map:**
-
-| openPractice event | Patient-level posting | Summary-mode posting |
-|---|---|---|
-| Claim-billed visit's charges finalized (`charged`) | `invoice.post` to the payer customer | — |
-| Self-pay visit's charges finalized | `invoice.post` to the guarantor customer | — |
-| Contractual adjustment at remittance | `credit_note.post` on the payer invoice | — |
-| Patient responsibility determined | `credit_note.post` on the payer invoice, plus `invoice.post` to the guarantor, linked by source event | — |
-| Payer or patient payment posted | `payment.post` into clearing, applied to the invoice | — |
-| Unidentified receipt | `journal.post` to an unidentified-receipts liability account, no customer | Liability line in the deposit entry |
-| Explained bank line | `deposit.post`, clearing to bank, equal to the bank line | One `journal.post` per explained bank line |
-| Merchant or bank fee | `journal.post` to fee expense | Fee line in the deposit entry |
-| Refund issued | `refund.post` | Refund line when its bank debit is explained |
-| Write-off | `credit_note.post` to the write-off reason | — |
-| Any correction | `reversal.post` with back-reference | Reversing `journal.post` with back-reference |
-| Old-system collection | Not posted at patient level | Bookkeeper's decision (open) |
-
-*Consequence to note:* posting invoices at `charged` puts receivables in the books on an accrual footing, which affects the brainstorm's "cash basis by default". Whether a practice can still report on a cash basis depends on each destination's reporting and must be verified per destination (Open Question 5). The timing proposal (`charged` rather than claim submission) is flagged too.
-
-### 10. Bank reconciliation ownership: brainstorm position kept, tension flagged
-
-The money-lines brainstorm has openPractice explain every practice-revenue bank line in the Bank Line Inbox, and makes "explained" the precondition for the export. Decision 2 makes the accounting system the owner of bank accounts. This design keeps the brainstorm's position:
-- openPractice explains practice-revenue lines and posts a deposit only for an explained line;
-- the accounting system owns the bank account and its reconciliation;
-- a line dispositioned "not ours to explain" never reaches the destination.
-
-The clearing-account pattern in Decision 9 preserves the brainstorm's key property: one deposit entry per bank line, so the bookkeeper's own bank reconciliation matches it in one step.
-
-**The tension is not resolved here.**
-- The bank statement is now read by two systems (openPractice's inbox and the accounting system's bank reconciliation).
-- The brainstorm's valve, "explained is the export's precondition", applies only to deposits under patient-level mode. Invoices and credit notes post before any bank line exists.
-
-Whether openPractice should instead read bank lines from the destination through the adapter, rather than from its own statement upload, is Open Question 6.
-
-### 11. PHI minimization
-
-- **Summary mode:** no element that identifies an individual or relates a posting to one.
-- **Patient-level mode, allowed:**
-  - guarantor display name and an opaque guarantor account reference;
-  - payer name and identifier;
-  - opaque patient, visit, claim and entry references;
-  - amounts, posting dates and invoice dates;
-  - reason-category descriptions.
-- **Patient-level mode, never sent:**
-  - date of birth, address, telephone or email;
-  - government identifiers, member or group identifiers, payer claim control numbers;
-  - diagnosis or procedure codes or descriptions, service descriptions beyond the reason category, dates of service;
-  - any clinical content.
-- **The EHR link:** demographics only. No guarantor, coverage, financial data or deactivation reason.
-- **Clinical facts:** the billing subset only. No notes, medications, results or orders.
-- **Everywhere:** no PHI in logs, fixtures, examples or commits.
-
-### 12. Adapter notes
-
-**ERPNext Accounts (MVP).**
-- The expected mapping is to ERPNext's Customer, Sales Invoice, return Sales Invoice (credit note), Payment Entry and Journal Entry documents, against the company's chart of accounts. This must be verified against the ERPNext major version pinned during Speckit planning.
-- Two topologies are supported:
-  - **Same site or bench.** The adapter calls ERPNext's documented document interface. openPractice and ERPNext must share a Frappe major version.
-  - **Remote, over TLS.** The adapter uses ERPNext's documented REST interface, which decouples the versions.
-- Never SQL and never direct table writes.
-- The mechanism for carrying the idempotency key on ERPNext documents is a planning decision. Options are a supported customization field installed by the adapter, or an existing reference field. It must not require direct table writes.
-- Packaging, as a separately installable Frappe app or a lazily loaded module, is also a planning decision. The requirement is that core has no import-time dependency on ERPNext.
-- *Open:* licensing review of same-site in-process calls into ERPNext; see Open Question 9.
-
-**QuickBooks Online and Microsoft Dynamics 365 Business Central (post-MVP; contract level only).** Each adapter must:
-- map every contract operation to the destination's receivable, payment, credit and journal documents;
-- provide idempotent creation, natively or by an external-reference lookup;
-- support the reconciliation read;
-- keep credentials least-privileged, with no payment-origination permission where it is separable;
-- pass the same contract tests.
-
-Before either adapter's feature is planned, the following must be verified against the vendor's current documentation and contract terms: authentication model, API surface and object model, rate limits, idempotency support, data residency, the ability to report on a cash basis, and BAA availability. **This change asserts none of them.**
-
-These two services are proprietary single-vendor cloud services. Under Principle VI they are optional adapters behind configuration. openPractice core never depends on them, and a practice can run entirely on a self-hosted ERPNext.
-
-### 13. Governance tiers (FD-5): proposed, for owner review
-
-| Action | Proposed tier |
+| Event | Posting |
 |---|---|
-| Create patient | 1 — do + undo |
-| Edit demographics, contacts or addresses | 2 — do + notify (the normalization register puts "contact changes" at tier 2) |
-| Add or change coverage or guarantor | 2 |
-| Deactivate or reactivate | 2 |
-| Hard delete a record created in error | 4 — hard stop (it changes record identity) |
-| EHR link, `create_new` | 2 |
-| EHR link, `link_existing`; resolve identity review | 4 |
-| Revoke an EHR link | 2 |
-| Demographic publication | No separate gate; an automatic consequence of the human edit |
+| Claim-billed charges finalized | `invoice.post` to the payer customer. GL date = date of service (or first open date + late flag); invoice date = finalization date; due date from terms; date of service on each line. |
+| Expected contractual adjustment (payer with learned baseline) | `credit_note.post` at the date of service, label `expected_contractual_adjustment` (AI-12) |
+| Remittance true-up | `credit_note.post` or `debit_note.post` for actual minus expected, label `contractual_adjustment_true_up` |
+| Payer without history | Gross at the date of service. `credit_note.post` for the full `contractual_adjustment` at remittance. |
+| Patient responsibility | `credit_note.post` (transfer) on the payer invoice, plus `invoice.post` to the guarantor account |
+| Self-pay charges finalized | `invoice.post` to the guarantor account |
+| Collect-at-visit payment before the invoice | `payment.post` as an unapplied payment (customer credit), later `payment.apply` |
+| Payment received | `payment.post` into clearing, applied to the invoice |
+| Customer credit | Held unapplied until `payment.apply` or `refund.post` |
+| Chargeback / returned item | `reversal.post` of the payment, plus `journal.post` of the chargeback or bank fee |
+| Payer debit / takeback | `reversal.post` (whole or part) of the recovered payment allocation |
+| Provider-level offsets in a wire | Named `journal.post` lines in the deposit's composition: interest, forwarding balance, takeback |
+| Virtual-card payment | Net of a `journal.post` virtual-card fee |
+| Merchant or bank fee | `journal.post` to its mapped expense account |
+| Unidentified receipt | `journal.post` to an unidentified-receipts liability. When identified: release the liability and `payment.post` to the customer, linked by `supersedes`. |
+| Legacy share of a deposit | `journal.post` to the mapped legacy-collections account (BAB-08) |
+| Explained deposit | One `deposit.post` equal to the bank line, made of clearing releases and named lines |
+| Write-off | `credit_note.post` with label `write_off` |
+| Correction | `reversal.post` with a back-reference |
+
+In summary mode, one journal group is posted per explained bank line, or per day. It is split by reason category with neutral labels and carries no individual data.
+
+**Neutral labels.** Every line carries a fixed neutral label (AI-16) that never reveals the type of service. A practice's internal reason category stays inside openPractice.
+
+### 9. Posting modes and the BAA gate
+
+Every destination starts in `summary`. Patient-level mode requires one of two records (AI-14, ruling 6):
+- a verified BAA with the vendor;
+- for a practice-operated destination, a verified attestation naming the operator, which is the practice itself or an existing business associate whose BAA covers the accounting site.
+
+Enabling patient-level mode is tier 4 (ruling 12). If the BAA lapses, delivery halts and nothing is converted (ruling 7). No vendor's BAA posture is asserted.
+
+### 10. Adapter notes
+
+**ERPNext (MVP).** The adapter uses the REST API only (ruling 8). It is expected to map to Customer, Sales Invoice (including returns), Payment Entry and Journal Entry, verified against the ERPNext version pinned in planning. Where the posting key is carried on ERPNext documents is decided in planning, with no direct table writes. Packaging is decided in planning, with the constraint that openPractice core never imports the adapter. Go-live requires AI-20 verification.
+
+**QuickBooks Online and Microsoft Dynamics 365 Business Central (post-MVP, contract level only).** Each must implement the same operations and tests. Before planning, the following must be verified with the vendor: authentication, API and object model, rate limits, idempotency, data residency, line service dates, cash-basis reporting, and BAA availability. This change asserts none of them.
+
+QuickBooks Online is a vendor-operated cloud service. Business Central is offered as a vendor cloud service and is also licensed for on-premises deployment. Either way it is a proprietary single-vendor product. Under Principle VI, both are optional adapters, and core never depends on them.
+
+## Governance tiers (FD-5)
+
+| Action | Tier |
+|---|---|
+| Create patient | 1 |
+| Edit demographics, contacts, confidential-communication instructions, coverage or guarantor; deactivate or reactivate | 2 |
+| Hard delete of a record created in error | **4** (T-13) |
+| EHR link `create_new` or `link_existing`; identity-review resolution; link revocation | 2 (the explicit human confirmation is the approval) |
+| Accept or decline an EHR correction request; re-assert a rejected date of birth | 2 |
+| Practice bank register or payer deposit-link change | 2 |
 | Change an account mapping | 2 |
-| Release an export batch | A person's explicit action (tier 2: the release is the approval), not a tier-3 countdown, while R-2 is unresolved |
-| Enable patient-level mode | 4 |
-| Switch a destination to summary mode | 2 (it reduces PHI) |
+| Release an export batch | Explicit human action (tier 2). No tier-3 countdown while R-2 is unresolved. |
+| Enable patient-level mode (before first release only) | **4** (T-13) |
+| Change mode after first release | Refused until a continuity procedure is ratified |
 
-### 14. Handoff, ratification and closure
-
-This change mirrors `add-reimbursement-retention-control`:
-- `Status: draft`, which only the owner changes;
-- strict validation;
-- a durable unconditional owner ratification in `owner-ratification.md`;
-- feature creation blocked until ratification;
-- archival blocked until the implementing work lands and is accepted (`closure-evidence.md`).
-
-**Handoff-shape tension.** The global workflow protocol (Lifecycle step 3) says an OpenSpec change "hands off to exactly one Speckit feature". `tasks.md` lists an ordered sequence of features, because the four capabilities ship in different slices (0 and 4) and have different prerequisites (FD-7's Thread contract, the money ledger). `owner-ratification.md` therefore asks the owner to choose explicitly:
-- **(A)** ratify the ordered multi-feature handoff as an exception for this change; or
-- **(B)** split this change into per-capability changes before any feature is created.
+**Deadline escapes (FD-5).** Every gate names its escape:
+- A link in identity review that would stall a claim past the filing threshold releases the claim to manual entry, then a tier-3 claim batch, with notification (EB-18).
+- The two tier-4 gates guard no deadline-bearing work, so nothing expires while they wait. Their escape is escalation, not release.
+- The date-of-birth hold, the BAA gate and batch release stall no claim, because claims use openPractice demographics and accounting postings carry no filing deadline.
 
 ## Constitution Check (pre-handoff, against v1.0.0)
 
-| Principle or gate | Obligation this change creates | Status |
+| Principle or gate | Obligation | Status |
 |---|---|---|
-| I. HIPAA by design | Registry audits every change and every PHI read. PHI is excluded from logs and fixtures. Encryption in transit and at rest covers the registry, outbox, batches and BAA documents. Access is minimum-necessary, derived from the Roster. Session controls are platform-level and carried to each feature's plan. | Satisfied at requirement level; per-feature safeguard plans owed |
-| II. Security review | Every feature touches PHI, money or credentials and needs a documented security review and a risk-analysis update. Each destination's patient-level enablement needs its own risk entry. Batch release is explicit, refunds are tier 4, and no autonomous financial action is on by default. | Owed per feature; R-2 avoided, not resolved |
-| III. Test-first | Contract tests at the EHR boundary (openChart is named in the principle) and at the accounting boundary ("every integration boundary"). Calculation tests for the posting map, with boundary and failure cases. Synthetic fixtures and contract doubles only. | Owed per feature |
-| IV. Clinical boundary and originality | openPractice keeps references and claim-as-submitted copies only. No-EHR charge entry is administrative data. The ERPNext adapter is original code that calls documented interfaces. | Satisfied; licensing question raised (Open Question 9) |
-| V. Versioned contracts only | Three named, versioned contracts. FHIR R4-compatible for patient and clinical facts. Versioned REST for accounting. No direct database access in either direction. | Satisfied; same-site in-process reading raised (Open Question 9) |
-| VI. Portability | ERPNext is self-hostable. QuickBooks Online and Business Central are optional adapters only. Environment-specific behavior lives in configuration. | Satisfied |
-| Data gate | Synthetic-only fixtures; no credentials in any commit | Satisfied at requirement level |
+| I. HIPAA by design | Every change and every PHI read is audited, tamper-evidently (PR-10). No PHI in logs, errors or diagnostics (EB-12, AI-19). Bank numbers are encrypted and restricted (BAB-10). Encryption in transit and at rest. Roster-derived minimum-necessary access. | Requirement level; a safeguard plan is owed per feature |
+| II. Security review | Every feature touches PHI, money or credentials. Each needs a review and a risk-analysis update, and each destination needs a risk entry before patient-level mode. Batch release is explicit; nothing autonomous is on by default. | Owed per feature; R-2 avoided, not resolved |
+| III. Test-first | Contract tests at the EHR and accounting boundaries against the canonical schemas. Calculation tests for accrual valuation and true-up. Synthetic fixtures only. | Owed per feature |
+| IV. Clinical boundary and originality | References and claim-as-submitted copies only. Manual charges are marked manual. Adapters are original code using documented REST interfaces. | Satisfied |
+| V. Versioned contracts | Three contracts, each with one canonical schema and digest. REST only to ERPNext in the MVP. No database access in either direction. | Satisfied |
+| VI. Portability | ERPNext is self-hostable. Proprietary adapters are optional. | Satisfied |
+| Data gate | Synthetic fixtures. No credentials or bank numbers in commits. | Requirement level |
 
-## Conflicts and tensions with ratified or governing text
+## Adversarial review dispositions
 
-Each tension is recorded rather than silently decided.
+| Finding | Disposition |
+|---|---|
+| B1 mode switching double-counts | AI-09 locks mode at first release (ruling 7) |
+| B2 date-of-birth hold bypass and deadlock | Link-level suspension; `demographics.hold_rejected`; publication suspended (EB-08, PL-08) |
+| B3 design calls frozen as requirements | Rulings recorded; text aligned; every remaining open question routed in `tasks.md` §3 |
+| M1 tier 4 beyond FD-5 | Ruling 12; T-13; deadline escapes above |
+| M2 Feature 4 consumes the Thread | `tasks.md` §2.4 is gated on the FD-7 Thread contract |
+| M3 posting map incomplete; legacy versus deposit | AI-13; Decision 8; BAB-08 legacy share |
+| M4 idempotency key unsound | AI-05 posting IDs, `supersedes`, summary keys, no personal data |
+| M5 EHR issuer undefined; contract identity by name only | EB-02, EB-03, PL-03, PL-04; canonical schemas plus digests; task 1.3 compares digests |
+| M6 two resolvers | EB-05 and PL-06 single resolver; revoke wins; case 2 never `confirmed`; `link_id` counters |
+| M7 "agree" against the DocType | Deterministic projection and normalization; empty date of birth goes to review (PL-05) |
+| M8 hard delete versus retention | Ruling 9; PR-12, PR-13; dependency note |
+| M9 deactivation blocks past services | PR-11 refuses only activity dated after deactivation |
+| M10 no-PHI diagnostics; guarantor name; service-revealing labels | EB-12, AI-19, PL-13; AI-10, AI-16; neutral-label enumeration in the schema |
+| M11 same-site acceptance | Ruling 8; AI-04; `tasks.md` §2.3 |
+| m1 coverage count | Zero or more (PR-07, `proposal.md`) |
+| m2 mode continuity | AI-09 |
+| m3 compatibility rule | Same MAJOR (EB-10, AI-01, PL-12) |
+| m4 daily balanced day | No longer claimed (Decision 6, `proposal.md`) |
+| m5 acknowledgements; `link.revoked` | EB-07 acknowledgement set; PL-11 |
+| m6 free-text reasons | Coded reasons only (EB-06, schema) |
+| m7 audit editability | Editable by no one, tamper-evident (PR-10); T-14 |
+| m8 brainstorm constructs in binding text | Defined inline (BAB-14, AI-17, AI-18, EB-14) |
+| m9 Business Central characterization | Corrected (Decision 10) |
+| m10 durable notifications; manual entry for linked patients | openChart PL-14; EB-17 |
 
-- **T-1: Workflow protocol, "exactly one Speckit feature".** See Decision 14. The owner must choose A or B at ratification.
-- **T-2: FD-7, the Thread contract before any consumer.** Accounting postings derive from ledger entries that reference Threads. `tasks.md` therefore blocks the accounting-adapter feature until the Thread contract is versioned. The patient registry and the EHR link do not consume the Thread, because the party register is substrate the Thread presupposes.
-- **T-3: FD-3's wording, "exported to QuickBooks".** Generalized to any destination. The substance is kept.
-- **T-4: Money-lines brainstorm (non-normative).**
-  - The deposit-level, cash-basis default is superseded by patient-level invoices.
-  - The rule that only explained lines reach the export now governs deposits only.
-  - Old-system collections remain excluded.
-- **T-5: Bank reconciliation is done by two systems.** See Decision 10. Not decided.
-- **T-6: R-2, governance tier 3 versus Principle II.** This change keeps accounting release explicit, so it neither needs nor supplies the reading R-2 asks for.
-- **T-7: The retention change and hard delete.** An unselected jurisdiction could block every hard delete. See Decision 3 and Open Question 11.
-- **T-8: Principle V and same-site ERPNext.** It is unclear whether in-process calls to ERPNext's document interface count as "direct database access". This change prohibits SQL and table writes, but the reading is the owner's (Open Question 9).
-- **T-9: The BAA gate as worded.** It requires "an executed HIPAA BAA with the destination's vendor". For a destination the practice operates itself, with no vendor, the gate as written cannot be satisfied (Open Question 7).
-- **T-10: openChart cannot yet supply billable facts.** See Decision 5. Charge capture against openChart waits on a separate openChart capability.
-- **T-11: Interoperability brainstorm direction.** That brainstorm has openPractice consuming Patient and Coverage from openChart. Decision 5 reverses that for administrative data.
-- **T-12: Scope-and-sequencing, "first staged proposal".** This change is staged ahead of the vertical-thread proposal. Recorded in `proposal.md`.
+## Conflicts and tensions
+
+| # | Tension | Status |
+|---|---|---|
+| T-1 | The protocol's one-feature handoff | **Ruled A** (ruling 1); owner to confirm in `owner-ratification.md` |
+| T-2 | FD-7: Thread contract before any consumer | Features 3 and 4 are gated on it |
+| T-3 | FD-3 wording ("QuickBooks") | Generalized to every destination |
+| T-4 | Money-lines defaults (deposit-level, cash basis, file-only bank reads, "not ours to explain") | Superseded: patient-level invoices with accrual valuation (ruling 22); the bank is read from the destination (ruling 5); "accounting system's" labels |
+| T-5 | Two systems reconciling the bank | **Resolved** by ruling 5: openPractice reconciles deposits only |
+| T-6 | R-2: tier 3 versus Principle II | Avoided by explicit release; not resolved |
+| T-7 | Retention change versus hard delete | **Resolved** by ruling 9; dependency note in Decision 3 |
+| T-8 | Principle V and in-process ERPNext calls | **Resolved for the MVP** by ruling 8 (REST only). In-process use stays conditional on counsel (Open Question 2). |
+| T-9 | BAA wording versus a practice-operated destination | **Resolved** by ruling 6 |
+| T-10 | openChart cannot yet supply billable facts | Manual entry (ruling 21); the encounter capability stays open in openChart |
+| T-11 | Interoperability brainstorm direction | Reversed for administrative data |
+| T-12 | "First staged proposal" recommendation | This change departs from it, as recorded in `proposal.md` |
+| T-13 | **Tier 4 beyond FD-5's list.** FD-5 reserves tier 4 for refunds, material adjustments and merges. This change adds hard delete (an irreversible identity change) and patient-level enablement (an irreversible PHI disclosure). | **Conscious exception** (ruling 12) |
+| T-14 | **Tamper-evident audit versus removal of audit values** (PR-10 versus PR-13) | Mechanism chosen in planning (Decision 3) |
 
 ## Risks / Trade-offs
 
-- **[PHI in a third party's books widens the breach surface and the business-associate footprint]** → Gate patient-level mode on a verified BAA per destination, at tier 4. Minimize the fields sent. Halt delivery on BAA lapse. Give each destination its own risk-analysis entry.
-- **[Duplicate or lost postings across retries]** → Deterministic idempotency keys, lookup before retry on indeterminate outcomes, and per-entry delivery state separate from frozen content.
-- **[The bookkeeper edits mirrored documents]** → The reconciliation report flags destination-side edits as exceptions. openPractice never imports them.
-- **[A wrong-patient link pushes demographics onto the wrong clinical record]** → `link_existing` is human-confirmed at tier 4. openChart checks that demographics agree before linking and holds date-of-birth changes for review. Conflicts never merge.
-- **[EHR outage]** → The outbox queues demographic updates. Charge capture waits in waiting-on-clinical with the filing-window clock. Registration never blocks.
-- **[The contracts drift between repositories]** → Identical contract names, versions and namespaces in both changes. Contract tests on both sides. MAJOR-version rejection.
-- **[Vendor API, terms or BAA posture change]** → Adapters sit behind one contract, and a destination can fall back to summary mode by explicit action.
-- **[Same-site ERPNext couples Frappe versions and raises a licensing question]** → The remote topology is supported. The owner's reading and a counsel check come before same-site in-process calls ship.
-- **[Two systems reconcile the same bank account]** → Decision 10 keeps one deposit per explained line, and Open Question 6 asks whether to read bank lines from the destination.
-- **[A multi-feature handoff departs from protocol]** → The owner chooses A or B explicitly at ratification.
+- **[PHI in a third party's books]** → Mitigated by:
+  - account-number-only customers and neutral labels;
+  - the BAA gate or operator attestation, enabled at tier 4;
+  - a delivery halt on lapse;
+  - a risk entry per destination.
+- **[Duplicate or lost postings]** → Posting IDs, `supersedes` links, lookup before retry, and delivery state kept apart from batch content.
+- **[Bookkeeper edits]** → Reconciliation exceptions; edits are never imported.
+- **[Wrong-patient link]** → Explicit confirmation, a deterministic "agree" check, the date-of-birth suspension, and single-resolver reviews that never merge.
+- **[EHR outage]** → The outbox queues messages. Visits stay visible as waiting on clinical documentation. Manual entry and the deadline escape protect the filing window.
+- **[Contract drift between repositories]** → One canonical schema per contract, compared by digest in both changes' task 1.3.
+- **[Mode lock-in]** → Mode is deliberately locked after first release. Changing it needs a ratified continuity procedure; there is no fallback mitigation.
+- **[Vendor change]** → Adapters sit behind one contract, and each is verified before go-live (AI-20).
+- **[Bank-number exposure]** → Encryption, role restriction, audited views, and exclusion from every outbound path.
 
 ## Migration Plan
 
-1. Strictly validate this change. The owner ratifies the exact revision unconditionally, choosing handoff shape A or B.
-2. Create the patient-registry feature first (Slice 0): fields, coverage, guarantor, search, deactivation, hard delete, audit, and synthetic fixtures under test-first and security review.
-3. Create the EHR patient-link feature (Slice 0): link requests, outbox, acknowledgements, identity review, and contract tests against an openChart double. Live interoperation waits for openChart's `define-openpractice-boundary` work.
-4. Define the reason taxonomy and immutable money ledger (Slice 0, separately governed). Version the Thread contract (FD-7, separately governed).
-5. Create the accounting-contract and ERPNext-adapter feature (Slice 4) after step 4: contract, delivery engine, batches, release, reconciliation, posting modes, BAA gate, the ERPNext adapter in both topologies, and contract tests. Patient-level mode is enabled per destination only after its BAA gate and risk entry.
-6. Consume clinical facts with charge capture (Slice 3), once a producing EHR capability exists.
-7. QuickBooks Online and Business Central adapters follow after the MVP, each after vendor verification, against `openpractice-accounting-integration/1.x`.
-8. Roll back by disabling a destination or link. Undelivered work is held, and released batches, ledger history, audit and outbox records are preserved. Never roll back by deleting postings or audit records.
-9. Archive only after the implementing features and the root pin bump have landed and `closure-evidence.md` is complete.
+1. Validate strictly. The owner completes `owner-ratification.md` and confirms handoff shape A.
+2. Feature 1 (patient registry, Slice 0).
+3. Feature 2 (EHR patient link, Slice 0), tested against an openChart double.
+4. Separately governed work: the reason taxonomy and money ledger, and the FD-7 Thread contract.
+5. Feature 3 (accounting contract, banks and the ERPNext adapter, Slice 4), after step 4. The remote ERPNext topology over REST is used for acceptance. Patient-level mode is set before the first release, only after the BAA gate or attestation.
+6. Feature 4 (clinical-fact consumption, Slice 3), after the Thread contract. Manual entry applies while the EHR reports no billable-facts capability.
+7. Post-MVP: QuickBooks Online and Business Central adapters, after vendor verification.
+8. Rollback disables a destination or link and holds undelivered work. It never deletes postings, audit records or links.
+9. Archive only after the features land, the root pin bump lands, and `closure-evidence.md` is complete.
 
 ## Open Questions
 
-Items marked ⚑ are design calls this change made beyond Brett Heap's decisions. They need owner review.
+Every remaining question is routed in `tasks.md` §3.5 to the feature or gate it blocks.
 
-1. **Appointment authority (R-7).** Which system is authoritative for the appointment, and what happens during an EHR outage? Deliberately undecided.
-2. **Handoff shape (T-1).** A multi-feature exception, or a split into per-capability changes?
-3. ⚑ **Accounting customer.** The guarantor account (proposed) or the patient? Payers as customers (proposed)?
-4. ⚑ **Patient name on invoices.** Omitted by default (proposed). Should it be included for bookkeeper usability?
-5. ⚑ **Invoice timing and cash basis.** Post invoices at `charged` (proposed) or at claim submission? Can each destination still report on a cash basis? Verify per destination.
-6. **Bank lines (T-5).** Keep openPractice's own statement upload, or read bank transactions from the destination through the adapter?
-7. **BAA gate for a practice-operated destination (T-9).** Proposal for the owner: allow an attestation that names the operator, where the operator is the practice itself or an existing business associate whose BAA covers the accounting site. Until ruled, the gate fails closed.
-8. ⚑ **Switching mode mid-stream.** How are opening customer balances established when a destination moves from summary to patient-level, and how is continuity kept when it moves back?
-9. **Same-site ERPNext (T-8).** Do in-process document-interface calls satisfy Principle V? Does in-process use of ERPNext (distributed under GPL-3.0) from Apache-2.0 openPractice code raise a licensing issue? Counsel verification is needed before same-site in-process calls ship.
-10. **Frappe version policy** for same-site ERPNext co-installation.
-11. **Hard delete versus retention (T-7).** Is "created in error with no linked activity" inside any retention record family? If not, does the unselected-jurisdiction block apply to it?
-12. ⚑ **Confidential communications.** Should the MVP registry carry confidential-communication instructions (alternate address or channel) before statements ship in Slice 2?
-13. ⚑ **Fields left out.** Sex assigned at birth, sexual orientation and preferred language are excluded from the MVP field list. Preferred name is included. Confirm.
-14. ⚑ **Coverage to the EHR.** Coverage is excluded from the 1.0 link contract. Add it later as a MINOR?
-15. ⚑ **Date-of-birth review hold** on the EHR side, and tier 4 for `link_existing`. Confirm.
-16. ⚑ **Governance tiers** in Decision 13. Confirm or amend.
-17. **Old-system collections.** Where do legacy collections post? (Carried from the money-lines brainstorm; the bookkeeper's decision.)
-18. ⚑ **Namespace tokens** `openpractice` and `openchart` (Decision 1). Confirm.
+1. **Appointment authority (R-7).** Blocks any appointment exchange. Outside the 1.0 contracts.
+2. **Counsel on same-site in-process ERPNext calls.** Covers GPL-3.0 ERPNext and Principle V. Blocks only a future in-process adapter change; not the MVP.
+3. **Frappe version policy** for co-installing ERPNext on the same bench. Blocks same-site deployment support in Feature 3.
+4. **Legacy collections account.** The bookkeeper's call. The legacy share posts to a mapped account (BAB-08). Blocks Feature 3's first release for a practice with legacy run-off.
+5. **Mode continuity procedure** (opening-AR true-up). Blocks any mode change after first release (AI-09). Not part of the MVP.
+6. **R-2** (tier 3 versus Principle II). Avoided here, because release is explicit. Blocks any future automatic batch release.
+7. **Two receivable routes in one destination** (ruling 24). How do medical-billing receivables and membership or retail receivables coexist in one destination? This covers customer namespace collisions, a person appearing both as an account-number customer and as a named commerce customer, and reconciliation across the two routes. Tracked with the `openpractice-customer-financial-separation` brainstorm packet (in progress). Blocks Feature 3's go-live only in a destination that also carries membership or retail customers.

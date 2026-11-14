@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:openpractice:contract:openpractice-ehr-clinical-facts:1.0",
+  "title": "openpractice-ehr-clinical-facts 1.0",
+  "description": "Canonical schema for the clinical-facts contract: the EHR produces and openPractice consumes. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation; referenced by digest from opensoft/openChart-spec change define-openpractice-boundary. Notifications are pointer-only. Read results are FHIR R4-compatible subsets limited to the billing purpose. Codings carry a system and a code and never a display or descriptor text (FD-11). No note text, medication, result or order content exists in this contract. A consumer accepts any 1.x message and rejects any other MAJOR.",
+  "oneOf": [
+    { "$ref": "#/$defs/notification" },
+    { "$ref": "#/$defs/capabilityResult" },
+    { "$ref": "#/$defs/factsResult" }
+  ],
+  "$defs": {
+    "uuid": { "type": "string", "format": "uuid" },
+    "issuer": { "type": "string", "minLength": 3, "maxLength": 255 },
+    "patientRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["issuer", "namespace", "value"],
+      "properties": {
+        "issuer": { "$ref": "#/$defs/issuer" },
+        "namespace": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,63}$" },
+        "value": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "required": ["contract", "contract_version", "message_id", "message_type", "issued_at", "issuer", "link_id", "subject"],
+      "properties": {
+        "contract": { "const": "openpractice-ehr-clinical-facts" },
+        "contract_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+        "message_id": { "$ref": "#/$defs/uuid" },
+        "message_type": { "type": "string" },
+        "issued_at": { "type": "string", "format": "date-time" },
+        "issuer": { "$ref": "#/$defs/issuer" },
+        "link_id": { "description": "The openpractice-ehr-patient-link link_id; facts are served only for an active link.", "$ref": "#/$defs/uuid" },
+        "subject": {
+          "type": "object", "additionalProperties": false,
+          "required": ["openpractice_patient", "ehr_patient"],
+          "properties": { "openpractice_patient": { "$ref": "#/$defs/patientRef" }, "ehr_patient": { "$ref": "#/$defs/patientRef" } }
+        }
+      }
+    },
+    "coding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["system", "code"],
+      "properties": { "system": { "type": "string", "minLength": 1, "maxLength": 255 }, "code": { "type": "string", "minLength": 1, "maxLength": 32 } }
+    },
+    "resourceRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["resource_type", "id", "version"],
+      "properties": { "resource_type": { "enum": ["Encounter", "Condition", "Procedure"] }, "id": { "type": "string", "maxLength": 128 }, "version": { "type": "integer", "minimum": 1 } }
+    },
+    "practitionerRef": { "type": "string", "maxLength": 128 },
+    "notification": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "enum": ["encounter.documentation_final", "clinical_fact.corrected", "clinical_fact.entered_in_error"] },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["resource_refs"],
+            "properties": {
+              "resource_refs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/resourceRef" } },
+              "supersedes": { "type": "array", "items": { "$ref": "#/$defs/resourceRef" } }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "capabilityResult": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "capability.result" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["billable_facts_supported"],
+            "properties": { "billable_facts_supported": { "type": "boolean" } }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    },
+    "encounter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "status", "period"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "version": { "type": "integer", "minimum": 1 },
+        "status": { "enum": ["planned", "in-progress", "finished", "cancelled", "entered-in-error"] },
+        "type": { "type": "array", "items": { "$ref": "#/$defs/coding" } },
+        "period": { "type": "object", "additionalProperties": false, "required": ["start"], "properties": { "start": { "type": "string", "format": "date-time" }, "end": { "type": "string", "format": "date-time" } } },
+        "location_ref": { "type": "string", "maxLength": 128 },
+        "participants": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["practitioner_ref"], "properties": { "practitioner_ref": { "$ref": "#/$defs/practitionerRef" }, "role": { "$ref": "#/$defs/coding" } } } }
+      }
+    },
+    "condition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "category", "code", "encounter_ref"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "version": { "type": "integer", "minimum": 1 },
+        "supersedes": { "$ref": "#/$defs/resourceRef" },
+        "category": { "const": "encounter-diagnosis" },
+        "code": { "$ref": "#/$defs/coding" },
+        "rank": { "type": "integer", "minimum": 1 },
+        "encounter_ref": { "type": "string", "maxLength": 128 }
+      }
+    },
+    "procedure": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "code", "encounter_ref"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "version": { "type": "integer", "minimum": 1 },
+        "supersedes": { "$ref": "#/$defs/resourceRef" },
+        "code": { "$ref": "#/$defs/coding" },
+        "quantity": { "type": "number", "exclusiveMinimum": 0 },
+        "performed": { "type": "string", "format": "date-time" },
+        "performer_ref": { "$ref": "#/$defs/practitionerRef" },
+        "encounter_ref": { "type": "string", "maxLength": 128 }
+      }
+    },
+    "factsResult": {
+      "allOf": [ { "$ref": "#/$defs/envelope" }, {
+        "properties": {
+          "message_type": { "const": "facts.result" },
+          "payload": {
+            "type": "object", "additionalProperties": false,
+            "required": ["result"],
+            "properties": {
+              "result": { "enum": ["facts", "no_billable_facts"] },
+              "encounter": { "$ref": "#/$defs/encounter" },
+              "conditions": { "type": "array", "items": { "$ref": "#/$defs/condition" } },
+              "procedures": { "type": "array", "items": { "$ref": "#/$defs/procedure" } },
+              "documentation_final": {
+                "type": "object", "additionalProperties": false,
+                "required": ["final"],
+                "properties": { "final": { "type": "boolean" }, "signer_ref": { "$ref": "#/$defs/practitionerRef" }, "signed_at": { "type": "string", "format": "date-time" } }
+              }
+            }
+          }
+        },
+        "required": ["payload"]
+      } ]
+    }
+  }
+}

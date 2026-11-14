@@ -27,7 +27,13 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 - Contract tests for `openpractice-accounting-integration/1.0` (all operations, replay, indeterminate lookup, batch freeze, release refusals, reconciliation): _pending_
 - openPractice installed and tested with no ERPNext present; ERPNext adapter verified same-site and remote: _pending_
 - Summary-mode no-PHI verification and patient-level minimum-necessary verification: _pending_
-- BAA gate refusal, tier-4 enablement and halt-on-lapse verification: _pending_
+- BAA gate refusal (including operator attestation), tier-4 enablement and halt-on-lapse verification: _pending_
+- Mode lock after first release; mapping versioned per destination and mode: _pending_
+- Account-number-only customers, neutral labels, accounting dates, late-charge flag and accrual true-up: _pending_
+- Bank register, deposit links, expected-account check, re-enrollment worklist, and encrypted, role-restricted, audited bank numbers: _pending_
+- Date-of-birth hold suspension, correction requests and single-resolver identity review: _pending_
+- Messages validated against canonical schemas at their recorded digests (`contracts/SHA256SUMS`): _pending_
+- Hard-delete removal scope (live data and audit values, PHI-free tombstone, tamper-evident redaction evidence): _pending_
 
 ## Boundary and Merge Evidence
 
