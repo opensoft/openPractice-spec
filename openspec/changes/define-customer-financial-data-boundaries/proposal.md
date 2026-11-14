@@ -23,8 +23,10 @@ minimize unnecessary patient data while protecting the PHI that remains.
   separately sold services at offering/line level. Billing route does not decide
   PHI status.
 - Assign one authoritative obligation and one accounting posting route per
-  economic event, preserving customer-detail and summary-journal options without
-  duplicate invoices, collections or recognized revenue.
+  economic event, preserving the `customer-detail` and `summary-journal` modes
+  of `openpractice-accounting-integration/1.0` without duplicate invoices,
+  collections or recognized revenue. Posting mechanics belong to change
+  `define-mvp-practice-foundation`; this change references them.
 - Keep subscriptions, commercial receivables, inventory and general accounting
   in connected business applications; do not turn openPractice into an ERP.
 - Define controlled business analytics and separate authorization for report

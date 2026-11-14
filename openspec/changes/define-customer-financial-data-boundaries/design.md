@@ -89,17 +89,21 @@ or duplicate debt. Being a member does not imply permission to charge a card.
 
 ### 4. Choose one posting path for each economic event
 
-Preserve the existing deposit-level medical summary journal as the baseline
-posting route. Customer identity can still exist in accounting through ordinary
-customer/membership records. A connector can select a detailed medical customer
-route under an explicit reviewed mapping, but it must not add the same effect
-through both routes.
+Posting mechanics belong to `openpractice-accounting-integration/1.0`, owned
+by change `define-mvp-practice-foundation`: posting identity and idempotency,
+batches and their freeze, release, retries, the reconciliation report, the
+`summary-journal` and `customer-detail` modes and the BAA gate. Every
+destination starts in `summary-journal`, the existing deposit-level medical
+summary journal, and may move to `customer-detail` only before its first
+released batch, after its BAA gate (that change's AI-09 and AI-14). Customer
+identity can still exist in accounting through ordinary customer/membership
+records. No event may add the same effect through both routes.
 
-Source domain, immutable obligation/event identifier, entity, currency, version
-and destination mapping correlate invoices, payments and postings. Detail
+Source domain, immutable obligation/event identifier and entity tie invoices,
+payments and postings to their authoritative obligation. Detail
 representations in accounting refer to the same medical receivable; they cannot
-produce a second collectible balance. Retries reuse event identity. Transfers
-between domains are linked reclassifications, never independent sale events.
+produce a second collectible balance. Transfers between domains are linked
+reclassifications, never independent sale events.
 
 Separate invoice issuance, cash collection, deferred revenue, recognized revenue,
 tax liabilities, refunds and fees. Mixed receipts allocate to compatible

@@ -52,22 +52,22 @@ Every obligation SHALL retain its authoritative domain and immutable source iden
 - **THEN** linked entries preserve the original obligation and adjustment history without reporting a new sale solely because its responsible party changed
 
 ### Requirement: Each economic event follows one accounting posting path
-The system SHALL identify accounting effects by source domain, immutable event identifier, entity, currency, version and destination mapping. It SHALL support the existing medical summary-journal route and an explicitly selected customer-detail route while ensuring an event's effect is recognized once. Retries SHALL reuse the original event identity. Invoicing, cash collection, deferred revenue, recognized revenue, taxes, fees and refunds SHALL remain distinguishable.
+The system SHALL tie each accounting effect to its source domain, immutable event identifier and entity, and SHALL assign each economic event to one posting path so that its effect is recognized once. Posting identity and idempotency, export batches and their freeze and release, retries, the reconciliation report, the `summary-journal` and `customer-detail` posting modes and the BAA gate SHALL be those of `openpractice-accounting-integration/1.0`, owned by change `define-mvp-practice-foundation`; this change SHALL NOT define a second posting mechanism. Invoicing, cash collection, deferred revenue, recognized revenue, taxes, fees and refunds SHALL remain distinguishable.
 
 #### Scenario: Invoice and summary contain the same event
-- **WHEN** an accounting destination has accepted an event through the detailed route and a later additive summary attempts to include it
-- **THEN** the system prevents duplicate posting and exposes the original acknowledgement for reconciliation
+- **WHEN** an accounting destination has accepted an event in `customer-detail` mode and a later additive `summary-journal` batch attempts to include it
+- **THEN** the contract's mode lock and idempotency prevent duplicate posting, and its reconciliation report exposes the original acknowledgement
 
 #### Scenario: Posting is retried after timeout
 - **WHEN** delivery of a financial posting is retried after an uncertain acknowledgement
-- **THEN** the system reuses its original event identity and reconciles destination status before asserting success or creating a non-idempotent replacement
+- **THEN** the retry follows the contract's idempotency and indeterminate-outcome lookup under the original posting identity before asserting success or creating a replacement
 
 #### Scenario: Renewal invoice is paid and recognized
 - **WHEN** accounting receives an invoice, its payment and the applicable recognition event
 - **THEN** reporting distinguishes the three stages and does not add them together as three sales
 
 ### Requirement: Mixed payments and corrections preserve reconciliation controls
-The system SHALL allocate a mixed receipt to compatible authoritative obligations and reconcile its processor gross, fees and net settlement once. It SHALL preserve entity, merchant and payer/guarantor boundaries, legacy run-off exclusions, dated reversals, immutable exported batches and existing financial-authority controls.
+The system SHALL allocate a mixed receipt to compatible authoritative obligations and reconcile its processor gross, fees and net settlement once. It SHALL preserve entity, merchant and payer/guarantor boundaries, legacy run-off exclusions, dated reversals and existing financial-authority controls. Export batches, their freeze and the reconciliation report SHALL follow `openpractice-accounting-integration/1.0`, owned by change `define-mvp-practice-foundation`.
 
 #### Scenario: One receipt pays membership and retail obligations
 - **WHEN** a permitted payment covers a membership invoice and retail invoice for compatible entity and merchant scopes
@@ -75,4 +75,4 @@ The system SHALL allocate a mixed receipt to compatible authoritative obligation
 
 #### Scenario: Refund follows an exported settlement
 - **WHEN** an authorized refund corrects a payment in an already exported batch
-- **THEN** the system records linked correcting entries in a later batch and preserves the original batch and financial-authority evidence
+- **THEN** the system records linked correcting entries in a later batch under the contract's correction rules and preserves the original frozen batch and financial-authority evidence
