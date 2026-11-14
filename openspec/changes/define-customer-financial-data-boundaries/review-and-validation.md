@@ -105,3 +105,32 @@ Validation of the reconciled change:
 | `git diff --check` | PASS |
 
 The `py-bench` run with OpenSpec 1.13.1 was not repeated.
+
+## Re-review edits (fix round 3, 2026-11-14)
+
+A re-review of the three coordinated changes found defects, and Brett Heap
+ruled 27 to 31 the same day. The agent that authors `define-mvp-practice-foundation`
+made the edits below in a separate clone. Status stays draft. The change now has
+16 requirements and 34 scenarios, because two scenarios were added.
+
+| # | Place | Edit | Reason |
+|---|---|---|---|
+| 9 | `specs/financial-domain-routing/spec.md`, scenario "Invoice and summary contain the same event" | Replaced by "An event could reach accounting twice". The contract refuses a batch in a second mode for a destination (AI-09), and routing gives each event one owner. The cross-mode deduplication it relied on does not exist. | re-review N3, 2026-11-14 |
+| 10 | Same file, "Mixed payments and corrections preserve reconciliation controls" | Each settlement names one deposit poster. For a deposit openPractice explains, openPractice is that poster (companion BAB-14) and posts other-route shares as `other_route_share`. A scenario covers a card settlement that funds medical and membership balances. | re-review N4, 2026-11-14 |
+| 11 | Same file, "Offerings determine financial routing at line level" | Medical charge finalization checks the route and the membership entitlement before any medical invoice or claim (companion BAB-16). | re-review N4, 2026-11-14 |
+| 12 | Same file, "Membership and retail obligations use connected business ledgers" | openPractice's offering routing refuses to route a PHI-bearing membership obligation to a destination without a satisfied BAA gate in openPractice's destination register. It is named as the enforcement point. A scenario covers the refusal. | re-review N7, 2026-11-14 |
+| 13 | `specs/customer-role-boundaries/spec.md`, "Accounting receives a limited customer and financial record" | Several changes:<br>- Service-revealing reason categories are added to the exclusions (ruling 25).<br>- Medical-membership labels must be neutral.<br>- PHI-bearing records are defined.<br>- Any system writing one needs the destination's BAA gate, recorded in openPractice's register (companion AI-14) and enforced by its routing.<br>- The recipient profile is the companion's AI-23 shape. | re-review N7 and N9, ruling 25, 2026-11-14 |
+| 14 | `specs/purpose-bound-business-data/spec.md`, "Every business output has a scoped recipient profile" | Uses the companion's single recipient-profile shape (AI-23) instead of defining a second one. | re-review N9, 2026-11-14 |
+| 15 | `design.md` §2 | The same exclusion, label and BAA-gate statements as edit 13. | re-review N7, 2026-11-14 |
+| 16 | `design.md` §5 | The recipient profile references the companion's AI-23 shape. | re-review N9, 2026-11-14 |
+| 17 | `design.md` §4 | `summary-journal` is described as the default (balanced category totals to payer-class control accounts), and `customer-detail` as an opt-in. This replaces the round-2 phrase "the existing deposit-level medical summary journal". | ruling 28, 2026-11-14 |
+| 18 | `owner-ratification.md` (new) | A PENDING owner gate mirroring the companion's: validation evidence, companion consistency, handoff shape and the required statement. | re-review N15, 2026-11-14 |
+| 19 | `tasks.md` 1.3, 1.4, 2.1 | A strict-validation task and an owner-ratification task now come before the single Speckit handoff. | re-review N15, 2026-11-14 |
+
+Validation of the round-3 revision:
+
+| Check | Result |
+|---|---|
+| `openspec validate define-customer-financial-data-boundaries --strict --no-interactive`, run with OpenSpec 1.2.0 in a scratch clone | PASS: change is valid |
+| `openspec validate --all --strict --no-interactive`, run in a temporary unpushed merge with `change/define-mvp-practice-foundation` | PASS: 3 passed, 0 failed |
+| `git diff --check` | PASS |

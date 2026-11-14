@@ -8,7 +8,7 @@ and reconcile their accounting effects without duplicate debt, revenue or cash.
 ## ADDED Requirements
 
 ### Requirement: Offerings determine financial routing at line level
-Each financial offering SHALL identify its effective version, selling entity, billing route, authoritative obligation owner, category, currency, approved accounting/tax mapping and disclosure profile. Supported routes SHALL distinguish insurance-billed healthcare, direct-pay healthcare, memberships and retail or separately sold services. Mixed orders SHALL preserve those distinctions per line.
+Each financial offering SHALL identify its effective version, selling entity, billing route, authoritative obligation owner, category, currency, approved accounting/tax mapping and disclosure profile. Supported routes SHALL distinguish insurance-billed healthcare, direct-pay healthcare, memberships and retail or separately sold services. Mixed orders SHALL preserve those distinctions per line. Medical charge finalization SHALL check a line's route and membership entitlement before any medical invoice or claim, as `define-mvp-practice-foundation` BAB-16 requires.
 
 #### Scenario: Mixed healthcare and retail order
 - **WHEN** an order includes an insurance-billed service and a retail product
@@ -26,7 +26,7 @@ Medical billing SHALL own insurance charge/claim lineage, adjudication and healt
 - **THEN** its obligation remains traceable through medical billing and the system does not create an insurer claim solely to collect the payment
 
 ### Requirement: Membership and retail obligations use connected business ledgers
-Connected subscription/accounting capabilities SHALL own membership agreements, renewal invoicing and corresponding commercial receivables. Connected commerce/accounting capabilities SHALL own retail sales obligations. Membership entitlements SHALL state whether a service is included, discounted or separately chargeable under approved terms. Subscription status SHALL NOT itself authorize money movement or insurance billing.
+Connected subscription/accounting capabilities SHALL own membership agreements, renewal invoicing and corresponding commercial receivables. Connected commerce/accounting capabilities SHALL own retail sales obligations. Membership entitlements SHALL state whether a service is included, discounted or separately chargeable under approved terms. Subscription status SHALL NOT itself authorize money movement or insurance billing. openPractice's offering routing SHALL refuse to route a PHI-bearing membership obligation, such as a medical membership, to a connected accounting destination whose BAA gate is not satisfied in openPractice's accounting destination register (`define-mvp-practice-foundation` AI-14), and SHALL create owned review work instead. That routing is the enforcement point: a connected subscription or commerce capability receives such an obligation only through it.
 
 #### Scenario: Membership renews
 - **WHEN** a valid agreement reaches its renewal date
@@ -35,6 +35,10 @@ Connected subscription/accounting capabilities SHALL own membership agreements, 
 #### Scenario: Service is included in membership
 - **WHEN** approved membership terms include a service without a separate service charge
 - **THEN** the system does not create another collectible service obligation or automatic insurance claim for that service
+
+#### Scenario: Medical membership is bound for an ungated destination
+- **WHEN** a medical-membership obligation would route to an accounting destination with no satisfied BAA gate in openPractice's destination register
+- **THEN** openPractice's routing refuses the route and creates owned review work, and no customer record for that membership is written to the destination
 
 #### Scenario: Membership and insurer terms are unresolved
 - **WHEN** a service's membership entitlement or permitted insurance treatment cannot be resolved
@@ -54,9 +58,9 @@ Every obligation SHALL retain its authoritative domain and immutable source iden
 ### Requirement: Each economic event follows one accounting posting path
 The system SHALL tie each accounting effect to its source domain, immutable event identifier and entity, and SHALL assign each economic event to one posting path so that its effect is recognized once. Posting identity and idempotency, export batches and their freeze and release, retries, the reconciliation report, the `summary-journal` and `customer-detail` posting modes and the BAA gate SHALL be those of `openpractice-accounting-integration/1.0`, owned by change `define-mvp-practice-foundation`; this change SHALL NOT define a second posting mechanism. Invoicing, cash collection, deferred revenue, recognized revenue, taxes, fees and refunds SHALL remain distinguishable.
 
-#### Scenario: Invoice and summary contain the same event
-- **WHEN** an accounting destination has accepted an event in `customer-detail` mode and a later additive `summary-journal` batch attempts to include it
-- **THEN** the contract's mode lock and idempotency prevent duplicate posting, and its reconciliation report exposes the original acknowledgement
+#### Scenario: An event could reach accounting twice
+- **WHEN** an event has been posted through one path, and either a batch in the other posting mode for the same destination or another route would post it again
+- **THEN** the contract refuses any batch in a second mode for that destination (`define-mvp-practice-foundation` AI-09), and routing has given the event exactly one owner, so no other route posts it
 
 #### Scenario: Posting is retried after timeout
 - **WHEN** delivery of a financial posting is retried after an uncertain acknowledgement
@@ -67,11 +71,15 @@ The system SHALL tie each accounting effect to its source domain, immutable even
 - **THEN** reporting distinguishes the three stages and does not add them together as three sales
 
 ### Requirement: Mixed payments and corrections preserve reconciliation controls
-The system SHALL allocate a mixed receipt to compatible authoritative obligations and reconcile its processor gross, fees and net settlement once. It SHALL preserve entity, merchant and payer/guarantor boundaries, legacy run-off exclusions, dated reversals and existing financial-authority controls. Export batches, their freeze and the reconciliation report SHALL follow `openpractice-accounting-integration/1.0`, owned by change `define-mvp-practice-foundation`.
+The system SHALL allocate a mixed receipt to compatible authoritative obligations and reconcile its processor gross, fees and net settlement once. Each settlement SHALL name one deposit poster. For a deposit openPractice explains, openPractice is that poster (`define-mvp-practice-foundation` BAB-14): it posts the share that funds membership or retail balances as `other_route_share`, and each owning route records only its obligation allocation. It SHALL preserve entity, merchant and payer/guarantor boundaries, legacy run-off exclusions, dated reversals and existing financial-authority controls. Export batches, their freeze and the reconciliation report SHALL follow `openpractice-accounting-integration/1.0`, owned by change `define-mvp-practice-foundation`.
 
 #### Scenario: One receipt pays membership and retail obligations
 - **WHEN** a permitted payment covers a membership invoice and retail invoice for compatible entity and merchant scopes
 - **THEN** the system records separate obligation allocations and one receipt/settlement identity whose allocations equal the received amount
+
+#### Scenario: A card settlement funds medical and membership balances
+- **WHEN** one card settlement funds a medical patient payment and a membership invoice payment
+- **THEN** openPractice is the named deposit poster and posts one deposit entry equal to the settlement, with the membership share as `other_route_share`, and the membership route records its allocation without a second deposit entry
 
 #### Scenario: Refund follows an exported settlement
 - **WHEN** an authorized refund corrects a payment in an already exported batch

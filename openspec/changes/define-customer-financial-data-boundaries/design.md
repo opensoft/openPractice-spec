@@ -50,11 +50,17 @@ FHIR Person is a reference pattern, not a required resource or version upgrade.
 Accounting is assumed to hold necessary customer identity. Its candidate
 projection includes name, customer identifier, billing address/contact, scoped
 payer relationship, necessary offering/membership labels, invoices, payments,
-refunds, balances and source-event references. Inclusion still requires a
-defined purpose and destination profile.
+refunds, balances and source-event references. For a medical-membership record
+those labels stay neutral and never reveal a service, condition or type of
+care. Inclusion still requires a defined purpose and destination profile.
+Writing any PHI-bearing customer record, care-linked or medical-membership,
+into a destination requires that destination's BAA gate, recorded in
+openPractice's accounting destination register (`define-mvp-practice-foundation`
+AI-14); openPractice's offering routing enforces it.
 
 Default exclusions are chart notes, diagnoses, medication lists, results,
-full insurance claims and EHR medical-record numbers. Medical billing may retain
+full insurance claims, EHR medical-record numbers and service-revealing reason
+categories. Medical billing may retain
 required coded service facts and approved claim evidence under the existing
 attachment/custody contracts. Those limited copies do not transfer clinical
 authority. A targeted accounting exception needs documented fields, purpose,
@@ -93,9 +99,11 @@ Posting mechanics belong to `openpractice-accounting-integration/1.0`, owned
 by change `define-mvp-practice-foundation`: posting identity and idempotency,
 batches and their freeze, release, retries, the reconciliation report, the
 `summary-journal` and `customer-detail` modes and the BAA gate. Every
-destination starts in `summary-journal`, the existing deposit-level medical
-summary journal, and may move to `customer-detail` only before its first
-released batch, after its BAA gate (that change's AI-09 and AI-14). Customer
+destination starts in `summary-journal`, the default and recommended setup:
+balanced category totals to payer-class control accounts, with patient-level
+receivable detail kept in openPractice (owner ruling 28). A destination may opt
+into `customer-detail` only before its first released batch, after its BAA gate
+(that change's AI-09 and AI-14). Customer
 identity can still exist in accounting through ordinary customer/membership
 records. No event may add the same effect through both routes.
 
@@ -114,9 +122,13 @@ financial authority and payment-mandate controls remain in force under FD-5.
 
 ### 5. Reuse purpose-bound views and the existing Roster
 
-Define a versioned recipient profile: actor/organization, job, purpose,
-relationship and row scope, field allowlist, source provenance, sensitivity,
-output channel and applicable handling/retention obligations. Cover attachments,
+Use the single versioned recipient-profile shape that change
+`define-mvp-practice-foundation` defines (AI-23, schema
+`recipientProfileDocument`): recipient (actor role, organization or
+destination), purpose, relationship and row scope, source provenance, field
+allowlist with each field's purpose, recipient and authority, sensitivity,
+output channels and applicable handling/retention obligations. This change does
+not define a second shape. Cover attachments,
 logs, exports and connector diagnostics as well as structured API fields.
 Unresolved profiles or unsupported destination safeguards refuse delivery.
 

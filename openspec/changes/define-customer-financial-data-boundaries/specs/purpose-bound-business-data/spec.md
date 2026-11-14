@@ -19,7 +19,7 @@ The system SHALL evaluate the care/payment relationship and identifying context 
 - **THEN** the report remains protected and the substitution grants no additional recipient or export authority
 
 ### Requirement: Every business output has a scoped recipient profile
-The system SHALL authorize each financial/customer projection and export against a versioned profile covering actor, organization, purpose, relationship/row scope, fields, destination, sensitivity and applicable handling obligations. Checks SHALL cover structured fields, attachments, logs and connector diagnostics. An unresolved profile or destination unable to satisfy required safeguards SHALL prevent protected delivery.
+The system SHALL authorize each financial/customer projection and export against a versioned recipient profile in the single shape that change `define-mvp-practice-foundation` defines (AI-23). That shape covers the recipient (actor role, organization or destination), purpose, relationship/row scope, sources, fields, sensitivity, output channels and applicable handling obligations. This change SHALL NOT define a second profile shape. Checks SHALL cover structured fields, attachments, logs and connector diagnostics. An unresolved profile or destination unable to satisfy required safeguards SHALL prevent protected delivery.
 
 #### Scenario: Connector destination cannot support required handling
 - **WHEN** an accounting destination lacks required contractual or safeguard support for its proposed PHI payload
