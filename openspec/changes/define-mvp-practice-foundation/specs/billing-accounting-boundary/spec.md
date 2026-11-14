@@ -125,20 +125,39 @@ When a practice bank account is replaced or closed, openPractice SHALL create a 
 - **WHEN** the operating account is replaced by a new account
 - **THEN** every payer linked to the old account appears on the re-enrollment worklist, and each item clears only when that payer's confirmation of the new account is recorded
 
-### Requirement: BAB-14 openPractice reconciles deposits only; the accounting system owns the bank reconciliation
-openPractice SHALL reconcile only revenue-related bank lines: deposits, chargebacks, payer takebacks and processor fees. It SHALL label every other bank line "accounting system's" and SHALL NOT reconcile it. For each deposit it explains, openPractice SHALL post exactly one deposit entry to the destination, equal to the bank line. The accounting system SHALL own bank balances and the full bank reconciliation.
+### Requirement: BAB-14 openPractice reconciles deposits only, is the single poster of each deposit it explains, and leaves the bank reconciliation to the accounting system
+openPractice SHALL reconcile only revenue-related bank lines: deposits, chargebacks, payer takebacks, processor fees and refund disbursements. It SHALL label every other bank line "accounting system's" and SHALL NOT reconcile it. For each deposit it explains, openPractice SHALL post exactly one deposit entry to the destination, equal to the bank line, and SHALL be that deposit's single poster (ruling 5): no other route or system SHALL post a deposit entry for the same bank line. When the deposit also funds balances that another route owns, such as membership or retail obligations under change `define-customer-financial-data-boundaries`, that share SHALL post as an `other_route_share` line to the account mapped for it in the destination-and-mode mapping version (BAB-06). The owning route SHALL record only its own obligation allocation. Each refund disbursement line SHALL be matched to the issued refund it pays out (BAB-07). The accounting system SHALL own bank balances and the full bank reconciliation.
 
 #### Scenario: A payer wire is explained
 - **WHEN** openPractice explains a payer wire by its remittance trace number
 - **THEN** it posts one deposit entry equal to the bank line, which the accounting system's reconciliation can match
+
+#### Scenario: A card settlement funds medical and membership balances
+- **WHEN** a card settlement of 150.00 funds a 100.00 medical patient payment and a 50.00 membership invoice payment
+- **THEN** openPractice posts one deposit entry equal to 150.00: 100.00 releases from clearing and 50.00 posts as `other_route_share` to its mapped account; the membership route records its allocation and posts no deposit entry
+
+#### Scenario: A refund is paid out of the bank
+- **WHEN** a 25.00 refund disbursement appears on an account openPractice reads
+- **THEN** openPractice matches it to the issued refund recorded with `refund.post`, and an unmatched disbursement becomes work
 
 #### Scenario: A rent debit appears
 - **WHEN** a rent debit appears on an account openPractice reads
 - **THEN** it is labelled "accounting system's", openPractice does not reconcile it, and no posting is made for it
 
 ### Requirement: BAB-15 Closed destination periods are never edited, and late charges are flagged
-openPractice SHALL never post into, or edit, a period the destination reports closed, and SHALL never edit a released batch. The posting date SHALL be the date of service when that period is open. Otherwise it SHALL be the first open date, the date of service SHALL be kept on the line, and the posting SHALL be flagged as a late charge. A posting the destination refuses after release because its period closed SHALL be superseded by a new posting in a later batch, without editing the original.
+openPractice SHALL never post into, or edit, a period the destination reports closed, and SHALL never edit a released batch. The posting date of a charge posting (an invoice, debit note or credit note) SHALL be the date of service when that period is open. Otherwise it SHALL be the first open date, the date of service SHALL be kept on the line, and the posting SHALL be flagged as a late charge. A payment, refund, deposit or other posting SHALL use its own event or bank date (AI-11), under the same closed-period rule. A posting the destination refuses after release because its period closed SHALL be superseded by a new posting in a later batch, without editing the original.
 
 #### Scenario: A charge arrives after the destination closed October
 - **WHEN** a charge for an October 28 date of service is assembled after the destination closed October
 - **THEN** its posting date is the first open date, its line keeps October 28 as the date of service, and it is flagged as a late charge
+
+### Requirement: BAB-16 Charge finalization checks the offering route before any medical invoice
+Before openPractice finalizes a charge for an invoice under AI-12, or for an insurance claim, it SHALL check the service's offering route and the patient's membership entitlement, as change `define-customer-financial-data-boundaries` defines them. A service whose approved membership terms include it without a separate charge SHALL NOT be invoiced or claimed as medical billing. A discounted or separately chargeable service SHALL be charged under its approved terms. An unresolved route or entitlement SHALL hold finalization as work owned by a Roster entry. Until offering routes are configured, every service SHALL route as medical billing, except that a practice that sells memberships SHALL hold each member's charge this way until its routes are configured. The hold's FD-5 deadline escape is escalation: when a held charge reaches the payer's filing threshold, the work escalates to the owner, and the charge is never invoiced or claimed by default.
+
+#### Scenario: A membership-included visit
+- **WHEN** a member's visit is a service that the membership's approved terms include without a separate charge
+- **THEN** openPractice creates no medical invoice and no insurance claim for it
+
+#### Scenario: The entitlement is unresolved
+- **WHEN** a member's visit cannot be resolved as included, discounted or separately chargeable
+- **THEN** finalization is held as owned review work, and nothing is invoiced or claimed

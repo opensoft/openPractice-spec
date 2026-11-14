@@ -53,11 +53,15 @@ A link SHALL enter identity review, never a merge, when any of the following hol
 - the EHR holds an update for review;
 - openPractice finds that an EHR reference returned to it is already linked to a different openPractice patient.
 
-Each review SHALL have exactly one resolver, the side that raised it. Only that side SHALL send `link.review_resolved`, with outcome `confirmed` or `revoked`. A review raised because the EHR patient already holds a different active `openpractice` reference from the same issuer SHALL NOT resolve as `confirmed`. A revocation of the same `link_id` by either side SHALL win over any concurrent or later confirmation. While a review is open, no demographic update SHALL be applied on that link. Resolution MUST NOT merge, overwrite or delete either patient record.
+Each review SHALL have exactly one resolver, the side that raised it. Only that side SHALL send `link.review_resolved`, with outcome `confirmed` or `revoked`. Two kinds of review SHALL NOT resolve as `confirmed`, because each would leave two openPractice patients on one EHR patient: a review the EHR raises because the EHR patient already holds a different active `openpractice` reference from the same issuer, and its mirror, a review openPractice raises because an EHR reference returned to it is already linked to a different openPractice patient. A revocation of the same `link_id` by either side SHALL win over any concurrent or later confirmation. While a review is open, no demographic update SHALL be applied on that link. Resolution MUST NOT merge, overwrite or delete either patient record.
 
 #### Scenario: Two openPractice patients claim one EHR patient
 - **WHEN** a link request targets an EHR patient that already holds an active `openpractice` reference with a different value from the same issuer
 - **THEN** the new link enters review, the EHR resolves it, it cannot resolve as `confirmed`, and no record is merged
+
+#### Scenario: openPractice finds the returned EHR reference already linked
+- **WHEN** a `link.result` returns an EHR reference that is already linked to a different openPractice patient
+- **THEN** openPractice raises the review, resolves it itself, cannot resolve it as `confirmed`, and no record is merged
 
 #### Scenario: A revocation crosses a confirmation
 - **WHEN** openPractice revokes a link while the EHR is confirming the same link's review
@@ -72,7 +76,7 @@ openPractice SHALL be the source of administrative demographic changes for linke
 - provenance made of an opaque actor reference, a source, and a reason from the schema's coded list. Free-text reasons MUST NOT be sent;
 - a full snapshot: legal and preferred name, date of birth, administrative sex, gender identity, pronouns, preferred language, telecom, addresses, confidential-communication instructions, and administrative status.
 
-The message MUST NOT include guarantor, coverage, financial, deactivation-reason or internal-note content. Coverage is excluded from contract version 1.0 and may be added only as a later MINOR version.
+The snapshot's confidential-communication instructions SHALL stay in the snapshot, and the receiving EHR SHALL honor them for every patient communication it originates, including communications from any system it drives (ruling 27; openChart PL-16). The message MUST NOT include guarantor, coverage, financial, deactivation-reason or internal-note content. Coverage is excluded from contract version 1.0 and may be added only as a later MINOR version.
 
 #### Scenario: A patient's address changes
 - **WHEN** staff change a linked patient's home address
@@ -183,9 +187,12 @@ openPractice SHALL store references to EHR clinical facts, and SHALL freeze only
 - **THEN** openPractice shows the original as submitted and the correction separately, and overwrites neither
 
 ### Requirement: EB-17 Manual charge entry is allowed without EHR facts and is marked manual
-openPractice SHALL let authorized staff enter a visit's billing codes manually in two cases:
+openPractice SHALL let authorized staff enter a visit's billing codes manually in three cases:
 - the practice has no linked EHR;
-- the patient is linked to an EHR whose capability result reports no billable-facts support.
+- the patient is linked to an EHR whose capability result reports no billable-facts support;
+- the patient's link is in identity review and the visit has reached the filing threshold of EB-18.
+
+In the third case, staff SHALL first record an attestation of two facts: the patient's identity for the visit was verified, and the visit's clinical documentation is final and signed by a clinician. The attestation SHALL carry provenance: the attesting actor, the time, a coded basis for the identity verification, the `link_id` under review, and the visit. EB-14 still applies, so codes MAY be entered only for documentation the attestation states is final and signed. When staff do not attest to both facts, the system SHALL refuse the manual entry, keep the visit waiting, and raise work owned by a Roster entry. An attestation SHALL NOT confirm or change the link.
 
 Every manual entry SHALL be marked manual and SHALL carry provenance: the actor, the time, and why EHR facts were unavailable. The system MUST NOT represent it as a signed clinical record. When the linked EHR later reports billable-facts support, new visits SHALL use EHR facts, and existing manual entries SHALL remain marked manual.
 
@@ -197,24 +204,36 @@ Every manual entry SHALL be marked manual and SHALL carry provenance: the actor,
 - **WHEN** a practice with no EHR enters codes from its own superbill
 - **THEN** the charge is marked manual, with staff-entry provenance and no clinical-record status
 
+#### Scenario: Manual entry under identity review, with attestation
+- **WHEN** a visit's link is in identity review at the filing threshold, and a staff member attests that the patient's identity was verified and that the documentation is final and signed
+- **THEN** the codes may be entered manually, the charge is marked manual, the attestation is recorded with its provenance, and the link stays in review
+
+#### Scenario: The attestation is refused
+- **WHEN** a staff member at the filing threshold cannot attest that the documentation is final and signed, or that the patient's identity was verified
+- **THEN** the manual entry is refused, no claim is created, the visit stays waiting, and the work is raised to a Roster entry
+
 ### Requirement: EB-18 Gates that could stall a claim carry the FD-5 deadline escape
 Every gate in this capability SHALL name its deadline escape, as FD-5 requires. If a link held in identity review would stall billing of a visit past the payer's filing threshold, then at that threshold the claim SHALL be released from the identity gate:
 - staff are notified;
-- staff may enter the charge manually under EB-17's marking;
+- staff may enter the charge manually under EB-17's third case, after the attestation it requires;
 - the claim enters the outbound claim batch at tier 3, delay plus cancel window.
 
 The link itself MUST NOT be confirmed automatically. Demographic holds and link creation stall no claim, because claims use openPractice's own demographics, so they need no escape.
 
 #### Scenario: Review would cost the filing window
 - **WHEN** a visit's facts are unavailable because its link is in identity review, and the filing deadline reaches the threshold
-- **THEN** staff are notified, the visit may be charged manually and claimed at tier 3, and the link stays in review
+- **THEN** staff are notified, the visit may be charged manually after the EB-17 attestation and claimed at tier 3, and the link stays in review
 
-### Requirement: EB-19 Appointment authority is left undecided
-This change SHALL NOT assign authority over appointments to either system. Risk R-7 remains open until the owner decides it. The 1.0 versions of both EHR contracts MUST NOT carry appointment create, update or cancel operations.
+### Requirement: EB-19 openPractice owns the administrative appointment; the EHR owns the encounter
+openPractice SHALL be the system of record for the administrative appointment (ruling 31, closing R-7). The EHR SHALL own the clinical encounter and MAY keep a reference to the openPractice appointment. The 1.0 versions of both EHR contracts MUST NOT carry appointment create, update or cancel operations; appointment events SHALL be added only as a later MINOR version.
 
 #### Scenario: Appointment sync is proposed
-- **WHEN** a feature plan proposes synchronizing appointments under the 1.0 contracts
-- **THEN** the proposal is out of scope until the owner decides appointment authority
+- **WHEN** a feature plan proposes exchanging appointment events under the 1.0 contracts
+- **THEN** it is out of scope for 1.0, openPractice remains the appointment's system of record, and the exchange waits for a governed MINOR version
+
+#### Scenario: A walk-in visit has no appointment
+- **WHEN** the EHR documents an encounter that has no openPractice appointment
+- **THEN** the encounter stays the EHR's record, and billing proceeds from the clinical facts without requiring an appointment
 
 ### Requirement: EB-20 Each system operates without the other
 openPractice SHALL operate fully with no EHR linked, and the EHR contracts SHALL be optional for every deployment. openPractice MUST NOT require openChart. openChart's own operation without openPractice is governed by openChart's ratified `expanded-patient-intake` requirement and by `opensoft/openChart-spec` change `define-openpractice-boundary`.

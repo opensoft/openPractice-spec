@@ -11,7 +11,7 @@ openPractice has no ratified statement of what its minimum viable product must c
 
 Two of these are tracked as open items in the packet. Risk R-7 says the EHR boundary is specified in one direction only. The packet also leaves the accounting destination open.
 
-Brett Heap, the product owner, settled these boundaries on 2026-11-14 and ruled on 26 follow-up design questions the same day. Ruling 25 supersedes ruling 3. The rulings are recorded in `design.md` under "Owner rulings (2026-11-14)". This change records the decisions and rulings as governed requirements before any runtime exists. **Rulings are not ratification:** the change stays draft until the owner completes `owner-ratification.md`.
+Brett Heap, the product owner, settled these boundaries on 2026-11-14 and ruled on 31 follow-up design questions the same day. Ruling 25 supersedes ruling 3, and ruling 30 supersedes ruling 22. The rulings are recorded in `design.md` under "Owner rulings (2026-11-14)". This change records the decisions and rulings as governed requirements before any runtime exists. **Rulings are not ratification:** the change stays draft until the owner completes `owner-ratification.md`.
 
 All ideation paths below are relative to the root of `opensoft/openPractice-spec`. Every cited ideation document is `Status: brainstorm`, except the framing decisions FD-1 to FD-11 in [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md), which were ratified on 2026-08-27. This change contradicts none of them, with one exception: it adds tier-4 gates beyond FD-5's list. That exception is deliberate, was ruled by the owner, and is recorded as tension T-13 in `design.md`.
 
@@ -64,22 +64,24 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
   - correction requests from the EHR;
   - clinical facts under `openpractice-ehr-clinical-facts/1.0`, including a capability result;
   - manual charge entry, marked manual, while no billable facts are available;
-  - the FD-5 deadline escape;
+  - the FD-5 deadline escape, where manual entry for a visit under identity review needs a staff attestation that identity was verified and documentation is final and signed;
   - no PHI in diagnostics, and no direct database access;
-  - appointment authority explicitly left undecided.
+  - appointment authority settled by ruling 31: openPractice owns the administrative appointment, the EHR owns the encounter, and the 1.0 contracts carry no appointment operations.
 - **`billing-accounting-boundary`.** Records that openPractice owns billing and the receivables and is their source of truth, and that the accounting system owns the ledger, bank balances and the full bank reconciliation. It also covers:
   - FD-3 extended to every destination;
   - a reason taxonomy mapped per destination and mode;
   - a practice bank account register, with full account and routing numbers encrypted and role-restricted;
   - payer deposit links per payer and billing entity;
   - an expected-account check and a re-enrollment worklist;
-  - deposit-only reconciliation;
+  - deposit-only reconciliation, including refund disbursements, with openPractice as the single poster of each deposit it explains and other-route shares posted as `other_route_share`;
+  - an offering-route check before charge finalization, so a membership-included service is never invoiced or claimed as medical;
   - a mapped account for the legacy share of a mixed deposit;
   - closed destination periods never edited, with late charges flagged.
 - **`accounting-integration`.** Adds `openpractice-accounting-integration/1.0` and its canonical schema, with operations, posting IDs and keys free of personal data, batches released by a person and frozen, delivery states, and a reconciliation report. It also covers:
-  - posting mode, `summary-journal` or `customer-detail`, fixed before a destination's first released batch;
+  - posting mode fixed before a destination's first released batch: `summary-journal`, the default and recommended setup, or `customer-detail`, a per-destination opt-in (ruling 28);
   - customers created only in `customer-detail` mode behind the BAA gate: guarantor accounts, which may carry name and billing address or contact (ruling 25), and payers, with any further field set by a versioned recipient profile;
-  - accounting dates, and accrual valuation with an expected contractual adjustment;
+  - accounting dates (date of service for charges, each event's own date for payments, refunds and deposits), and net revenue at the constrained expected entitlement, estimated at the date of service and re-estimated at each close (ruling 30);
+  - the single recipient-profile definition (AI-23);
   - the full set of money events;
   - a BAA gate, or an operator attestation for practice-operated destinations;
   - neutral labels;
@@ -87,16 +89,17 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
   - per-destination verification before go-live;
   - contract tests.
 - **Ownership split with `define-customer-financial-data-boundaries` (ruling 26).** This change owns the posting mechanics of `openpractice-accounting-integration/1.0`: posting identity and idempotency, batches and their freeze, release, retries, the reconciliation report, the posting modes and the BAA gate. Change `define-customer-financial-data-boundaries` (`openspec/changes/define-customer-financial-data-boundaries/`, with its brainstorm packet `ideation/brainstorm/openpractice-customer-financial-separation-overview.md` and companions) owns customer and party roles, routing by offering (insurance-billed healthcare, direct-pay healthcare, membership, retail), obligation ownership and purpose-bound business views. It references this contract for posting. That change and its packet are on branch `define-customer-financial-data-boundaries`, not yet on main.
+- **Framework document.** `ideation/brainstorm/openpractice-domain-framework.md`, on branch `docs/ideation-domain-framework-revenue-recognition` and not yet on main, is a proposal-status brainstorm. Rulings 28 to 31 adopt its Option A and D5/D8, keep demographics with openPractice, and settle appointments. Its posting contract (§5.4, §7) is governed by this change's accounting contract (ruling 26).
 - **Companion change.** `opensoft/openChart-spec` change `define-openpractice-boundary` is openChart's side of both EHR contracts. It references this change's canonical schemas by path and digest.
 - **Owner ratification.** An unconditional owner ratification (`owner-ratification.md`) is required after strict validation and before any Speckit feature is created.
 
 ## What this supersedes or resolves
 
-- **Supersedes the deposit-level, cash-basis summary export as the default.** The default is described in §8 of [`ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md), around line 577, and in the register row "Accounting Export, QuickBooks-Shaped". The new default is **customer-detail invoices** (the owner's "patient-level invoices"), valued on an accrual basis with an expected contractual adjustment at the date of service. The `summary-journal` mode is kept only as the fallback for destinations whose BAA gate is not satisfied.
+- **Supersedes the deposit-level, cash-basis summary export as the default.** The default is described in §8 of [`ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-money-lines-and-bank-inbox.md), around line 577, and in the register row "Accounting Export, QuickBooks-Shaped". The new default is **`summary-journal`** (ruling 28): balanced accrual category totals posted to payer-class control accounts, with patient-level receivable detail kept in openPractice and net revenue recognized at the constrained expected entitlement (ruling 30). `customer-detail` invoices, the owner's earlier "patient-level invoices", remain a per-destination opt-in after the BAA gate, chosen before a destination's first release; a destination stays in the mode its first released batch used (AI-09).
 - **Supersedes the money-lines brainstorm's bank sources and labels.** openPractice now reads revenue bank lines from the accounting system through the adapter, with statement upload as the fallback. Lines that are not revenue are labelled "accounting system's", replacing "not ours to explain".
 - **Resolves the open question of the accounting destination for the MVP:** ERPNext first.
 - **Generalizes FD-3's export-batch freeze** from QuickBooks to any destination. This change does not alter or specify the other parts of FD-3.
-- **Settles the patient-identity half of R-7.** The appointment-authority half stays open.
+- **Settles R-7.** Patient identity is settled here, and appointment authority by ruling 31.
 - **Partly supersedes the direction of flow** in [`ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md`](../../../ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md). openPractice publishes demographics and consumes only clinical facts.
 - **Departs from the first-staged-proposal recommendation.** That recommendation (a vertical thread first) is not followed. This change stages the boundaries first, does not author the Thread contract (FD-7), and gates Features 3 and 4 on it.
 
@@ -107,7 +110,7 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
 - **Household modeling and the minor-to-adult transition.** See [`ideation/brainstorm/openpractice-small-practice-beta-feature-normalization.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-feature-normalization.md).
 - **QuickBooks Online and Business Central adapters.** These come after the MVP.
 - **In-process calls into ERPNext.** These depend on counsel.
-- **Appointment authority (R-7).** Not decided here.
+- **Appointment operations in the 1.0 contracts.** Ruling 31 makes openPractice the appointment's system of record; appointment events come as a later MINOR version.
 - **The Thread contract, the reason taxonomy's categories, and automatic batch release.**
 - **Routing and owning membership agreements, subscription renewals, retail sales and other non-medical commerce obligations** (rulings 24 and 26). These obligations are owned by the routes of change `define-customer-financial-data-boundaries`, and this contract never creates a second collectible balance for them. Self-pay and direct-pay healthcare charges (FD-4) are medical billing and stay in scope. The customer-field rules of ruling 25 govern only the customers this contract creates.
 - **Customer and party roles, offering routes and purpose-bound business views** (ruling 26). These belong to `define-customer-financial-data-boundaries`.
@@ -120,8 +123,8 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
 ### New Capabilities
 - `patient-registry` (PR-01 to PR-14): the administrative patient record, its fields, confidential-communication instructions, guarantor, coverages, search, audit, deactivation and bounded hard delete.
 - `ehr-boundary` (EB-01 to EB-20): linked records, issuers, canonical schemas, identity review, demographic publication and suspension, correction requests, clinical facts, manual entry, deadline escape and no-PHI diagnostics.
-- `billing-accounting-boundary` (BAB-01 to BAB-15): billing ownership, the books of record, FD-3, the taxonomy, the bank register and deposit links, deposit-only reconciliation, legacy share and late charges.
-- `accounting-integration` (AI-01 to AI-22): the contract and schema, ownership of posting mechanics, adapters, keys, batches, mode, customers created by this contract and their recipient profile, dates, accrual, money events, BAA gate, PHI minimization, bank lines, verification, tests, and no posting to records the contract does not own.
+- `billing-accounting-boundary` (BAB-01 to BAB-16): billing ownership, the books of record, FD-3, the taxonomy, the bank register and deposit links, deposit-only reconciliation with a single deposit poster, legacy and other-route shares, late charges and the offering-route check.
+- `accounting-integration` (AI-01 to AI-23): the contract and schema, ownership of posting mechanics, adapters, keys, batches, mode, customers created by this contract and their recipient profile, dates, accrual, money events, BAA gate, PHI minimization, bank lines, verification, tests, no posting to records the contract does not own, and the one recipient-profile definition.
 
 ### Modified Capabilities
 
@@ -131,7 +134,7 @@ None. This change depends on, and does not modify, `add-reimbursement-retention-
 
 - **New openPractice data contracts:** patient, guarantor account, coverage, confidential-communication instructions, EHR link, demographic outbox, practice bank account register, payer deposit link, export batch, posting mode, accounting recipient profile and the BAA or attestation record.
 - **External contracts:** three contracts are fixed, with canonical schemas in `contracts/` (`SHA256SUMS` included).
-- **PHI exposure:** a `customer-detail` destination receives PHI, limited by default to guarantor account numbers, guarantor names and billing addresses or contacts, dates of service, amounts and neutral labels. Any further field needs a versioned recipient profile (ruling 25). Each destination needs a security review and a risk-analysis entry under Principle II.
+- **PHI exposure:** the default `summary-journal` destination receives category totals by payer class and no PHI. A `customer-detail` destination, an opt-in, receives PHI, limited by default to guarantor account numbers, guarantor names and billing addresses or contacts, dates of service, amounts and neutral labels. Any further field needs a versioned recipient profile (ruling 25). Each destination needs a security review and a risk-analysis entry under Principle II.
 - **Contract tests:** required at three boundaries, using synthetic fixtures only.
 - **Commitments for openChart:** governed by `define-openpractice-boundary`. Until openChart has a clinical-encounter capability, it reports no billable-facts support, and charges for linked patients are entered manually.
 - **Runtime:** no runtime code, dependencies or BAA claims are added.

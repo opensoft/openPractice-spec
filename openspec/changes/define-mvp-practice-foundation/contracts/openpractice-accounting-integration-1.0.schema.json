@@ -2,11 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:openpractice:contract:openpractice-accounting-integration:1.0",
   "title": "openpractice-accounting-integration 1.0",
-  "description": "Canonical schema for the accounting integration contract between openPractice core and every destination adapter. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation. A released batch is frozen; content_digest is the SHA-256 of the RFC 8785 (JCS) canonical JSON of the batch with content_digest removed. Delivery state (per-posting status, destination document references, recorded/sync timestamps) is NOT batch content and is never an accounting date. Posting modes are summary-journal and customer-detail. A summary-journal batch carries no customer record, name or per-person identifier. Only a customer-detail batch carries customers, and it is released only while the destination's BAA gate is satisfied (AI-14). There a guarantor-account customer may carry a display name, billing address and billing contact, and any further field only as profile_fields documented by the batch's versioned recipient profile. No key, line, label or diagnostic carries a person's name, and no customer or line carries chart notes, diagnoses, medications, results, full claim payloads, EHR medical-record numbers or service-revealing reason categories. Posting mechanics are owned by change define-mvp-practice-foundation; customer and party roles, offering routes and obligation ownership by change define-customer-financial-data-boundaries. Adapters accept any 1.x and reject any other MAJOR.",
+  "description": "Canonical schema for the accounting integration contract between openPractice core and every destination adapter. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation. A released batch is frozen; content_digest is the SHA-256 of the RFC 8785 (JCS) canonical JSON of the batch with content_digest removed. Delivery state (per-posting status, destination document references, recorded/sync timestamps) is NOT batch content and is never an accounting date. Posting modes are summary-journal, the default and recommended setup (ruling 28), and customer-detail, a per-destination opt-in. Revenue and deduction lines reference the estimate version or close snapshot they apply (ruling 30). A summary-journal batch carries no customer record, name or per-person identifier. Only a customer-detail batch carries customers, and it is released only while the destination's BAA gate is satisfied (AI-14). There a guarantor-account customer may carry a display name, billing address and billing contact, and any further field only as profile_fields documented by the batch's versioned recipient profile. recipientProfileDocument is the only recipient-profile shape; define-customer-financial-data-boundaries references it rather than defining another. No key, line, label or diagnostic carries a person's name, and no customer or line carries chart notes, diagnoses, medications, results, full claim payloads, EHR medical-record numbers, service-revealing reason categories, or full bank account or routing numbers. Posting mechanics are owned by change define-mvp-practice-foundation; customer and party roles, offering routes and obligation ownership by change define-customer-financial-data-boundaries. Adapters accept any 1.x and reject any other MAJOR.",
   "oneOf": [
     { "$ref": "#/$defs/customerDetailBatch" },
     { "$ref": "#/$defs/summaryBatch" },
-    { "$ref": "#/$defs/bankLinesResult" }
+    { "$ref": "#/$defs/bankLinesResult" },
+    { "$ref": "#/$defs/recipientProfileDocument" }
   ],
   "$defs": {
     "uuid": { "type": "string", "format": "uuid" },
@@ -15,8 +16,8 @@
     "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
     "date": { "type": "string", "format": "date" },
     "neutralLabel": {
-      "description": "Fixed neutral financial labels. They never reveal the type of service, a diagnosis or a procedure.",
-      "enum": ["patient_services_revenue", "expected_contractual_adjustment", "contractual_adjustment", "contractual_adjustment_true_up", "patient_responsibility_transfer", "write_off", "payment_received", "unapplied_payment", "payment_application", "refund", "chargeback", "returned_item", "payer_takeback", "payer_interest", "payer_forwarding_balance", "merchant_fee", "virtual_card_fee", "chargeback_fee", "bank_fee", "unidentified_receipt", "unidentified_receipt_reclassified", "legacy_collections", "deposit_clearing_release"]
+      "description": "Fixed neutral financial labels. They never reveal the type of service, a diagnosis or a procedure. patient_services_revenue is the gross line; gross_to_net_deduction and gross_to_net_true_up bring it to the constrained expected entitlement (AI-12, ruling 30); credit_loss is an expense, never a revenue deduction. other_route_share is the part of an explained deposit that funds balances owned by another route (for example membership or retail obligations); it posts to the account mapped for it per destination and mode, and openPractice remains the single deposit poster.",
+      "enum": ["patient_services_revenue", "gross_to_net_deduction", "gross_to_net_true_up", "contractual_adjustment", "unbilled_to_billed", "credit_loss", "refund_liability", "contract_liability", "patient_responsibility_transfer", "write_off", "payment_received", "unapplied_payment", "payment_application", "refund", "chargeback", "returned_item", "payer_takeback", "payer_interest", "payer_forwarding_balance", "merchant_fee", "virtual_card_fee", "chargeback_fee", "bank_fee", "unidentified_receipt", "unidentified_receipt_reclassified", "legacy_collections", "other_route_share", "deposit_clearing_release"]
     },
     "mappingVersion": {
       "description": "Account mapping version, scoped to one destination AND one posting mode.",
@@ -39,11 +40,62 @@
         "content_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
       }
     },
+    "profileFieldName": {
+      "description": "Name of a field a recipient profile may permit. Names suggesting chart notes, clinical content, diagnoses, procedures, medications, results, full claim payloads, medical-record numbers, reason categories, services, or bank, routing or account numbers are refused; profile review enforces the rest.",
+      "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$",
+      "not": { "pattern": "(chart|clinical|note|diagnos|icd|cpt|hcpcs|procedure|medication|prescription|result|lab_|claim_payload|full_claim|mrn|medical_record|reason|service|bank|routing|acct)" }
+    },
+    "codedValue": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+    "estimateRef": {
+      "description": "Reference to the estimate version or close snapshot a revenue or deduction line applies (AI-12). The estimate itself stays in openPractice.",
+      "type": "object", "additionalProperties": false,
+      "required": ["estimator_version"],
+      "properties": {
+        "estimator_version": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" },
+        "close_snapshot_ref": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,128}$" }
+      }
+    },
+    "revenueLabel": { "enum": ["patient_services_revenue", "gross_to_net_deduction", "gross_to_net_true_up"] },
+    "payerClass": { "description": "Payer-class control-account dimension, as a coded value (for example medicare, commercial, self_pay).", "$ref": "#/$defs/codedValue" },
     "recipientProfile": {
-      "description": "Versioned recipient profile for one destination. It lists the customer fields permitted beyond the default (display name, billing address, billing contact) and documents each field's purpose, recipient and authority. The profile document itself is governed outside batch content; the batch records which version applied.",
+      "description": "Reference, recorded on each customer-detail batch, to the recipientProfileDocument version that applied.",
       "type": "object", "additionalProperties": false,
       "required": ["profile_id", "version"],
       "properties": { "profile_id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" }, "version": { "type": "integer", "minimum": 1 } }
+    },
+    "recipientProfileDocument": {
+      "description": "The single recipient-profile shape (AI-23). One version authorizes one recipient's projection: an accounting destination's customer fields, or another business output governed by define-customer-financial-data-boundaries. Every permitted field, including the default display_name, billing_address and billing_contact, carries its purpose, recipient and authority. A new field needs a new version.",
+      "type": "object", "additionalProperties": false,
+      "required": ["document", "profile_id", "version", "recipient", "purpose", "sensitivity", "fields", "effective_from"],
+      "properties": {
+        "document": { "const": "recipient_profile" },
+        "profile_id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+        "version": { "type": "integer", "minimum": 1 },
+        "recipient": {
+          "type": "object", "additionalProperties": false, "required": ["kind", "ref"],
+          "properties": { "kind": { "enum": ["accounting_destination", "organization", "actor_role"] }, "ref": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,128}$" } }
+        },
+        "purpose": { "$ref": "#/$defs/codedValue" },
+        "row_scope": { "description": "Relationship and row scope, as a coded rule reference.", "$ref": "#/$defs/codedValue" },
+        "sources": { "description": "Source provenance: the source domains or event types the projection draws on, as coded values.", "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/codedValue" } },
+        "sensitivity": { "enum": ["phi", "non_phi_reviewed", "aggregate_only"] },
+        "output_channels": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/codedValue" } },
+        "handling_obligations": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/codedValue" } },
+        "fields": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["field", "purpose", "recipient", "authority"],
+            "properties": {
+              "field": { "$ref": "#/$defs/profileFieldName" },
+              "purpose": { "$ref": "#/$defs/codedValue" },
+              "recipient": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,128}$" },
+              "authority": { "description": "Reference to the documented authority, such as a BAA record or an owner decision; never free text about a person.", "type": "string", "pattern": "^[A-Za-z0-9:_./-]{1,128}$" }
+            }
+          }
+        },
+        "effective_from": { "$ref": "#/$defs/date" },
+        "effective_to": { "$ref": "#/$defs/date" }
+      }
     },
     "billingAddress": {
       "type": "object", "additionalProperties": false,
@@ -69,7 +121,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["kind"],
       "oneOf": [
-        { "properties": { "kind": { "const": "guarantor_account" } }, "required": ["account_number"] },
+        { "properties": { "kind": { "const": "guarantor_account" } }, "required": ["account_number"], "not": { "anyOf": [ { "required": ["payer_id"] }, { "required": ["payer_name"] } ] } },
         { "properties": { "kind": { "const": "payer" } }, "required": ["payer_id", "payer_name"], "not": { "anyOf": [ { "required": ["display_name"] }, { "required": ["billing_address"] }, { "required": ["billing_contact"] }, { "required": ["profile_fields"] } ] } }
       ],
       "properties": {
@@ -79,13 +131,13 @@
         "billing_address": { "$ref": "#/$defs/billingAddress" },
         "billing_contact": { "$ref": "#/$defs/billingContact" },
         "profile_fields": {
-          "description": "Fields beyond the default, each documented with purpose, recipient and authority in the batch's recipient profile. Names suggesting chart notes, diagnoses, procedures, medications, results, full claim payloads, medical-record numbers, reason categories or services are refused here; the profile review enforces the rest.",
+          "description": "Fields beyond the default, each listed with purpose, recipient and authority in the batch's recipient profile. A payer relationship on a guarantor-account customer can appear only here, never as payer_id or payer_name.",
           "type": "object", "minProperties": 1, "maxProperties": 16,
-          "propertyNames": { "pattern": "^[a-z][a-z0-9_]{0,63}$", "not": { "pattern": "(chart|clinical|note|diagnos|icd|cpt|hcpcs|procedure|medication|prescription|result|lab_|claim_payload|full_claim|mrn|medical_record|reason|service)" } },
+          "propertyNames": { "$ref": "#/$defs/profileFieldName" },
           "additionalProperties": { "type": "string", "maxLength": 256 }
         },
-        "payer_id": { "type": "string", "maxLength": 64 },
-        "payer_name": { "type": "string", "maxLength": 128 }
+        "payer_id": { "description": "Payer customers only.", "type": "string", "maxLength": 64 },
+        "payer_name": { "description": "Payer customers only.", "type": "string", "maxLength": 128 }
       }
     },
     "line": {
@@ -95,8 +147,11 @@
         "reason_category": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
         "label": { "$ref": "#/$defs/neutralLabel" },
         "amount": { "$ref": "#/$defs/money" },
-        "service_date": { "description": "Date of service. Required on every invoice, debit-note and credit-note line in customer-detail mode.", "$ref": "#/$defs/date" }
-      }
+        "service_date": { "description": "Date of service. Required on every invoice, debit-note and credit-note line in customer-detail mode.", "$ref": "#/$defs/date" },
+        "estimate_ref": { "$ref": "#/$defs/estimateRef" }
+      },
+      "if": { "properties": { "label": { "$ref": "#/$defs/revenueLabel" } }, "required": ["label"] },
+      "then": { "required": ["estimate_ref"] }
     },
     "posting": {
       "type": "object", "additionalProperties": false,
@@ -109,14 +164,17 @@
         "applies_to": { "description": "posting_id of the invoice, payment or posting this one adjusts, applies to or reverses.", "$ref": "#/$defs/uuid" },
         "back_reference": { "type": "object", "additionalProperties": false, "required": ["batch_seq", "posting_id"], "properties": { "batch_seq": { "type": "integer", "minimum": 1 }, "posting_id": { "$ref": "#/$defs/uuid" } } },
         "customer": { "$ref": "#/$defs/customer" },
-        "posting_date": { "description": "General-ledger date: the date of service when that period is open in the destination, otherwise the first open date.", "$ref": "#/$defs/date" },
+        "posting_date": { "description": "General-ledger date. Invoice, debit-note and credit-note postings use the date of service; payment, application, refund, reversal, deposit and journal postings use their own event date (receipt, application, issue or bank-line posted date). If that period is closed in the destination, the first open date.", "$ref": "#/$defs/date" },
         "invoice_date": { "description": "Charge-finalization date (invoices).", "$ref": "#/$defs/date" },
         "due_date": { "description": "From the statement terms that apply to the customer.", "$ref": "#/$defs/date" },
-        "late_charge": { "description": "True when posting_date differs from the service date because that period was closed.", "type": "boolean" },
+        "effective_date": { "description": "Economic date of the information the posting reflects, kept when it differs from posting_date.", "$ref": "#/$defs/date" },
+        "late_charge": { "description": "True when posting_date is not the posting's own date (the date of service for charge postings, the event or bank-line date otherwise) because that period was closed in the destination.", "type": "boolean" },
         "deposit_bank_line_ref": { "description": "Opaque reference to the explained bank line a deposit.post equals.", "type": "string", "maxLength": 128 },
         "currency": { "$ref": "#/$defs/currency" },
         "lines": { "type": "array", "items": { "$ref": "#/$defs/line" } }
-      }
+      },
+      "if": { "properties": { "operation": { "enum": ["invoice.post", "debit_note.post", "credit_note.post"] } }, "required": ["operation"] },
+      "then": { "properties": { "lines": { "items": { "required": ["service_date"] } } } }
     },
     "summaryLine": {
       "type": "object", "additionalProperties": false,
@@ -130,8 +188,13 @@
         "label": { "$ref": "#/$defs/neutralLabel" },
         "amount": { "$ref": "#/$defs/money" },
         "currency": { "$ref": "#/$defs/currency" },
+        "payer_class": { "$ref": "#/$defs/payerClass" },
+        "effective_date": { "$ref": "#/$defs/date" },
+        "estimate_ref": { "$ref": "#/$defs/estimateRef" },
         "deposit_bank_line_ref": { "type": "string", "maxLength": 128 }
-      }
+      },
+      "if": { "properties": { "label": { "$ref": "#/$defs/revenueLabel" } }, "required": ["label"] },
+      "then": { "required": ["estimate_ref", "payer_class"] }
     },
     "customerDetailBatch": {
       "allOf": [ { "$ref": "#/$defs/batchHeader" }, {
@@ -141,15 +204,15 @@
       "unevaluatedProperties": false
     },
     "summaryBatch": {
-      "description": "Summary-journal batch: aggregated journal lines only. It carries no customer record, name or per-person identifier.",
+      "description": "Summary-journal batch, the default mode (ruling 28): balanced category totals to payer-class control accounts. It carries no customer record, name or per-person identifier. detail_manifest_digest identifies the openPractice detail manifest that traces every line.",
       "allOf": [ { "$ref": "#/$defs/batchHeader" }, {
-        "properties": { "posting_mode": { "const": "summary-journal" }, "mapping_version": { "properties": { "posting_mode": { "const": "summary-journal" } } }, "summary_lines": { "type": "array", "items": { "$ref": "#/$defs/summaryLine" } } },
+        "properties": { "posting_mode": { "const": "summary-journal" }, "mapping_version": { "properties": { "posting_mode": { "const": "summary-journal" } } }, "summary_lines": { "type": "array", "items": { "$ref": "#/$defs/summaryLine" } }, "detail_manifest_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" } },
         "required": ["summary_lines"]
       } ],
       "unevaluatedProperties": false
     },
     "bankLinesResult": {
-      "description": "Result of bank_lines.read: revenue-related lines read from the destination (or from an uploaded statement as fallback). Lines outside the revenue categories are labelled accounting_system and are never reconciled by openPractice.",
+      "description": "Result of bank_lines.read: revenue-related lines (deposits, chargebacks, payer takebacks, processor fees and refund disbursements) read from the destination, or from an uploaded statement when the destination cannot supply them. Lines outside the revenue categories are labelled accounting_system and are never reconciled by openPractice.",
       "type": "object", "additionalProperties": false,
       "required": ["contract", "contract_version", "destination_id", "source", "lines"],
       "properties": {
@@ -167,7 +230,7 @@
               "practice_bank_account_ref": { "description": "Reference to the practice bank account register entry; never a full account number.", "type": "string", "maxLength": 64 },
               "posted_date": { "$ref": "#/$defs/date" },
               "amount": { "$ref": "#/$defs/money" },
-              "category": { "enum": ["deposit", "chargeback", "payer_takeback", "processor_fee", "accounting_system"] }
+              "category": { "enum": ["deposit", "chargeback", "payer_takeback", "processor_fee", "refund_disbursement", "accounting_system"] }
             }
           }
         }

@@ -25,15 +25,19 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 - Demographic outbox atomicity, idempotent and version-ordered acknowledgements, and identity review without merge: _pending_
 - Contract tests for `openpractice-ehr-patient-link/1.0` and `openpractice-ehr-clinical-facts/1.0`: _pending_
 - Contract tests for `openpractice-accounting-integration/1.0` (all operations, replay, indeterminate lookup, batch freeze, release refusals, reconciliation): _pending_
-- openPractice installed and tested with no ERPNext present; ERPNext adapter verified same-site and remote: _pending_
+- openPractice installed and tested with no ERPNext present; ERPNext adapter verified over REST against the remote topology (ruling 8): _pending_
 - Summary-journal no-PHI verification and customer-detail minimum-necessary and recipient-profile verification: _pending_
 - BAA gate refusal (including operator attestation), tier-4 enablement and halt-on-lapse verification: _pending_
-- Mode lock after first release; mapping versioned per destination and mode: _pending_
-- Account-number-only customers, neutral labels, accounting dates, late-charge flag and accrual true-up: _pending_
+- Mode lock after first release; mapping versioned per destination and mode; `summary-journal` as the default with payer-class control-account reconciliation (ruling 28): _pending_
+- Constrained-estimate revenue, evidence true-ups, close re-estimate dating and close snapshots (ruling 30): _pending_
+- Accountant approval of the reporting basis, estimator, classification, materiality and reopening policy, recorded before any destination went live (ruling 30, D8): _pending_
+- Customers keyed by guarantor account number and named only in customer-detail mode behind the BAA gate, with the recipient-profile version recorded (ruling 25); neutral labels; accounting dates, including event dates for payments, refunds and deposits; late-charge flag: _pending_
+- Single deposit poster with `other_route_share` lines, refund-disbursement matching, and the offering-route check before charge finalization (BAB-14, BAB-16): _pending_
+- Manual entry under identity review only with a recorded staff attestation, and refusal without it (EB-17): _pending_
 - Bank register, deposit links, expected-account check, re-enrollment worklist, and encrypted, role-restricted, audited bank numbers: _pending_
 - Date-of-birth hold suspension, correction requests and single-resolver identity review: _pending_
 - Messages validated against canonical schemas at their recorded digests (`contracts/SHA256SUMS`): _pending_
-- Hard-delete removal scope (live data and audit values, PHI-free tombstone, tamper-evident redaction evidence): _pending_
+- Hard-delete removal scope (live data and audit values, PHI-free tombstone, tamper-evident redaction evidence), and verification flagging any audit value missing without a redaction event: _pending_
 
 ## Boundary and Merge Evidence
 

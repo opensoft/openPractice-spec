@@ -69,7 +69,7 @@ Every openPractice function that contacts a patient or guarantor, including stat
 - **THEN** the reminder is not left as a voicemail
 
 ### Requirement: PR-06 Each patient has exactly one current guarantor
-The system SHALL record exactly one current guarantor for each patient, defaulting to the patient (`self`) at creation. A guarantor who is another person SHALL be recorded in the party register with a legal name, contact facts and their relationship to the patient. That person need not be a patient. A guarantor change SHALL take effect from a stated date and SHALL keep the prior assignment as history. Recording a guarantor MUST NOT require a household model. Each guarantor SHALL have an opaque guarantor account number, which is the only identifier used for that guarantor's balances outside openPractice.
+The system SHALL record exactly one current guarantor for each patient, defaulting to the patient (`self`) at creation. A guarantor who is another person SHALL be recorded in the party register with a legal name, contact facts and their relationship to the patient. That person need not be a patient. A guarantor change SHALL take effect from a stated date and SHALL keep the prior assignment as history. Recording a guarantor MUST NOT require a household model. Each guarantor SHALL have an opaque guarantor account number, which keys that guarantor's balances in every accounting destination. The guarantor's name and billing address or contact SHALL reach a destination only in `customer-detail` mode, behind that destination's BAA gate, with the recipient-profile version recorded on the batch (accounting-integration AI-10).
 
 #### Scenario: A parent is guarantor for a minor
 - **WHEN** staff record a parent who is not a patient as the guarantor of a minor
@@ -127,7 +127,7 @@ For every creation, change, deactivation, reactivation and hard delete of regist
 - a coded reason where one is required;
 - the prior and new values.
 
-The system SHALL record every read access to a patient record, as constitution Principle I requires. Audit records SHALL be kept owner-local, MUST NOT be written to application logs, MUST NOT be editable or deletable by anyone, and SHALL be tamper-evident. The only sanctioned removal is the PHI-value removal of PR-13. That removal SHALL leave verifiable evidence that a redaction occurred, recording by whom, when and why.
+The system SHALL record every read access to a patient record, as constitution Principle I requires. Audit records SHALL be kept owner-local, MUST NOT be written to application logs, MUST NOT be editable or deletable by anyone, and SHALL be tamper-evident. The only sanctioned removal is the PHI-value removal of PR-13. That removal SHALL leave verifiable evidence that a redaction occurred, recording by whom, when and why. Verifying the trail SHALL flag every audit entry whose value is missing without a matching redaction event, as well as every alteration.
 
 #### Scenario: Staff correct a date of birth
 - **WHEN** a staff member corrects a patient's date of birth
@@ -136,6 +136,10 @@ The system SHALL record every read access to a patient record, as constitution P
 #### Scenario: Someone tries to alter an audit record
 - **WHEN** any user, administrator included, attempts to edit or delete an audit record
 - **THEN** the attempt is refused, and any alteration made outside the application is detectable by verifying the trail
+
+#### Scenario: An audit value disappears without a redaction
+- **WHEN** verification finds an audit entry whose value is gone and no redaction event records its removal
+- **THEN** verification flags the entry as an integrity failure
 
 ### Requirement: PR-11 Delete means deactivate, and services already given remain chargeable
 A request to delete a patient record SHALL deactivate it from a stated deactivation date. A deactivated record SHALL refuse new activity (visits, services or charges) dated after the deactivation date. Activity dated on or before that date, including services already given, SHALL remain chargeable and billable. The record SHALL remain retrievable with its full history. Its existing threads, claims, balances, coverages, EHR links and audit history SHALL be unchanged. Deactivation SHALL require a coded reason (at least `duplicate`, `no_longer_a_patient`, `deceased` or `other`). Deactivation SHALL be reversible by reactivation, and both acts SHALL be audited.
