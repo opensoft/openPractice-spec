@@ -195,7 +195,7 @@ Rule: **each arrow in this chain is a new object with its own ID that references
 | Fact | System of record | Others hold |
 |---|---|---|
 | Signed clinical content, encounter, orders, results | openChart / EHR | Reference ID, version, hash, provenance only |
-| Patient demographics (clinical master) | EHR | openPractice keeps administrative copy with cross-reference |
+| Patient demographics | openPractice for administrative demographics, which it publishes to a linked EHR; the EHR for its clinical record | Each system owns its own record, linked by cross-reference (ruling 29) |
 | Appointment | openPractice | EHR keeps reference if needed |
 | Coverage, eligibility result, authorization | openPractice | — |
 | Charge, claim, claim status | openPractice | Accounting sees posted summaries only |
@@ -208,7 +208,7 @@ Rule: **each arrow in this chain is a new object with its own ID that references
 
 | Option | Description | Pros | Cons | Verdict |
 |---|---|---|---|---|
-| **A. openPractice subledger, ERP summary GL (recommended)** | openPractice holds patient/payer receivable detail; sends balanced summary postings to payer-class control accounts; ERP never sees patient-level AR | One AR; ERP stays small; no clinical/PHI-like detail in ERP; works for MSBC and ERPNext identically | Requires a reconciliation (subledger total = control account) and a posting contract | **Proposed default** |
+| **A. openPractice subledger, ERP summary GL (recommended)** | openPractice holds patient/payer receivable detail; sends balanced summary postings to payer-class control accounts; ERP never sees patient-level AR | One AR; ERP stays small; no clinical/PHI-like detail in ERP; works for MSBC and ERPNext identically | Requires a reconciliation (subledger total = control account) and a posting contract | **Proposed default.** Adopted as the MVP default by ruling 28; `customer-detail` remains a per-destination opt-in behind the BAA gate, per `openpractice-accounting-integration/1.0` |
 | B. ERP is AR master; openPractice mirrors | Create ERP sales invoices/customers per patient or claim | Uses ERP aging/dunning out of the box | Dual AR, claim lifecycle does not fit invoice lifecycle, patient identities spread into ERP, hard to remain ERP-neutral (MSBC vs ERPNext differ) | Reject for MVP |
 | C. Hybrid: patient statements as ERP invoices, claims in openPractice | Claims in openPractice; patient balances in ERP | Reuses ERP collections for patients | Splits one patient balance across systems; payer-adjudication determines patient share, so ordering and reversal become fragile | Defer; revisit only if the practice wants ERP-side dunning |
 
@@ -230,6 +230,8 @@ Also: **openPractice must work with MSBC (no Frappe) as accounting**, so it cann
 ### 5.4 Accounting posting contract (proposal)
 
 openPractice emits **posting batches**, not invoices.
+
+> **Pointer (2026-11-14, ruling 26).** The posting contract is governed by `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, branch `change/define-mvp-practice-foundation`, not yet on main). Where this section differs, that contract governs. For example, its default `summary-journal` mode posts these summarized entries; its opt-in `customer-detail` mode posts invoices to guarantor-account and payer customers behind the BAA gate; and its idempotency keys are per posting or per summary line.
 
 | Event in openPractice | Posting concept (summarized) | Notes |
 |---|---|---|
@@ -598,6 +600,8 @@ Synthetic patient "Pat Example" (not a real person). Steps marked **[conditional
 
 ## 7. Minimal integration contract examples
 
+> **Pointer (2026-11-14, ruling 26).** For accounting, `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, branch `change/define-mvp-practice-foundation`, not yet on main) governs the batch, envelope and acknowledgement shapes and the money format, which is a decimal string with two places rather than integer minor units. Where the accounting examples below differ, that contract governs.
+
 ### 7.1 Common envelope (all messages)
 
 | Field | Rule |
@@ -701,7 +705,7 @@ Rationale: stages 1–6 can be built and tested end-to-end with synthetic data a
 | ID | Decision | Recommended default | Why |
 |---|---|---|---|
 | D1 | One `Party` identity with roles; "customer" is not a patient role | **Yes** | Prevents competing identities |
-| D2 | Receivable subledger owner | **openPractice** (Option A); ERP gets summarized control postings | Avoids double AR; ERP-neutral |
+| D2 | Receivable subledger owner | **openPractice** (Option A); ERP gets summarized control postings; `customer-detail` remains a per-destination opt-in behind the BAA gate, per `openpractice-accounting-integration/1.0` (ruling 28) | Avoids double AR; ERP-neutral |
 | D3 | Which ERP first | **ERPNext first as the reference adapter**, MSBC adapter second, one active per deployment | Same Frappe stack eases early testing; the contract stays neutral. Override if the practice already runs MSBC |
 | D4 | Deployment: one Frappe app `open_practice` with internal modules, no dependence on ERPNext doctypes | **Yes** | Keeps MSBC option open; domain lines enforced in code review, not by service splits |
 | D5 | Revenue recognition basis in postings | **Corrected:** net revenue = constrained expected entitlement at service, updated each close; gross charge is memo or gross line with its deduction; billing, adjudication, cash and disputes are evidence events (Section 5A). The first version's "gross at charge plus adjustment on adjudication" is withdrawn | Avoids overstating revenue and AR at each close; allows timely close; final policy to be approved by the practice's accountant |
@@ -710,6 +714,15 @@ Rationale: stages 1–6 can be built and tested end-to-end with synthetic data a
 | D8 | Revenue-recognition policy approval and close governance (Section 5A.4) | **Accountant approves reporting basis, estimator, classification, materiality and reopening policy before go-live** | Policy choices are accounting judgments, not software defaults |
 
 Nothing above is ratified until Brett records a decision.
+
+**Rulings applied (2026-11-14).** Brett Heap ruled on parts of this document while authoring `define-mvp-practice-foundation`; its rulings table records them. This document keeps its proposal status.
+
+- D2 → ruling 28. Option A, `summary-journal`, is the MVP default and recommended setup, and `customer-detail` remains a per-destination opt-in behind the BAA gate.
+- D5 and D8 → ruling 30. Both are adopted, superseding that change's ruling 22.
+- §5.1 appointment row → ruling 31. openPractice is the system of record for the administrative appointment, and the EHR owns the encounter.
+- §5.1 demographics row → ruling 29. The row is amended above.
+- Posting contract (§5.4, §7) → governed by `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, branch `change/define-mvp-practice-foundation`, not yet on main) (ruling 26). See the pointer notes in §5.4 and §7.
+- D3 matches that change's boundary decision to build the ERPNext adapter first. D1, D4, D6 and D7 remain unruled.
 
 ## 11. Future questions (only where genuinely needed, not blocking)
 
