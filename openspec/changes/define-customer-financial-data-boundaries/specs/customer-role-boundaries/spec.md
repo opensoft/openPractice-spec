@@ -1,0 +1,59 @@
+# Spec Delta
+
+## Purpose
+
+Preserve usable customer identity across practice and accounting systems while
+separating patient, member, payer and representative roles and clinical access.
+
+## ADDED Requirements
+
+### Requirement: Parties have distinct effective roles
+The system SHALL distinguish person identity, customer, patient, membership subscriber, membership beneficiary, insurance subscriber, payer/guarantor and representative relationships. Each relationship SHALL preserve its authority, provenance, effective dates and organizational scope. Customer creation SHALL NOT require clinical patient creation.
+
+#### Scenario: Retail purchaser has no patient relationship
+- **WHEN** a person purchases a retail product without an established patient relationship
+- **THEN** the system creates or uses the necessary customer record without creating a patient, encounter or claim
+
+#### Scenario: Membership purchaser and beneficiary differ
+- **WHEN** a subscriber pays for a membership benefiting another person
+- **THEN** the system records their separate roles and does not grant the subscriber general access to the beneficiary's clinical or purchase history
+
+### Requirement: Cross-system identity links are controlled
+The system SHALL preserve a controlled mapping between operational party and domain-specific customer or patient identifiers. Linking and correction SHALL require verified matching evidence and attributable authority, preserve prior financial history, and restrict visibility of sensitive links. A shared contact detail alone SHALL NOT authorize a merge.
+
+#### Scenario: Shared phone creates an ambiguous match
+- **WHEN** two customer or patient records share a phone number but identity evidence does not resolve the match
+- **THEN** the system creates review work and does not merge or cross-disclose the records
+
+#### Scenario: Customer identity does not grant patient lookup
+- **WHEN** an accountant can view a customer's accounting identifier but lacks patient-record authority
+- **THEN** the system does not expose the EHR identifier, patient lookup link or clinical record through that view
+
+### Requirement: Shared fields have explicit ownership and update direction
+The system SHALL declare the owning source, permitted update direction, destination fields and conflict behavior for each synchronized identity/contact field. Updates SHALL preserve confidential-contact instructions and relationship-specific communication authority.
+
+#### Scenario: Billing address changes
+- **WHEN** an authorized user corrects an accounting billing address
+- **THEN** only permitted destination fields change and the system preserves unrelated clinical identity and confidential communication destinations
+
+### Requirement: Accounting receives a limited customer and financial record
+The system SHALL support necessary customer name, billing address/contact, scoped payer relationship, membership/invoice details, payments, refunds and balances in connected accounting. A versioned recipient profile SHALL define the permitted fields and purpose. The default accounting projection SHALL exclude chart notes, diagnoses, medication lists, results, full claim payloads and EHR medical-record numbers; any narrow additional field SHALL require documented purpose, recipient and authority.
+
+#### Scenario: Medical membership is invoiced
+- **WHEN** a permitted accounting workflow issues a named customer's medical membership invoice
+- **THEN** the projection contains the necessary customer and financial facts under the protected handling profile without copying the chart
+
+#### Scenario: Broad source payload includes clinical detail
+- **WHEN** an accounting connector receives a source object containing a chart note or diagnosis outside its allowed projection
+- **THEN** it excludes that content from delivery, attachments and diagnostic output rather than forwarding the source object wholesale
+
+### Requirement: Clinical authority and access remain independent
+The connected EHR SHALL remain authoritative for encounters, signed clinical notes, diagnoses, medications, orders and results. openPractice medical billing SHALL consume only necessary coded facts and approved evidence under bounded contracts. Customer, accounting, membership and commerce permissions SHALL NOT grant clinical read or write authority.
+
+#### Scenario: Biller needs coded service information
+- **WHEN** an authorized biller prepares an insurance claim
+- **THEN** the system supplies the required coded service facts and approved evidence without granting unrelated chart access or clinical editing authority
+
+#### Scenario: Membership administrator requests a chart
+- **WHEN** an actor authorized only for membership administration requests a linked chart
+- **THEN** access is refused independently of the actor's ability to view or change the membership
