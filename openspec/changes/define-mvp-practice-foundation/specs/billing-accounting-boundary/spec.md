@@ -55,7 +55,7 @@ The accounting integration SHALL record financial events and MUST NOT instruct t
 - **THEN** the destination receives a refund record only after the refund is recorded as issued, and no payment instruction is sent
 
 ### Requirement: BAB-08 Legacy receivables are excluded, but a mixed deposit still balances
-Balances represented by old-system balance threads (FD-9) SHALL NOT be posted to a destination as patient-level receivables. When a deposit combines legacy collections with openPractice money, the legacy share SHALL post to a mapped legacy-collections account, so that the deposit entry equals the bank line. The bookkeeper decides which account that is.
+Balances represented by old-system balance threads (FD-9) SHALL NOT be posted to a destination as customer-detail receivables. When a deposit combines legacy collections with openPractice money, the legacy share SHALL post to a mapped legacy-collections account, so that the deposit entry equals the bank line. The bookkeeper decides which account that is.
 
 #### Scenario: A wire mixes legacy and new money
 - **WHEN** a payer wire of 500.00 pays 320.00 on openPractice claims and 180.00 on legacy run-off claims

@@ -25,7 +25,8 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - openPractice tests green with no ERPNext present;
   - AI-20 verification is recorded;
   - bank-number protection is tested;
-  - no destination enters patient-level mode except before its first release, after a verified BAA or attestation, and with a risk entry.
+  - no destination enters customer-detail mode except before its first release, after a verified BAA or attestation, and with a risk entry;
+  - customer names and billing contacts reach a destination only in customer-detail mode with its gate satisfied; summary-journal batches carry no customer record; every customer-detail batch records its recipient-profile version, and no profile adds an excluded field (AI-10, AI-15, AI-16).
 - [ ] 2.4 **Feature 4: clinical-fact consumption for charge capture (Slice 3).** Owns EB-13 to EB-18. It consumes the Thread, because waiting on clinical documentation and the deadline escape are thread conditions. Gate: task 1.2, Feature 2 merged, and the FD-7 Thread contract versioned. The owner may fold this feature into the Slice 3 charge-capture feature, provided ownership is recorded. Acceptance evidence:
   - contract tests run against the clinical-facts canonical schema at its recorded digest;
   - manual entry is marked manual while the capability result is false;
@@ -45,7 +46,7 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - Open Question 4, the legacy-collections account: blocks Feature 3's first release for any practice with legacy run-off.
   - Open Question 5, the mode continuity procedure: blocks any post-release mode change (AI-09). Feature 3 records the refusal path.
   - Open Question 6, R-2: blocks any future automatic batch release. Feature 3 records explicit release.
-  - Open Question 7, two receivable routes in one destination (ruling 24): tracked with the `openpractice-customer-financial-separation` brainstorm packet, which is in progress. It blocks Feature 3's go-live only in a destination that also carries membership or retail customers. Feature 3 tests AI-22 in every case.
+  - Open Question 7, two receivable routes in one destination (rulings 24 and 26): owned by change `define-customer-financial-data-boundaries`, on branch `define-customer-financial-data-boundaries` and not yet on main. It blocks Feature 3's go-live only in a destination that also carries membership or retail customers. Feature 3 tests AI-22 in every case.
 
 ## 4. Acceptance and Closure
 

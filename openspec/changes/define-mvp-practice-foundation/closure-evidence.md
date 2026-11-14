@@ -26,7 +26,7 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 - Contract tests for `openpractice-ehr-patient-link/1.0` and `openpractice-ehr-clinical-facts/1.0`: _pending_
 - Contract tests for `openpractice-accounting-integration/1.0` (all operations, replay, indeterminate lookup, batch freeze, release refusals, reconciliation): _pending_
 - openPractice installed and tested with no ERPNext present; ERPNext adapter verified same-site and remote: _pending_
-- Summary-mode no-PHI verification and patient-level minimum-necessary verification: _pending_
+- Summary-journal no-PHI verification and customer-detail minimum-necessary and recipient-profile verification: _pending_
 - BAA gate refusal (including operator attestation), tier-4 enablement and halt-on-lapse verification: _pending_
 - Mode lock after first release; mapping versioned per destination and mode: _pending_
 - Account-number-only customers, neutral labels, accounting dates, late-charge flag and accrual true-up: _pending_

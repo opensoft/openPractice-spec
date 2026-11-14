@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:openpractice:contract:openpractice-accounting-integration:1.0",
   "title": "openpractice-accounting-integration 1.0",
-  "description": "Canonical schema for the accounting integration contract between openPractice core and every destination adapter. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation. A released batch is frozen; content_digest is the SHA-256 of the RFC 8785 (JCS) canonical JSON of the batch with content_digest removed. Delivery state (per-posting status, destination document references, recorded/sync timestamps) is NOT batch content and is never an accounting date. No key, line or label carries a person's name, a full bank account or routing number, or any per-person identifier other than an opaque guarantor account number in patient-level mode. Adapters accept any 1.x and reject any other MAJOR.",
+  "description": "Canonical schema for the accounting integration contract between openPractice core and every destination adapter. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation. A released batch is frozen; content_digest is the SHA-256 of the RFC 8785 (JCS) canonical JSON of the batch with content_digest removed. Delivery state (per-posting status, destination document references, recorded/sync timestamps) is NOT batch content and is never an accounting date. Posting modes are summary-journal and customer-detail. A summary-journal batch carries no customer record, name or per-person identifier. Only a customer-detail batch carries customers, and it is released only while the destination's BAA gate is satisfied (AI-14). There a guarantor-account customer may carry a display name, billing address and billing contact, and any further field only as profile_fields documented by the batch's versioned recipient profile. No key, line, label or diagnostic carries a person's name, and no customer or line carries chart notes, diagnoses, medications, results, full claim payloads, EHR medical-record numbers or service-revealing reason categories. Posting mechanics are owned by change define-mvp-practice-foundation; customer and party roles, offering routes and obligation ownership by change define-customer-financial-data-boundaries. Adapters accept any 1.x and reject any other MAJOR.",
   "oneOf": [
-    { "$ref": "#/$defs/patientLevelBatch" },
+    { "$ref": "#/$defs/customerDetailBatch" },
     { "$ref": "#/$defs/summaryBatch" },
     { "$ref": "#/$defs/bankLinesResult" }
   ],
@@ -22,7 +22,7 @@
       "description": "Account mapping version, scoped to one destination AND one posting mode.",
       "type": "object", "additionalProperties": false,
       "required": ["destination_id", "posting_mode", "version"],
-      "properties": { "destination_id": { "$ref": "#/$defs/destinationId" }, "posting_mode": { "enum": ["patient_level", "summary"] }, "version": { "type": "integer", "minimum": 1 } }
+      "properties": { "destination_id": { "$ref": "#/$defs/destinationId" }, "posting_mode": { "enum": ["customer-detail", "summary-journal"] }, "version": { "type": "integer", "minimum": 1 } }
     },
     "batchHeader": {
       "type": "object",
@@ -32,23 +32,58 @@
         "contract_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
         "destination_id": { "$ref": "#/$defs/destinationId" },
         "batch_seq": { "type": "integer", "minimum": 1 },
-        "posting_mode": { "enum": ["patient_level", "summary"] },
+        "posting_mode": { "enum": ["customer-detail", "summary-journal"] },
         "mapping_version": { "$ref": "#/$defs/mappingVersion" },
         "released_by": { "description": "Opaque actor reference; no name.", "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,128}$" },
         "released_at": { "type": "string", "format": "date-time" },
         "content_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
       }
     },
+    "recipientProfile": {
+      "description": "Versioned recipient profile for one destination. It lists the customer fields permitted beyond the default (display name, billing address, billing contact) and documents each field's purpose, recipient and authority. The profile document itself is governed outside batch content; the batch records which version applied.",
+      "type": "object", "additionalProperties": false,
+      "required": ["profile_id", "version"],
+      "properties": { "profile_id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" }, "version": { "type": "integer", "minimum": 1 } }
+    },
+    "billingAddress": {
+      "type": "object", "additionalProperties": false,
+      "required": ["lines", "country"],
+      "properties": {
+        "lines": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "type": "string", "minLength": 1, "maxLength": 100 } },
+        "city": { "type": "string", "maxLength": 64 },
+        "region": { "type": "string", "maxLength": 64 },
+        "postal_code": { "type": "string", "maxLength": 16 },
+        "country": { "type": "string", "pattern": "^[A-Z]{2}$" }
+      }
+    },
+    "billingContact": {
+      "description": "Contact used for billing only.",
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": {
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "phone": { "type": "string", "pattern": "^\\+?[0-9 ()-]{7,24}$" }
+      }
+    },
     "customer": {
+      "description": "A customer created by this contract from openPractice medical billing. Appears only in customer-detail batches.",
       "type": "object", "additionalProperties": false,
       "required": ["kind"],
       "oneOf": [
         { "properties": { "kind": { "const": "guarantor_account" } }, "required": ["account_number"] },
-        { "properties": { "kind": { "const": "payer" } }, "required": ["payer_id", "payer_name"] }
+        { "properties": { "kind": { "const": "payer" } }, "required": ["payer_id", "payer_name"], "not": { "anyOf": [ { "required": ["display_name"] }, { "required": ["billing_address"] }, { "required": ["billing_contact"] }, { "required": ["profile_fields"] } ] } }
       ],
       "properties": {
         "kind": { "enum": ["guarantor_account", "payer"] },
-        "account_number": { "description": "Opaque openPractice guarantor account number. The only customer identifier for patient balances; never a name.", "type": "string", "pattern": "^[A-Za-z0-9-]{1,32}$" },
+        "account_number": { "description": "Opaque openPractice guarantor account number; the customer key for patient balances, including self-pay and direct-pay healthcare.", "type": "string", "pattern": "^[A-Za-z0-9-]{1,32}$" },
+        "display_name": { "description": "Guarantor's name, permitted by the default recipient profile.", "type": "string", "minLength": 1, "maxLength": 140 },
+        "billing_address": { "$ref": "#/$defs/billingAddress" },
+        "billing_contact": { "$ref": "#/$defs/billingContact" },
+        "profile_fields": {
+          "description": "Fields beyond the default, each documented with purpose, recipient and authority in the batch's recipient profile. Names suggesting chart notes, diagnoses, procedures, medications, results, full claim payloads, medical-record numbers, reason categories or services are refused here; the profile review enforces the rest.",
+          "type": "object", "minProperties": 1, "maxProperties": 16,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_]{0,63}$", "not": { "pattern": "(chart|clinical|note|diagnos|icd|cpt|hcpcs|procedure|medication|prescription|result|lab_|claim_payload|full_claim|mrn|medical_record|reason|service)" } },
+          "additionalProperties": { "type": "string", "maxLength": 256 }
+        },
         "payer_id": { "type": "string", "maxLength": 64 },
         "payer_name": { "type": "string", "maxLength": 128 }
       }
@@ -60,7 +95,7 @@
         "reason_category": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
         "label": { "$ref": "#/$defs/neutralLabel" },
         "amount": { "$ref": "#/$defs/money" },
-        "service_date": { "description": "Date of service. Required on every invoice, debit-note and credit-note line in patient-level mode.", "$ref": "#/$defs/date" }
+        "service_date": { "description": "Date of service. Required on every invoice, debit-note and credit-note line in customer-detail mode.", "$ref": "#/$defs/date" }
       }
     },
     "posting": {
@@ -98,17 +133,20 @@
         "deposit_bank_line_ref": { "type": "string", "maxLength": 128 }
       }
     },
-    "patientLevelBatch": {
+    "customerDetailBatch": {
       "allOf": [ { "$ref": "#/$defs/batchHeader" }, {
-        "properties": { "posting_mode": { "const": "patient_level" }, "postings": { "type": "array", "items": { "$ref": "#/$defs/posting" } } },
-        "required": ["postings"]
-      } ]
+        "properties": { "posting_mode": { "const": "customer-detail" }, "mapping_version": { "properties": { "posting_mode": { "const": "customer-detail" } } }, "recipient_profile": { "$ref": "#/$defs/recipientProfile" }, "postings": { "type": "array", "items": { "$ref": "#/$defs/posting" } } },
+        "required": ["postings", "recipient_profile"]
+      } ],
+      "unevaluatedProperties": false
     },
     "summaryBatch": {
+      "description": "Summary-journal batch: aggregated journal lines only. It carries no customer record, name or per-person identifier.",
       "allOf": [ { "$ref": "#/$defs/batchHeader" }, {
-        "properties": { "posting_mode": { "const": "summary" }, "summary_lines": { "type": "array", "items": { "$ref": "#/$defs/summaryLine" } } },
+        "properties": { "posting_mode": { "const": "summary-journal" }, "mapping_version": { "properties": { "posting_mode": { "const": "summary-journal" } } }, "summary_lines": { "type": "array", "items": { "$ref": "#/$defs/summaryLine" } } },
         "required": ["summary_lines"]
-      } ]
+      } ],
+      "unevaluatedProperties": false
     },
     "bankLinesResult": {
       "description": "Result of bank_lines.read: revenue-related lines read from the destination (or from an uploaded statement as fallback). Lines outside the revenue categories are labelled accounting_system and are never reconciled by openPractice.",

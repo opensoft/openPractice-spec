@@ -10,9 +10,15 @@ openPractice SHALL define one versioned contract, `openpractice-accounting-integ
 
 The contract SHALL carry a `MAJOR.MINOR` version. An adapter is compatible with openPractice exactly when both share the same MAJOR version. Additive changes increment MINOR. A breaking change requires a new MAJOR version, a new schema digest, and a migration path.
 
+This contract SHALL own posting mechanics (ruling 26): posting identity and idempotency (AI-05), export batches with their freeze and release (AI-06), retries and delivery states (AI-07), the reconciliation report (AI-08), the posting modes `summary-journal` and `customer-detail` (AI-09), and the BAA gate (AI-14). Customer and party roles, routing by offering (insurance-billed healthcare, direct-pay healthcare, membership and retail), obligation ownership and purpose-bound business views belong to change `define-customer-financial-data-boundaries`, which references this contract for posting.
+
 #### Scenario: A post-MVP adapter is planned
 - **WHEN** an adapter for a new destination is planned against `1.x`
 - **THEN** it implements the same operations, interoperates with any `1.x` core, and adds no destination-specific behavior to openPractice's core
+
+#### Scenario: Another route posts through openPractice
+- **WHEN** a route defined by `define-customer-financial-data-boundaries` sends an accounting effect through openPractice
+- **THEN** it uses this contract's posting identity, batches, release, retries, reconciliation report, modes and BAA gate, and no second posting mechanism exists
 
 ### Requirement: AI-02 The accounting contract has one canonical schema identified by digest
 The canonical schema SHALL be `openpractice-accounting-integration-1.0.schema.json` in this change's `contracts/` directory, identified by the SHA-256 digest of its bytes. It defines batch content, postings, summary lines and bank-line read results. Every adapter SHALL validate batch content against the schema with the recorded digest.
@@ -42,9 +48,9 @@ In the MVP, the ERPNext adapter SHALL call ERPNext only through its documented R
 - **THEN** the adapter still calls ERPNext only through its REST API over TLS and makes no in-process call
 
 ### Requirement: AI-05 Posting identifiers are minted at assembly, and keys carry no personal data
-At batch assembly, the system SHALL mint an opaque `posting_id` for each patient-level posting. Its idempotency key SHALL be `<destination_id>:<posting_id>`. A posting that replaces an earlier one, for example after a period-lock refusal, SHALL get a new `posting_id` and a `supersedes` link to the one it replaces. It MUST NOT reuse the earlier key.
+At batch assembly, the system SHALL mint an opaque `posting_id` for each customer-detail posting. Its idempotency key SHALL be `<destination_id>:<posting_id>`. A posting that replaces an earlier one, for example after a period-lock refusal, SHALL get a new `posting_id` and a `supersedes` link to the one it replaces. It MUST NOT reuse the earlier key.
 
-A summary-mode line SHALL use the key `<destination_id>:<batch_seq>:<line_no>`.
+A summary-journal line SHALL use the key `<destination_id>:<batch_seq>:<line_no>`.
 
 Idempotency keys MUST NOT contain names, account numbers, member identifiers, dates of birth, bank numbers or any other per-person or per-account data.
 
@@ -69,7 +75,7 @@ The system SHALL assemble postings into export batches per destination. Each bat
 A batch SHALL be released only by an explicit action of an authorized person. Scheduled automatic release MUST NOT be enabled by default. Release SHALL freeze the content. Release SHALL be refused in each of these cases:
 - a line lacks a mapping;
 - the batch fails the canonical schema;
-- the batch is in patient-level mode and the destination's BAA gate is not satisfied;
+- the batch is in customer-detail mode and the destination's BAA gate is not satisfied;
 - a deposit posting cites a bank line that has not been explained.
 
 #### Scenario: Release with an unexplained deposit
@@ -93,7 +99,7 @@ The system SHALL track delivery state separately from the frozen batch content, 
 - **THEN** the posting becomes `failed_permanent` work, the batch content is not edited, and the resolution is a redelivery or a superseding posting
 
 ### Requirement: AI-08 A reconciliation report proves the mirror
-After each delivery, and on demand as of any date, the system SHALL produce a reconciliation report for a destination. The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category, and in patient-level mode also by customer. It SHALL list missing documents, unexpected documents, amount mismatches and destination-side edits. It SHALL state its exclusions: unidentified receipts held as liabilities, bank lines labelled "accounting system's", and legacy collections. Each exception SHALL become work owned by a Roster entry.
+After each delivery, and on demand as of any date, the system SHALL produce a reconciliation report for a destination. The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category, and in customer-detail mode also by customer. It SHALL list missing documents, unexpected documents, amount mismatches and destination-side edits. It SHALL state its exclusions: unidentified receipts held as liabilities, bank lines labelled "accounting system's", and legacy collections. Each exception SHALL become work owned by a Roster entry.
 
 #### Scenario: The mirror ties
 - **WHEN** every posting of a delivered batch is posted and nothing was edited in the destination
@@ -104,39 +110,49 @@ After each delivery, and on demand as of any date, the system SHALL produce a re
 - **THEN** the report lists it as missing and creates work
 
 ### Requirement: AI-09 Posting mode is chosen before a destination's first released batch
-Each destination SHALL have a posting mode, `patient_level` or `summary`, and each batch SHALL record its mode. Every destination SHALL be created in `summary` mode. It MAY move to `patient_level` only before its first released batch, and only after its BAA gate is satisfied. After a destination's first released batch, the system SHALL refuse every change of its posting mode, until the owner ratifies a continuity procedure that defines the opening receivable true-up. A BAA lapse SHALL halt patient-level delivery, and MUST NOT silently convert any work to summary mode.
+Each destination SHALL have a posting mode, `customer-detail` or `summary-journal`, and each batch SHALL record its mode. Every destination SHALL be created in `summary-journal` mode. It MAY move to `customer-detail` only before its first released batch, and only after its BAA gate is satisfied. After a destination's first released batch, the system SHALL refuse every change of its posting mode, until the owner ratifies a continuity procedure that defines the opening receivable true-up. A BAA lapse SHALL halt customer-detail delivery, and MUST NOT silently convert any work to summary-journal mode.
 
 #### Scenario: Mode chosen before go-live
-- **WHEN** an administrator enables patient-level mode on a destination that has no released batch and has a satisfied BAA gate
-- **THEN** the destination switches to `patient_level`, and its first batch is released in that mode
+- **WHEN** an administrator enables customer-detail mode on a destination that has no released batch and has a satisfied BAA gate
+- **THEN** the destination switches to `customer-detail`, and its first batch is released in that mode
 
 #### Scenario: A mode change after first release
 - **WHEN** an administrator tries to change the mode of a destination that already has a released batch
 - **THEN** the change is refused, because no ratified continuity procedure exists
 
 #### Scenario: The BAA lapses
-- **WHEN** a patient-level destination's BAA lapses
-- **THEN** patient-level delivery halts, pending work is held unconverted, and the mode does not change
+- **WHEN** a customer-detail destination's BAA lapses
+- **THEN** customer-detail delivery halts, pending work is held unconverted, and the mode does not change
 
-### Requirement: AI-10 Customers created by this contract are guarantor accounts and payers, identified without names
-Patient-level invoices SHALL be the default posting granularity, replacing the deposit-level journal as the default. Summary mode SHALL exist only as the fallback for destinations whose BAA gate is not satisfied.
+### Requirement: AI-10 Customers created by this contract are guarantor accounts and payers, named only in customer-detail mode behind the BAA gate
+Customer-detail invoices SHALL be the default posting granularity, replacing the deposit-level journal as the default. Summary-journal mode SHALL exist only as the fallback for destinations whose BAA gate is not satisfied.
 
 The customers created by this contract derive from openPractice medical billing. There SHALL be two kinds:
-- **Guarantor accounts**, for patient balances. These include self-pay and direct healthcare charges (FD-4), which are medical billing. Each SHALL be identified by its opaque guarantor account number only.
+- **Guarantor accounts**, for patient balances. These include self-pay and direct-pay healthcare charges (FD-4), which are medical billing. Each SHALL be keyed by its opaque guarantor account number.
 - **Payers**, for insurance balances. Each SHALL be identified by payer name and payer identifier.
 
-No guarantor or patient name SHALL reach the destination on any customer, invoice or line created by this contract. This holds even when the guarantor is the patient. This requirement governs only the customers this contract creates. It does not govern customer records that other governance defines in the same destination, such as membership or retail customers.
+This contract SHALL create customer records only in `customer-detail` mode, which requires a satisfied BAA gate (AI-14). There, a guarantor-account customer MAY carry the guarantor's name, billing address and billing contact, the minimum necessary for billing. Each customer-detail destination SHALL have a versioned recipient profile that lists its permitted customer fields and their purpose, and every customer-detail batch SHALL record the identifier and version of the profile it used. A field beyond name, billing address and billing contact SHALL be sent only after a new profile version documents that field's purpose, recipient and authority. No profile SHALL permit content that AI-16 excludes.
 
-#### Scenario: Self-guarantor patient
-- **WHEN** a self-pay patient who is their own guarantor is invoiced in patient-level mode
-- **THEN** the destination customer carries only the guarantor account number, and no name
+No guarantor or patient name, address or contact SHALL reach a destination whose BAA gate is not satisfied, and `summary-journal` mode SHALL create no customer record (AI-15). This requirement governs only the customers this contract creates. Customer and party roles, and the customer records that other routes create in the same destination, are governed by change `define-customer-financial-data-boundaries` (AI-22).
+
+#### Scenario: Self-guarantor patient after the BAA gate
+- **WHEN** a self-pay patient who is their own guarantor is invoiced on a destination in customer-detail mode with a satisfied BAA gate
+- **THEN** the destination customer carries the guarantor account number, name, billing address and billing contact, and nothing else about the person
+
+#### Scenario: Destination in summary-journal mode
+- **WHEN** the same patient's charge is posted to a destination in summary-journal mode
+- **THEN** no customer record is created and no name, address or contact reaches the destination
+
+#### Scenario: A field beyond the default
+- **WHEN** a practice wants guarantor customers to carry an extra collections reference
+- **THEN** the field is sent only after a new recipient-profile version documents its purpose, recipient and authority, and each batch records that version
 
 #### Scenario: Insurance balance
 - **WHEN** a claim-billed visit is invoiced
 - **THEN** the invoice is raised to the payer customer, identified by payer name and identifier
 
 ### Requirement: AI-11 Accounting dates are the date of service, the finalization date and the statement terms
-In patient-level mode, postings SHALL use these accounting dates:
+In customer-detail mode, postings SHALL use these accounting dates:
 - every invoice, debit-note and credit-note line SHALL carry its date of service;
 - the posting date SHALL be the date of service when that period is open in the destination; otherwise it SHALL be the first open date, the line keeps the date of service, and the posting is flagged as a late charge;
 - the invoice date SHALL be the charge-finalization date;
@@ -149,7 +165,7 @@ The adapter's recorded or sync timestamp SHALL be stored separately and SHALL NO
 - **THEN** the invoice line carries service date November 10, the posting date is November 10, the invoice date is November 12, and the due date follows the customer's statement terms
 
 ### Requirement: AI-12 Accrual valuation books the expected contractual adjustment at the date of service
-For a claim-billed visit in patient-level mode, the system SHALL post, at the date of service:
+For a claim-billed visit in customer-detail mode, the system SHALL post, at the date of service:
 - the billed charge;
 - an expected contractual adjustment, calculated from that payer's observed payment history (the FD-2 learned baseline).
 
@@ -164,7 +180,7 @@ When the remittance arrives, the system SHALL post the difference between the ac
 - **THEN** 150.00 posts at the date of service and the full contractual adjustment posts at remittance
 
 ### Requirement: AI-13 The contract posts every money event that touches a receivable or a deposit
-In patient-level mode, the contract SHALL define the following postings. Each SHALL keep the deposit entry equal to its bank line.
+In customer-detail mode, the contract SHALL define the following postings. Each SHALL keep the deposit entry equal to its bank line.
 
 | Event | Postings |
 |---|---|
@@ -189,8 +205,8 @@ In patient-level mode, the contract SHALL define the following postings. Each SH
 - **WHEN** a card payment of 75.00 is charged back with a 15.00 fee
 - **THEN** the payment is reversed, the receivable reopens, and the 15.00 fee posts to its mapped account, with each debit equal to its explained bank line
 
-### Requirement: AI-14 Patient-level mode requires a verified BAA or an operator attestation
-Patient-level mode SHALL NOT be enabled for a destination until an authorized person records, and verifies, one of the following:
+### Requirement: AI-14 Customer-detail mode requires a verified BAA or an operator attestation
+Customer-detail mode SHALL NOT be enabled for a destination until an authorized person records, and verifies, one of the following:
 - an executed HIPAA Business Associate Agreement (BAA) with the destination's vendor;
 - for a destination the practice operates itself, such as self-hosted ERPNext, an attestation naming the operator. The operator is either the practice itself or an existing business associate whose BAA covers the accounting site.
 
@@ -202,31 +218,32 @@ The record SHALL capture:
 - an owner-local document reference;
 - the verifying person and the verification time.
 
-Enabling patient-level mode SHALL be a governance tier-4 hard stop. When the BAA expires or is revoked, or the attestation is withdrawn, patient-level delivery SHALL halt, pending work SHALL be held unconverted, and an authorized person SHALL be given the work. The system MUST NOT assume that any vendor offers or has signed a BAA.
+Enabling customer-detail mode SHALL be a governance tier-4 hard stop. When the BAA expires or is revoked, or the attestation is withdrawn, customer-detail delivery SHALL halt, pending work SHALL be held unconverted, and an authorized person SHALL be given the work. The system MUST NOT assume that any vendor offers or has signed a BAA.
 
 #### Scenario: Self-hosted ERPNext
 - **WHEN** a practice running its own ERPNext records an attestation naming itself as the operator, and an authorized person verifies it
 - **THEN** the BAA gate is satisfied for that destination
 
 #### Scenario: Nothing recorded
-- **WHEN** patient-level mode is requested with no verified BAA or attestation
-- **THEN** it is refused and the destination stays in `summary` mode
+- **WHEN** customer-detail mode is requested with no verified BAA or attestation
+- **THEN** it is refused and the destination stays in `summary-journal` mode
 
-### Requirement: AI-15 Summary mode carries no PHI
-In `summary` mode, the contract SHALL post only aggregated journal lines, one group per explained bank line or per day. Each line carries a reason category, a neutral label, an amount, a posting date and a batch reference. Summary postings MUST NOT contain any of the following:
-- names or account numbers of patients or guarantors;
+### Requirement: AI-15 Summary-journal mode creates no customer records and carries no PHI
+In `summary-journal` mode, the contract SHALL post only aggregated journal lines, one group per explained bank line or per day. Each line carries a reason category, a neutral label, an amount, a posting date and a batch reference. The contract SHALL NOT create or update any customer record in this mode. Summary postings MUST NOT contain any of the following:
+- customer records or customer names, or account numbers of patients or guarantors;
 - member, claim or subscriber identifiers;
 - dates of service;
 - addresses or contact details;
 - any element that identifies an individual or relates a line to one.
 
 #### Scenario: A summary batch is inspected
-- **WHEN** a reviewer inspects a summary-mode batch
-- **THEN** it holds only reason categories, neutral labels, amounts, dates and batch references
+- **WHEN** a reviewer inspects a summary-journal batch
+- **THEN** it holds only reason categories, neutral labels, amounts, dates and batch references, and no customer record
 
-### Requirement: AI-16 Patient-level postings carry the minimum necessary, with neutral labels
-Patient-level postings created by this contract SHALL contain only:
-- the opaque guarantor account number;
+### Requirement: AI-16 Customer-detail postings carry the minimum necessary, with neutral labels
+Customer-detail postings created by this contract SHALL contain only:
+- the opaque guarantor account number and, for guarantor-account customers, the name, billing address and billing contact (AI-10);
+- fields that the batch's recipient profile adds under AI-10;
 - payer name and identifier;
 - opaque `posting_id` and source references;
 - amounts;
@@ -234,18 +251,32 @@ Patient-level postings created by this contract SHALL contain only:
 - dates of service on lines;
 - neutral financial labels from the schema's fixed list.
 
-A neutral label SHALL NOT reveal the type of service. Patient-level postings MUST NOT contain any of the following:
-- any person's name;
-- dates of birth, addresses, telephone numbers or email addresses;
+A neutral label SHALL NOT reveal the type of service. Under any recipient profile, customer-detail postings MUST NOT contain any of the following:
+- chart notes or other clinical content;
+- diagnoses, or diagnosis or procedure codes or descriptions;
+- medication lists;
+- results;
+- full claim payloads;
+- EHR medical-record numbers;
+- service-revealing reason categories or descriptions.
+
+Unless the batch's recipient profile adds the field under AI-10, customer-detail postings also MUST NOT contain:
+- the name of any person other than the customer, such as a patient who is not the guarantor;
+- dates of birth, or addresses, telephone numbers or email addresses other than the customer's billing address and billing contact;
 - government identifiers, member or group identifiers, or payer claim control numbers;
-- full bank account or routing numbers;
-- diagnosis or procedure codes or descriptions;
-- service-revealing descriptions;
-- clinical content.
+- full bank account or routing numbers.
 
 #### Scenario: A practice has a service-specific revenue category
 - **WHEN** an invoice line comes from a reason category whose internal name describes a sensitive service
 - **THEN** the line sent to the destination carries the neutral label `patient_services_revenue`, and the internal category name stays out of the posting
+
+#### Scenario: A parent is guarantor for a child's visit
+- **WHEN** a child's visit is invoiced to a parent's guarantor account in customer-detail mode
+- **THEN** the customer carries the parent's name and billing contact, and no customer field or line carries the child's name
+
+#### Scenario: A recipient profile lists a diagnosis
+- **WHEN** a proposed recipient-profile version lists a diagnosis field
+- **THEN** the version is refused, and no posting carries a diagnosis
 
 ### Requirement: AI-17 Revenue bank lines are read from the destination, with statement upload as a fallback
 The adapter SHALL read revenue-related bank lines from the destination with `bank_lines.read`: deposits, chargebacks, payer takebacks and processor fees. Where the destination cannot supply them, an uploaded bank statement SHALL be the fallback. Lines outside those categories SHALL be labelled "accounting system's" and SHALL NOT be reconciled. Each explained deposit SHALL produce exactly one `deposit.post`, equal to the bank line, composed of clearing-account releases and named lines.
@@ -263,7 +294,7 @@ Each destination's credentials SHALL be stored in the platform's secret store an
 
 ### Requirement: AI-19 No PHI in logs, errors, diagnostics or rejection reasons
 Logs, error messages, diagnostic bundles and rejection or exception reasons from the accounting integration MUST NOT contain:
-- names or guarantor account numbers;
+- names, billing addresses, billing contacts or guarantor account numbers;
 - dates of service tied to an account;
 - full bank or routing numbers;
 - credentials;
@@ -280,28 +311,28 @@ Before any destination goes live, its adapter SHALL verify and record whether th
 - a service date on each invoice line;
 - cash-basis reporting over the postings this contract makes.
 
-A destination that cannot carry line service dates SHALL NOT go live in patient-level mode until the owner decides how to proceed.
+A destination that cannot carry line service dates SHALL NOT go live in customer-detail mode until the owner decides how to proceed.
 
 #### Scenario: ERPNext verification
 - **WHEN** the ERPNext adapter is prepared for go-live
 - **THEN** its verification record states, with evidence, whether line service dates and cash-basis reporting are supported in the pinned ERPNext version
 
-### Requirement: AI-22 The contract never copies care linkage into records it does not own and never posts commerce obligations
-This contract SHALL post only to customers it creates (AI-10), and only obligations that arise from openPractice medical billing. It MUST NOT copy care linkage or PHI into a customer record it does not own. Care linkage means patient, guarantor, visit, claim, coverage or clinical references. A record it does not own includes a membership or retail customer that other governance created in the same destination.
+### Requirement: AI-22 The contract never copies care linkage into records it does not own and never creates a second collectible balance
+This contract SHALL post only to customers it creates (AI-10), and only obligations that arise from openPractice medical billing. It MUST NOT copy care linkage or PHI into a customer record it does not own. Care linkage means patient, guarantor, visit, claim, coverage or clinical references. A record it does not own includes a membership or retail customer that another route created in the same destination.
 
-This contract MUST NOT post membership agreements, subscription renewals, retail sales or other non-medical commerce obligations. Each obligation SHALL be posted by exactly one route, so that no obligation or revenue is duplicated across routes. Self-pay and direct healthcare charges (FD-4) are medical billing, and this contract SHALL post them.
+Membership and retail obligations SHALL be owned by the routes that change `define-customer-financial-data-boundaries` defines, and this contract MUST NOT create a second collectible balance for any of them. Each obligation SHALL have one authoritative owner and one posting route, so that no obligation, collection or revenue is duplicated across routes. Where such a route sends accounting effects through openPractice, it SHALL use this contract's posting mechanics (AI-01), and a customer kind or operation that `1.x` lacks SHALL be added only by a governed change, as a new MINOR version. Self-pay and direct-pay healthcare charges (FD-4) are medical billing, and this contract SHALL post them.
 
-#### Scenario: A person is also a named commerce customer
-- **WHEN** a guarantor also exists in the destination as a named membership customer created by another route
-- **THEN** this contract posts the guarantor's medical charges to its own account-number customer, adds nothing to the named record, and no obligation appears under both
+#### Scenario: A person is also a commerce customer
+- **WHEN** a guarantor also exists in the destination as a membership customer created by another route
+- **THEN** this contract posts the guarantor's medical charges to its own guarantor-account customer, adds nothing to the other record, and no obligation appears under both
 
 #### Scenario: A membership renewal falls due
 - **WHEN** a patient's membership subscription renews
-- **THEN** this contract posts nothing for it
+- **THEN** the renewal obligation stays with the route that owns it, and this contract creates no receivable for it
 
 #### Scenario: A cash-pay visit
 - **WHEN** a self-pay patient is charged for a visit under FD-4
-- **THEN** this contract posts the charge to the guarantor's account-number customer as medical billing
+- **THEN** this contract posts the charge to the guarantor-account customer as medical billing
 
 ### Requirement: AI-21 The accounting boundary is covered by contract tests
 Each adapter SHALL pass contract tests covering:
@@ -315,7 +346,9 @@ Each adapter SHALL pass contract tests covering:
 - the AI-13 events;
 - reconciliation;
 - the absence of PHI in keys and diagnostics;
-- the AI-22 rule against posting to records the contract does not own.
+- the AI-10 and AI-16 customer-field rules: the BAA gate, the recipient-profile version and the exclusions;
+- the absence of customer records in summary-journal mode (AI-15);
+- the AI-22 rules against posting to records the contract does not own and against a second collectible balance.
 
 The tests SHALL run against a contract double or a disposable destination instance loaded with synthetic data only. Tests MUST NOT depend on live vendor services or real PHI.
 
