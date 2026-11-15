@@ -31,7 +31,7 @@ The ⚑ design calls were ruled by Brett Heap on 2026-11-14 and are recorded in 
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending owner confirmation; must be exactly `A — ordered multi-feature handoff` or `B — split into per-capability changes` (the owner ruled `A` on 2026-11-14 as `design.md` ruling 1 records, and this field still requires his confirmation)_
-- Proposed follow-up calls F-1 to F-4 (retraction reason code) accepted, changed or rejected: _pending_
+- Proposed follow-up calls F-1 to F-4 (retraction reason code) accepted, changed or rejected; F-5 noted: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
 Required owner statement:

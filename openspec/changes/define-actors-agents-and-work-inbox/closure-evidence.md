@@ -27,8 +27,8 @@ This record collects acceptance evidence for OpenSpec change `define-actors-agen
 - Per-patient read scope and the `patient_scope` refusal: _pending_
 - Read-only answers: every condition of AH-05 exception 1, including server assembly, `act_after_delay` only, attribution, the sampled audit and the return to `propose`: _pending_
 - Held delayed actions restart their windows after the pause or a suspension lifts: _pending_
-- Work-item operations (AO-13): reading only held administrative text, `text_not_held` for every item kind without text, re-route and urgency proposals applied by rule and never lowering urgency, release to a human, cancellation of the agent's own pending answer, and the `propose` cap: _pending_
-- Consent check (AH-06): refusal without a recorded grant, the second check before sending, cancellation of every pending answer on withdrawal, grants recorded only by a named human: _pending_
+- Work-item operations (AO-13): reading only held administrative text, `text_not_held` for every item kind without text, re-route and urgency proposals applied by rule and never lowering urgency, release to a human, cancellation of the agent's own pending answer, the `propose` cap, `not_item_owner`, and the `rate_limited` release at a limit: _pending_
+- Consent check (AH-06): refusal without a recorded grant, the check before every relay, withdrawal winning a concurrent relay, the hold after an agent hears a withdrawal, a representative's withdrawal, cancellation of every pending answer on withdrawal, grants recorded only by a named human: _pending_
 
 ## Final Validation and Archive Evidence
 

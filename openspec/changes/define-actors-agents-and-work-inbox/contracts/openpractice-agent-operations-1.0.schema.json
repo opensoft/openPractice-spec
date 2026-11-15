@@ -2,7 +2,7 @@
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "$id": "urn:openpractice:contract:openpractice-agent-operations:1.0",
  "title": "openpractice-agent-operations 1.0",
- "description": "Canonical schema for the agent operations contract (define-actors-agents-and-work-inbox, AO-01). Requests, responses, autonomy settings, read-only answer types and the daily agent digest. Every agent action follows its FD-5 tier and BAB-17 of define-mvp-practice-foundation; the autonomy ladder never gives less friction than the tier (AO-04). Grants, rungs, limits and the pause are changed only by named humans, so granted_by and the digest signer are human actors (AO-03). openPractice derives untrusted contribution on the server; the agent's own flag may only raise it (AH-05). A read-only answer carries no payload: the agent selects a practice-approved answer type and openPractice assembles the reply (AH-05 exception 1). Payload content is validated against the registry operation's own schema (PR-09), defined in planning. No key, reason or digest line carries PHI. openWallet identity mechanics are decided in planning; the schema carries only an opaque reference. Five work-item operations (AO-13; ruling 93) act only on the item named by work_item_ref and never change a record: work_item.read_text returns the administrative text openPractice holds for that item (outcome read_result; a clinical item, removed text or a document has none, and is refused with text_not_held); work_item.propose_clinical_reroute and work_item.propose_urgency_raise are raise-only proposals that openPractice's fixed routing rules apply at once (outcome applied_by_rule); work_item.release_to_human gives the item to a human owner (outcome released); and work_item.cancel_pending_answer cancels the agent's own read-only answer while it is still in its cancel window (outcome cancelled). None of them rises above propose. A read-only answer is scheduled and sent only while the patient's consent to AI-authored administrative messaging is recorded (AH-06); otherwise the request is refused with consent_not_recorded.",
+ "description": "Canonical schema for the agent operations contract (define-actors-agents-and-work-inbox, AO-01). Requests, responses, autonomy settings, read-only answer types and the daily agent digest. Every agent action follows its FD-5 tier and BAB-17 of define-mvp-practice-foundation; the autonomy ladder never gives less friction than the tier (AO-04). Grants, rungs, limits and the pause are changed only by named humans, so granted_by and the digest signer are human actors (AO-03). openPractice derives untrusted contribution on the server; the agent's own flag may only raise it (AH-05). A read-only answer carries no payload: the agent selects a practice-approved answer type and openPractice assembles the reply (AH-05 exception 1). Payload content is validated against the registry operation's own schema (PR-09), defined in planning. No key, reason or digest line carries PHI. openWallet identity mechanics are decided in planning; the schema carries only an opaque reference. Five work-item operations (AO-13; ruling 93) act only on the item named by work_item_ref and never change a record: work_item.read_text returns the administrative text openPractice holds for that item (outcome read_result; a clinical item, removed text or a document has none, and is refused with text_not_held); work_item.propose_clinical_reroute and work_item.propose_urgency_raise are raise-only proposals that openPractice's fixed routing rules apply at once (outcome applied_by_rule); work_item.release_to_human gives the item to a human owner (outcome released); and work_item.cancel_pending_answer cancels the agent's own read-only answer while it is still in its cancel window (outcome cancelled). None of them rises above propose, each needs the agent to be the item's current owner (not_item_owner), and a rate limit refuses further requests of that kind with rate_limited and releases the item to a human (AO-08). A read-only answer is scheduled and sent only while the patient's consent to AI-authored administrative messaging is recorded (AH-06); otherwise the request is refused with consent_not_recorded.",
  "oneOf": [
   {
    "$ref": "#/$defs/request"
@@ -103,13 +103,14 @@
    ]
   },
   "releaseReason": {
-   "description": "Why an agent releases an item to a human owner (WI-04, AO-13; design call D-21, PROPOSED). exceeds_rung_or_cap: the action exceeds the agent's rung or the tier's cap (AO-04). untrusted_content: the action derives from untrusted content (AH-05). limit_reached: a rate or blast-radius limit stops it (AO-08). patient_asked_for_person: the item's text asks for a person (ruling 45). cannot_complete: the agent cannot complete the item.",
+   "description": "Why an agent releases an item to a human owner (WI-04, AO-13; design call D-21, PROPOSED). exceeds_rung_or_cap: the action exceeds the agent's rung or the tier's cap (AO-04). untrusted_content: the action derives from untrusted content (AH-05). limit_reached: a rate or blast-radius limit stops it (AO-08). patient_asked_for_person: the item's text asks for a person (ruling 45). cannot_complete: the agent cannot complete the item. ai_messaging_withdrawal_requested: the patient asked, in the item's text, to stop AI-authored answers; openPractice then holds every agent answer to that patient until a staff member records the withdrawal or records that consent stands (AH-06; design call D-27, PROPOSED).",
    "enum": [
     "exceeds_rung_or_cap",
     "untrusted_content",
     "limit_reached",
     "patient_asked_for_person",
-    "cannot_complete"
+    "cannot_complete",
+    "ai_messaging_withdrawal_requested"
    ]
   },
   "itemText": {
@@ -687,8 +688,10 @@
       "phi_access_suspended",
       "text_not_held",
       "answer_not_pending",
-      "consent_not_recorded"
-     ]
+      "consent_not_recorded",
+      "not_item_owner"
+     ],
+     "description": "Coded reasons only. text_not_held: openPractice holds no text for that item (AO-13). answer_not_pending: the answer to cancel is not this agent's, or is no longer pending (AO-13). consent_not_recorded: the patient's consent to AI-authored administrative messaging is not in force, or is held for review (AH-06). not_item_owner: the agent is not the current owner of the item a work-item operation names (AO-13). rate_limited on a work-item operation: the item is released to its lane's human owner (AO-08)."
     },
     "item_text": {
      "$ref": "#/$defs/itemText"

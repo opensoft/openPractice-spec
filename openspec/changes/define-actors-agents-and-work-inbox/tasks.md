@@ -13,7 +13,7 @@
   - the suspension of all agent PHI access when a control lapses, and its lifting only by a named human;
   - the server-side untrusted determination, including a false-flag fixture;
   - prompt-injection test fixtures (synthetic) showing the `propose` cap, and every condition of AH-05 exception 1;
-  - the AH-06 consent check before scheduling and before sending, refusal with `consent_not_recorded`, the cancellation of every pending answer on withdrawal, and that provider processing for practice operations does not wait on per-patient consent (ruling 97);
+  - the AH-06 consent check before scheduling and before every relay, refusal with `consent_not_recorded`, a withdrawal that wins over a concurrent relay, the hold after `ai_messaging_withdrawal_requested`, a representative's withdrawal, the cancellation of every pending answer on withdrawal, and that provider processing for practice operations does not wait on per-patient consent (ruling 97);
   - a log scan showing no PHI.
 - [ ] 2.3 Agent operations contract (AO-01 to AO-13) for registry operations, the read-only answer types and the work-item operations. Gate: tasks 2.1 and 2.2, and the registry API (PR-09). Acceptance evidence:
   - contract tests for every operation, rung, cap, limit, the pause, the digest and idempotency;
@@ -21,7 +21,7 @@
   - the per-patient read scope, including the `patient_scope` refusal;
   - read-only answers: no payload, server assembly, eligibility, `act_after_delay` only, attribution, the automatic return to `propose` on a defect;
   - agents start at `propose`;
-  - the work-item operations of AO-13: each outcome, the `propose` cap, `text_not_held` for a clinical item, removed text and a document, and `answer_not_pending`.
+  - the work-item operations of AO-13: each outcome, the `propose` cap, `not_item_owner`, `text_not_held` for a clinical item, removed text and a document, `answer_not_pending`, and the `rate_limited` refusal that releases the item to a human.
 - [ ] 2.4 Remote VA safeguards (VA-01 to VA-05). Gate: the remote VA recipe's grant set is approved (design.md D-1). Acceptance evidence: tests for own-queue scoping, export refusal, masking, device and session refusal, and expiry.
 
 ## 3. Governance Constraints

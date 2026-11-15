@@ -28,8 +28,8 @@ Brett Heap made rulings 34 to 54 on 2026-11-14, and on 2026-11-15 accepted rulin
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending owner confirmation. `tasks.md` §2 proposes folding the actor model and inbox into the registry feature or the feature right after it, followed by AI data handling, the agent contract and VA safeguards._
-- Design calls D-1 to D-24 accepted or amended (D-18 to D-24, from the 2026-11-15 follow-up, are PROPOSED; D-18 carries reading item text, which ruling 93 named only by reference): _pending_
-- Open Question 6 (a request below the rung openPractice holds, not carried) dispositioned: _pending_
+- Design calls D-1 to D-29 accepted or amended (D-18 to D-29, from the 2026-11-15 follow-up and its review, are PROPOSED; D-18 carries reading item text, which ruling 93 named only by reference): _pending_
+- Open Question 6 (a request mode below the rung the practice has set, not carried) dispositioned: _pending_
 - Tensions T-1 to T-7 dispositioned: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 

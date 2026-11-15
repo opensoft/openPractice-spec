@@ -32,7 +32,7 @@ Paths are relative to the root of `opensoft/openPractice-spec`. This change is s
   - rate and blast-radius limits;
   - a practice-wide pause;
   - a daily agent digest signed in the day close;
-  - five work-item operations, none above `propose` (AO-13, ruling 93): read the text openPractice holds for the item being worked, propose a clinical re-route, propose an urgency raise, release the item to a human owner, and cancel the agent's own pending answer.
+  - five work-item operations, none above `propose`, each only for an item the agent owns (AO-13, ruling 93): read the text openPractice holds for the item being worked, propose a clinical re-route, propose an urgency raise, release the item to a human owner, and cancel the agent's own pending answer. Reading the item's text awaits the owner's confirmation: ruling 93 carries it only by reference to a consumer finding, and the owner was shown the other four by name (design call D-18).
 
   The MVP builds the patient-registry operations, the read-only answer types through which Hermes answers routine administrative questions (rulings 45 and 46), and the work-item operations.
 - **`work-inbox`** (WI-01 to WI-07):
@@ -49,7 +49,7 @@ Paths are relative to the root of `opensoft/openPractice-spec`. This change is s
   - no PHI in agent logs;
   - untrusted content treated as data, never instructions, with untrusted contribution derived by openPractice from provenance. This is the prompt-injection defence;
   - one numbered exception (ruling 45): read-only answers to the signed-in patient, assembled on the server from approved templates, at `act_after_delay` only;
-  - a consent check inside openPractice (AH-06, rulings 93 and 97): an agent answer is scheduled and sent only while the patient's consent to AI-authored administrative messaging is recorded, and a withdrawal cancels every pending answer at once. Provider processing for practice operations rests on the provider agreements of AH-02, not on per-patient consent.
+  - a consent check inside openPractice (AH-06, rulings 93 and 97): an agent answer is scheduled, and relayed, only while the patient's consent to AI-authored administrative messaging is recorded; a withdrawal, which staff record on the patient's or a confirmed representative's request, cancels every pending answer at once (a design call under ruling 93). Provider processing for practice operations rests on the provider agreements of AH-02, not on per-patient consent.
 - **Framing-decision amendments** (in a separate commit on this branch): `ideation/review/openpractice-framing-decisions.md` gains an "Amendments (2026-11-14)" section. It records FD-1 as amended by ruling 38 and FD-10(b) as amended by ruling 36. The original text stays above it.
 - **Brainstorm pointer.** Rulings 36 to 38 supersede part of the "Post-beta by default" list in `ideation/brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md`, which covers the companion app and AI intake:
   - the HealthLinc integration contract and escalation routing are MVP scope;

@@ -326,10 +326,11 @@ Staff MAY re-route a misfiled item (ruling 44). Every re-route SHALL keep the it
 
 When staff or an agent find that an administrative item is clinical, the rules SHALL route it as clinical at once (design call DC-14). openPractice SHALL then:
 - hand it off to openChart by HealthLinc's message reference, with origin `recategorized_from_administrative`;
+- cancel every pending agent answer on that item before it is sent, because an agent never answers a clinical item (ER-10), whoever found the item clinical;
 - remove the stored question text from openPractice, with a removal event that holds no PHI;
 - tell HealthLinc with `inquiry.recategorized`.
 
-A mixed question SHALL be split so that no clinical part stays in openPractice. HealthLinc splits a mixed question at intake into parts, each with its own reference. When staff find a mixed item later, openPractice SHALL route the item's HealthLinc reference to openChart as clinical, remove the stored text, and ask HealthLinc to resubmit only the administrative part.
+A mixed question SHALL be split so that no clinical part stays in openPractice. HealthLinc splits a mixed question at intake into parts, each with its own reference. When staff or an agent find a mixed item later, openPractice SHALL route the item's HealthLinc reference to openChart as clinical, cancel every pending agent answer on the item, remove the stored text, and ask HealthLinc to resubmit only the administrative part.
 
 openPractice staff cannot judge content they never see. A clinical item SHALL therefore move to administration only when openChart returns it as `returned_not_clinical`; HealthLinc then resubmits it as administrative. Backup copies of removed text age out under backup retention, and the removal is not described beyond that scope. Where the removed text had been sent to the agent layer or its model provider, openPractice SHALL require those copies to be deleted under the AH-02 agreements, and SHALL record the request and its confirmation with no PHI.
 
@@ -344,6 +345,10 @@ openPractice staff cannot judge content they never see. A clinical item SHALL th
 #### Scenario: Misrouted text had reached the agent layer
 - **WHEN** an item that Hermes had worked is found clinical and its stored text is removed
 - **THEN** the agent operator and model provider are asked to delete their copies under the AH-02 agreements, and the request and confirmation are recorded without PHI
+
+#### Scenario: An item with a pending agent answer is found clinical
+- **WHEN** staff flag an item clinical while a read-only answer on it waits in its cancel window
+- **THEN** the answer is cancelled and never sent, and the item is handed to openChart by reference
 
 #### Scenario: A clinician returns an item as administrative
 - **WHEN** openChart reports `returned_not_clinical` for a handoff
@@ -426,7 +431,7 @@ The handoff boundary SHALL be covered by contract tests, written first (constitu
 - re-routing and splitting, with text removal;
 - paused agents;
 - no PHI in diagnostics;
-- `clinician_acknowledged`: recorded, acknowledged, reported to HealthLinc as `inquiry.status`, never sent after `returned_not_clinical`, and changing no alert, fallback, retry or clock (ER-19).
+- `clinician_acknowledged`: an owner holding the `clinician` or the `nurse` role, recorded, acknowledged, reported to HealthLinc as `inquiry.status` only while the routing record shows the item open, recorded but not forwarded once it shows `responded`, `returned_not_clinical` or `closed`, and changing no alert, fallback, retry or clock (ER-19).
 
 The tests SHALL run against openChart and HealthLinc contract doubles, with synthetic data only.
 
@@ -464,14 +469,22 @@ The marker SHALL carry no reason, note or other clinical content (constitution P
 - **THEN** no marker is created, because only a clinician in openChart can record one
 
 ### Requirement: ER-19 A clinician's acknowledgment in openChart reaches HealthLinc as a coded status, and changes no safety path
-When the owner of a routed item in openChart's clinical inbox, a named clinician, explicitly acknowledges it, openChart SHALL report `handoff.status` with status `clinician_acknowledged` under `openpractice-clinical-handoff/1.0` (ruling 93; design call DC-50, PROPOSED). openChart's system acceptance of the offer (`handoff.ack` `accepted`) is not acknowledgment, and neither is the delivery of a notification. openChart SHALL send `clinician_acknowledged` once per handoff, at the first acknowledgment, and never after `returned_not_clinical`. A `responded` status MAY arrive without an earlier `clinician_acknowledged`. Both are companion items for openChart.
+When the owner of a routed item in openChart's clinical inbox explicitly acknowledges it, openChart SHALL report `handoff.status` with status `clinician_acknowledged` under `openpractice-clinical-handoff/1.0` (ruling 93; design call DC-50, PROPOSED). The owner is a named member of the clinical team: a person holding openChart's `clinician` or `nurse` role, as openChart's inbox allows. The value keeps the name `clinician_acknowledged`, the owner's wording in ruling 93, and covers both roles. openChart's system acceptance of the offer (`handoff.ack` `accepted`) is not acknowledgment, and neither is the delivery of a notification. openChart SHALL send `clinician_acknowledged` once per handoff, at the first acknowledgment, and only while the item is open: never after `responded`, `returned_not_clinical` or `closed`. A `responded` status MAY arrive without an earlier `clinician_acknowledged`. These are companion items for openChart.
 
 On `clinician_acknowledged`, openPractice SHALL:
 - record its time on the routing record (ER-01);
 - answer it with `message.ack`;
-- send HealthLinc `inquiry.status` with status `clinician_acknowledged` for that routing id, under `openpractice-patient-gateway/1.0`.
+- send HealthLinc `inquiry.status` with status `clinician_acknowledged` for that routing id, under `openpractice-patient-gateway/1.0`, but only while its routing record shows the item open. A `clinician_acknowledged` that arrives after the record shows `responded`, `returned_not_clinical` or `closed`, such as a late retry, SHALL be recorded and acknowledged and SHALL NOT be forwarded, so the patient app never shows "acknowledged" after "answered".
 
-Neither message carries clinical content, reply text, a note or the clinician's identity. The status SHALL NOT cancel, delay or close any alert, tracked alert, urgent fallback, retry or clock of ER-07 to ER-09, and SHALL NOT extend `respond_by` (design call DC-51, PROPOSED): a clinician's pickup is reported, and every safety path still runs on its own triggers. HealthLinc SHALL report the status only when openPractice sends it, and never infer it (companion item).
+Neither message carries clinical content, reply text, a note, or anyone's identity or role. The status SHALL NOT cancel, delay or close any alert, tracked alert, urgent fallback, retry or clock of ER-07 to ER-09, and SHALL NOT extend `respond_by` (design call DC-51, PROPOSED): a clinician's pickup is reported, and every safety path still runs on its own triggers. HealthLinc SHALL report the status only when openPractice sends it, and never infer it (companion item).
+
+#### Scenario: An acknowledgment arrives after the reply
+- **WHEN** openChart's `clinician_acknowledged` for an item arrives after openPractice recorded `responded` for it
+- **THEN** openPractice records it and answers `message.ack`, and sends HealthLinc no `inquiry.status` for it
+
+#### Scenario: A nurse owner acknowledges an item
+- **WHEN** the owner of an inbox item in the nurse lane acknowledges it
+- **THEN** openChart sends `clinician_acknowledged`, and HealthLinc receives it with no name or role
 
 #### Scenario: A clinician picks up an urgent item
 - **WHEN** the owner of an urgent inbox item acknowledges it in openChart

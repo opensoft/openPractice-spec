@@ -6,7 +6,7 @@ This record is the mandatory, durable owner gate for OpenSpec change `define-pat
 
 The rulings this change encodes (34 to 54, with 68 to 71) were made by Brett Heap on 2026-11-14, and rulings 93 and 97, which govern this change's follow-up, on 2026-11-15. They are recorded in `design.md` under "Owner rulings (2026-11-14)", and the follow-up's edits under "Follow-up of 2026-11-15". Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
 
-The 51 design calls in `design.md` under "Design calls for owner review" have not been ruled; DC-46 to DC-51 come from the 2026-11-15 follow-up. Ratification records the owner's disposition of each.
+The 53 design calls in `design.md` under "Design calls for owner review" have not been ruled; DC-46 to DC-53 come from the 2026-11-15 follow-up and its review. Ratification records the owner's disposition of each.
 
 ## Required Validation Evidence
 
@@ -34,7 +34,7 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
   - Contract identifier matches (`openpractice-clinical-handoff/1.0`): _pending_
   - Namespaces match (`healthlinc`, `openpractice`, and the EHR's own): _pending_
   - Issuer handling matches (EB-02): _pending_
-  - `clinician_acknowledged` sent once, at a clinician's first explicit acknowledgment, with no identity or note (ER-19): _pending_
+  - `clinician_acknowledged` sent once, at the owner's first explicit acknowledgment while the item is open (a `clinician` or `nurse` owner), with no identity, role or note (ER-19): _pending_
 - **`opensoft/HealthLinc`, change `define-practice-gateway-integration`** (private; cited by repository and change id only)
   - Companion change and revision compared: _pending_
   - Gateway schema digest matches: _pending_
@@ -50,14 +50,14 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
 - **`MedxSoft/medXfactory`, change `define-patient-medical-ai-connection`** (the medical AI; ruling 93)
   - Companion change and revision compared: _pending_
   - Clinical AI answering and its clinical-safety governance owned there; `medxfactory` conversation references; the medical AI's records reaching openChart through MedxEHR, outside openPractice (rulings 53 and 70): _pending_
-  - The entitlement assertion verified before any non-urgent consult, with urgent need never withheld (PG-16): _pending_
+  - The entitlement assertion verified before any non-urgent consult with every PG-16 check, `sub` compared only with the link bound at enrolment, and urgent need never withheld: _pending_
 
 ## Required Owner Decision
 
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending; must be exactly `A — ordered multi-feature handoff` or `B — split into per-capability changes` (design call DC-21 proposes `A`; no ruling states a shape)_
-- Design-call dispositions (DC-1 to DC-51, each accepted, changed or rejected; DC-39 is marked for the owner, and DC-46 to DC-51 are PROPOSED by the 2026-11-15 follow-up): _pending_
+- Design-call dispositions (DC-1 to DC-53, each accepted, changed or rejected; DC-39 is marked for the owner, and DC-46 to DC-53 are PROPOSED by the 2026-11-15 follow-up and its review): _pending_
 - Tension dispositions (T-1 to T-12; T-9, T-10 and T-12 are recorded as resolved by rulings 50, 52 and 71, and T-11 proposes a follow-up): _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 

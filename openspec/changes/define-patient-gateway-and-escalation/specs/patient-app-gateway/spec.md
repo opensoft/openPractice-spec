@@ -352,7 +352,8 @@ The gateway boundary SHALL be covered by contract tests, written first (constitu
 - the no-text rule for clinical inquiries;
 - reply relay and retry;
 - the no-PHI rules;
-- the entitlement assertion of PG-16: every required property, the representative's relationship and authority, `urgent_escalation` always present, no withheld reason, hold or patient reference, refusal of a tampered, expired, mis-addressed or replayed assertion by a relying-party double, and urgent access unchanged when no assertion can be verified;
+- the entitlement assertion of PG-16: its header and decoded claims against their schema definitions, the representative's relationship and authority, `urgent_escalation` always present, no withheld reason, hold or patient reference; and, with a relying-party double, refusal of a tampered, expired, mis-addressed, replayed or substituted assertion (one whose `sub` names another patient's link, presented in a session whose link was bound to a different patient), of a missing or different `nonce` where one was supplied, of any `alg` other than `EdDSA` and any header that names a key location, and of an unknown `kid` after one refresh; and urgent access unchanged when no assertion can be verified;
+- the cross-field rules the schema cannot check: an assertion whose `sub` differs from the result's `gateway_link_id`, whose `exp` is later than the result's `valid_until` or more than the maximum lifetime after `iat`, or which grants a capability the result withholds, such as `medical_ai_consult` under a payment hold, is never issued and is refused by the relying-party double;
 - `representative` on a linked representative `link.result`, and never on any other;
 - `inquiry.status` `clinician_acknowledged` (ER-19).
 
@@ -383,43 +384,78 @@ Until the agreement is verified, and at once if it expires or is revoked, openPr
 - **WHEN** the operator agreement expires while an urgent item from that deployment is routed
 - **THEN** new messages are refused with `operator_agreement_unverified`, the routed item stays owned, and its fallback keeps running
 
-### Requirement: PG-16 An entitlement result can carry an assertion that a relying party other than HealthLinc verifies itself
-A relying party that is not the patient app, such as medXfactory's medical AI before a non-urgent consult (ruling 52), SHALL be able to verify an entitlement without trusting HealthLinc (ruling 93). When an `entitlement.request` names an `assertion_audience`, and that audience is a relying party the practice has registered (design call DC-47), openPractice SHALL add to the `entitlement.result` an `assertion`. The assertion SHALL give the relying party these properties (design call DC-46, PROPOSED):
-- **Issued by openPractice.** It carries the issuing openPractice deployment's configured issuer (EB-02) and a signature that only that deployment can make and any relying party can check. The signature is asymmetric, over the RFC 8785 canonical JSON of the assertion with the `signature` member removed, and `key_ref` names the key. The signature scheme and how relying parties obtain openPractice's keys are decided in planning; this change names no cryptographic product.
-- **For this patient link.** It carries the `gateway_link_id` and the link kind, and for a representative link the representative's relationship and authority reference (PG-06; design call DC-49).
-- **For this audience.** It carries the relying party's configured issuer as `audience`.
-- **At a stated time, with a stated expiry.** It carries `issued_at` and `expires_at`, no later than the result's `valid_until`.
-- **Not altered.** A change to any signed member breaks the signature.
-- **Not replayed.** It carries a unique `assertion_id`, it is bound to its audience, link and expiry, and when the relying party supplied an `audience_nonce` through HealthLinc, the nonce is echoed (design call DC-48).
-- **What it states.** Its `capabilities` are the capabilities the result grants, limited to those the practice registered that audience to rely on, and always include `urgent_escalation`.
+### Requirement: PG-16 An entitlement result can carry a signed assertion, so a relying party need not rely on the patient app's statement of the entitlement
+A relying party that is not the patient app, such as medXfactory's medical AI before a non-urgent consult (ruling 52), SHALL be able to verify what openPractice granted without relying on the patient app's statement of the entitlement (ruling 93).
 
-The assertion SHALL carry no PHI and no master identity: no name, date of birth, contact detail, openPractice patient reference, HealthLinc account reference, withheld capability, withheld reason, hold, hold policy, amount or balance. It therefore never reveals a payment hold, to a representative or to a relying party (DC-34). openPractice SHALL record each assertion it issues, by `assertion_id`, audience, link and times, with no PHI in any log (PG-13). HealthLinc SHALL pass the assertion on unchanged, and SHALL NOT alter, re-sign or vouch for it (companion item).
+**What it proves, and what it does not (design call DC-48, PROPOSED).** An assertion proves what openPractice granted to one gateway link, for one audience, at one time, and that nobody altered it. It does not prove which person is using a session. The patient app still authenticates the patient, and the relying party still binds a link to its own record of the patient, as its checks below require.
 
-A relying party SHALL accept an assertion only when every one of these checks passes: the signature verifies under a current key of the openPractice issuer it is configured to trust; `audience` is its own issuer; `gateway_link_id` is the link of its session; the current time is at or after `issued_at` and before `expires_at`; `audience_nonce` is its own, when it supplied one; and `assertion_id` has not been accepted for another session. Otherwise it SHALL treat the patient as holding no verified non-urgent capability.
+**When it is issued.** When an `entitlement.request` names an `assertion_audience` that the practice has registered as a relying party (design call DC-47), openPractice SHALL add an `assertion` to the `entitlement.result`. For an audience that is not registered, openPractice answers as before, with no assertion.
 
-**When verification cannot be done, urgent access is never withheld.** No assertion, a refused or unregistered audience, an expired, unverifiable or mismatched assertion, a signing outage, or an unreachable openPractice SHALL withhold only non-urgent capabilities from the relying party's own service. `urgent_escalation` never depends on an assertion: openPractice SHALL accept and route every inquiry whose applied urgency is above `routine` under PG-10 and ER-09 whatever the state of any assertion, and the relying party SHALL hand priority and urgent need on at once (companion item). The absence of an assertion SHALL NOT remove any capability from the result.
+**Wire format (design call DC-46, PROPOSED).** The assertion is a JSON Web Token (RFC 7519) in JWS compact serialization (RFC 7515), built only from open standards:
+- its protected header holds exactly `alg` `EdDSA`, with Ed25519 keys only (RFC 8037), `typ` `openpractice-entitlement+jwt`, and `kid`, and validates against the schema's `entitlementAssertionHeader`. It names no key location: no `jku`, `jwk`, `x5u`, `x5c` or `crit`;
+- its payload holds the claims below, and validates against the schema's `entitlementAssertionClaims`;
+- its signature is the 64-byte Ed25519 signature over the ASCII bytes of the encoded header, a dot and the encoded payload, so it covers exactly the bytes sent and no canonicalization step is needed.
 
-Registering or removing a relying party SHALL be a tier-2 action by a named human, the practice manager or the controller or office manager, never an agent (change `define-actors-agents-and-work-inbox` AO-03). Registration records the relying party's issuer and the capability codes it may rely on, and SHALL wait until an authorized person has recorded and verified the agreement counsel requires with that relying party's operator, following PG-15's pattern (design call DC-47, PROPOSED). For an audience that is not registered, openPractice answers the `entitlement.request` as before, with no assertion.
+The claims are:
+- `iss`: the issuing openPractice deployment's configured issuer (EB-02);
+- `sub`: the `gateway_link_id` the assertion is about;
+- `aud`: the relying party's configured issuer, as one string;
+- `iat` and `exp`: issue and expiry times in NumericDate seconds, with `exp` no later than the result's `valid_until` and no more than the maximum lifetime after `iat`;
+- `jti`: a random UUID, unique per assertion;
+- `nonce`: the relying party's nonce, echoed when the request carried one;
+- `link_kind`, and for a representative link `representative`, with the relationship and the authority reference (PG-06; design call DC-49);
+- `capabilities`: the capabilities the result grants, limited to those the practice registered that audience to rely on, always including `urgent_escalation`.
+
+No other claim is allowed. The assertion SHALL carry no PHI and no master identity: no name, date of birth, contact detail, openPractice patient reference, HealthLinc account reference, withheld capability, withheld reason, hold, hold policy, amount or balance. It never reveals a payment hold, to a representative or to a relying party (DC-34). Its `sub` SHALL equal the result's `gateway_link_id`, its `link_kind` the result's `link_kind`, and each of its capabilities SHALL be granted in the result. The schema cannot check those three, so the contract tests do (PG-14).
+
+**Keys (design call DC-46, PROPOSED).** openPractice SHALL publish each practice's verification keys as a JWK Set (RFC 7517) of Ed25519 public keys. Where the JWK Set is published, and the pin a relying party checks it against, are fixed when the relying party is registered; a relying party never takes a key or a key location from a token. Each `kid` is the RFC 7638 SHA-256 thumbprint of its key. A new key SHALL be published before its first use, and a retired key SHALL stay published for at least the maximum lifetime plus the clock-skew tolerance after its last use. A relying party that meets an unknown `kid` refreshes the JWK Set once from the registered location, and refuses the assertion if the key is still unknown.
+
+**Lifetime and skew (design call DC-52, PROPOSED).** An assertion lives at most 15 minutes from `iat` to `exp`, and relying parties allow 60 seconds of clock skew. A payment hold, a lapse, a deactivation or a link revocation that takes effect after an assertion is issued therefore reaches the relying party no later than that assertion's expiry, at most 15 minutes and the skew after its issue. openPractice issues no later assertion that reflects the old state. Urgent access is unaffected.
+
+**What a relying party checks.** A relying party SHALL accept an assertion only when every one of these checks passes:
+1. the header validates, `alg` is `EdDSA`, the `kid` names an Ed25519 key in the practice's JWK Set from the registered location, and the signature verifies over the exact bytes received;
+2. the decoded payload validates against `entitlementAssertionClaims`;
+3. `iss` is the openPractice issuer it registered for that practice, and `aud` is its own issuer;
+4. `sub` equals the gateway link it bound to its own record of the patient when it first verified that link, and is never compared with a link named by the message, request or session that carries the assertion. On its first verification for a patient, the relying party binds the link to its own record of that patient through its own enrolment, and keeps that binding. The first binding rests on the patient app's authentication of the patient and on the relying party's enrolment, which no assertion replaces;
+5. the current time is no earlier than `iat` less the skew and earlier than `exp` plus the skew, and `exp` is no more than the maximum lifetime after `iat`;
+6. when it supplied a nonce for the session, `nonce` is present and equal to it. An assertion without it, or with another value, fails;
+7. `jti` has not been accepted for another session.
+
+A failed check means the patient holds no verified non-urgent capability with that relying party. An assertion for another patient's link is refused, and only non-urgent access is withheld.
+
+**When verification cannot be done, urgent access is never withheld.** No assertion, a refused or unregistered audience, a failed check, a signing outage or an unreachable openPractice SHALL withhold only non-urgent capabilities from the relying party's own service. `urgent_escalation` never depends on an assertion: openPractice SHALL accept and route every inquiry whose applied urgency is above `routine` under PG-10 and ER-09 whatever the state of any assertion, and the relying party SHALL hand priority and urgent need on at once (companion item). The absence of an assertion SHALL NOT remove any capability from the result.
+
+**Identifiers every audience sees (design call DC-53, PROPOSED).** Every registered audience receives the same `sub` and, for a representative, the same `authority_ref` for a link, so two relying parties could correlate a patient between their records. This is accepted for 1.0: each relying party is registered by a named human at tier 2 after its operator's agreement is verified, and both identifiers are opaque and carry no PHI. Per-audience identifiers are Open Question 21.
+
+**Registration and records.** Registering or removing a relying party SHALL be a tier-2 action by a named human, the practice manager or the controller or office manager, never an agent (change `define-actors-agents-and-work-inbox` AO-03). Registration records the relying party's issuer, the capability codes it may rely on, and where it reads the practice's JWK Set with its pin, and SHALL wait until an authorized person has recorded and verified the agreement counsel requires with that relying party's operator, following PG-15's pattern (design call DC-47, PROPOSED). openPractice SHALL record each assertion it issues, by `jti`, audience, link and times, with no PHI in any log (PG-13). HealthLinc SHALL pass the assertion on unchanged, and SHALL NOT alter, re-sign or vouch for it (companion item).
 
 #### Scenario: The medical AI verifies a consult entitlement
-- **WHEN** HealthLinc asks for capabilities with `assertion_audience` naming the practice's registered medical-AI relying party and a nonce that relying party issued, and the patient holds `medical_ai_consult`
-- **THEN** the result carries an assertion naming openPractice's issuer, that audience, the `gateway_link_id`, `urgent_escalation` and `medical_ai_consult`, the nonce, and times and a signature, and the relying party verifies it itself
+- **WHEN** HealthLinc asks for capabilities with `assertion_audience` naming the practice's registered medical-AI relying party and a nonce that relying party issued, for a patient whose link the relying party bound at enrolment and who holds `medical_ai_consult`
+- **THEN** the result carries a JWT whose `iss`, `aud`, `sub`, `nonce`, times and `capabilities` (`urgent_escalation` and `medical_ai_consult`) pass every check, and the relying party starts the consult
+
+#### Scenario: An assertion is substituted
+- **WHEN** a patient app presents, in patient B's session and with B's nonce, an assertion whose `sub` is patient A's link
+- **THEN** the relying party refuses it, because `sub` is not the link it bound to B, and B is still handed on at once for any priority or urgent need
 
 #### Scenario: An assertion is altered in transit
-- **WHEN** a relying party receives an assertion whose `capabilities` were changed after signing
-- **THEN** the signature fails, the relying party treats the patient as holding no verified non-urgent capability, and it still hands any priority or urgent need on at once
+- **WHEN** a relying party receives an assertion whose payload was changed after signing
+- **THEN** the signature fails, the patient holds no verified non-urgent capability, and any priority or urgent need is still handed on at once
 
-#### Scenario: An assertion is replayed for another audience or after expiry
-- **WHEN** an assertion issued for one relying party is presented to another, or after its `expires_at`
+#### Scenario: An assertion is replayed for another audience, after expiry or without the nonce
+- **WHEN** an assertion issued for one relying party is presented to another, after its `exp` plus the skew, or without the nonce the relying party supplied
 - **THEN** the relying party refuses it, and urgent need is still handed on
+
+#### Scenario: A key the relying party does not know
+- **WHEN** an assertion's `kid` is not in the relying party's copy of the practice's JWK Set
+- **THEN** the relying party refreshes the JWK Set once from the registered location, and refuses the assertion if the key is still unknown
+
+#### Scenario: A hold starts while an assertion is valid
+- **WHEN** a payment hold takes effect five minutes after an assertion granting `medical_ai_consult` was issued
+- **THEN** that assertion stays valid only until its `exp`, no later than 15 minutes after issue, and the next result withholds `medical_ai_consult` and issues no assertion granting it
 
 #### Scenario: A representative's assertion
 - **WHEN** a caregiver proxy whose granted scope includes `medical_ai_consult` asks for capabilities with a registered audience
-- **THEN** the assertion carries link kind `representative`, relationship `caregiver_proxy` and the authority reference, and no hold, withheld reason or patient reference
-
-#### Scenario: A held patient's assertion
-- **WHEN** a patient on a payment hold asks for capabilities with a registered audience
-- **THEN** the assertion lists `urgent_escalation` and no `medical_ai_consult`, and states nothing about the hold
+- **THEN** the assertion carries `link_kind` `representative`, relationship `caregiver_proxy` and the authority reference, and no hold, withheld reason or patient reference
 
 #### Scenario: The audience is not registered
 - **WHEN** an `entitlement.request` names an audience the practice has not registered
@@ -427,4 +463,4 @@ Registering or removing a relying party SHALL be a tier-2 action by a named huma
 
 #### Scenario: openPractice cannot be reached
 - **WHEN** the relying party can obtain no assertion because openPractice is unreachable
-- **THEN** no non-urgent consult starts, and an urgent need is handed on at once, and openPractice routes it when it arrives
+- **THEN** no non-urgent consult starts, an urgent need is handed on at once, and openPractice routes it when it arrives

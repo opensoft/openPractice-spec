@@ -20,7 +20,7 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - patient notices and `notice.ack`, with no grace period started before a confirmed or recorded delivery;
   - link verification, human confirmation, refusal without verification, and agent sign-off refusal are tested;
   - representative links are refused without an approved proxy policy, and a linked representative's `link.result` carries the relationship and authority reference;
-  - entitlement assertions: issued only for a registered relying party, every required property present, no PHI, withheld reason or hold, verified and refused (tampered, expired, mis-addressed, replayed) by a relying-party double, and urgent access unchanged without one;
+  - entitlement assertions: JWS compact tokens whose header and decoded claims validate, issued only for a registered relying party, with no PHI, withheld reason or hold; verified, and refused when tampered, expired, mis-addressed, replayed, substituted, missing the supplied nonce, signed with another algorithm or under an unknown key after one refresh, by a relying-party double; the three cross-field rules; and urgent access unchanged without one;
   - proposals never auto-apply, and interim confidential-communication restrictions are honored;
   - clinical inquiries with text are refused;
   - the PHI safeguard plan, security review and risk-analysis update are recorded.
@@ -36,7 +36,8 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - every alert trigger, including `clock_expired` and silence past `respond_by`, the urgent fallback with its guidance instruction, tracked alerts with re-sending and escalation to the medical director, the priority alert, and the no-on-call fallback are tested;
   - rejected urgent inquiries raise a PHI-free exception and a guidance instruction;
   - the clinical-need marker, its attribution and the urgent-origin check;
-  - `clinician_acknowledged`: recorded, acknowledged, passed to HealthLinc, and changing no alert, fallback, retry or clock;
+  - `clinician_acknowledged`: recorded, acknowledged, passed to HealthLinc only while the item is open, a late one not forwarded, a nurse owner covered, and changing no alert, fallback, retry or clock;
+  - a recategorization cancels every pending agent answer on the item;
   - Hermes never decides its own draft, and read-only answers follow change A's AH-05 exception 1;
   - the link precondition, re-routing, splitting and text removal are tested;
   - the pause switch sends administrative items to staff and leaves urgent routing untouched;
@@ -86,9 +87,10 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - Open Question 15, the `medxfactory` token: blocks live interoperation with medXfactory conversations only.
   - Open Question 16, the HealthLinc operator agreement: blocks enabling the gateway for any HealthLinc deployment (PG-15).
   - Open Question 17, distinguishing a demographic hold from a linkage conflict: blocks nothing here; a follow-up change owns it (T-11).
-  - Open Question 18, the assertion's signature scheme, keys, lifetime and relying-party registration: blocks issuing assertions in Feature 1; every other gateway function proceeds, and urgent access never depends on it.
+  - Open Question 18, the assertion's pin form, lifetime, skew and registration record: blocks issuing assertions in Feature 1; every other gateway function proceeds, and urgent access never depends on it.
   - Open Question 19, an alert on a missing clinician acknowledgment: blocks nothing; Feature 2 records that the status changes no safety path.
-  - Open Question 20, the PROPOSED calls DC-46 to DC-51: block the features that build them until the owner dispositions them at ratification.
+  - Open Question 20, the PROPOSED calls DC-46 to DC-53: block the features that build them until the owner dispositions them at ratification.
+  - Open Question 21, per-audience identifiers: blocks nothing in 1.0 (DC-53).
 
 ## 4. Acceptance and Closure
 

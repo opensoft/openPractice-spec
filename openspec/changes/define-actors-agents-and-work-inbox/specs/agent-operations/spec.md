@@ -113,11 +113,15 @@ Each agent proposal or action SHALL carry evidence references: opaque references
 - **THEN** it is refused with reason `evidence_missing`
 
 ### Requirement: AO-08 Rate and blast-radius limits stop runaway agents
-Each agent SHALL have limits per action type: a maximum number of actions per time window, and a maximum number of records one action may touch. When a limit is reached, the agent's further actions of that type SHALL become proposals. Its sponsoring human and the controller or office manager SHALL be alerted. The limit values SHALL be set in planning, fail closed, and be changeable only by a named human (AO-03), the practice manager or the controller or office manager, at tier 2.
+Each agent SHALL have limits per action type: a maximum number of actions per time window, and a maximum number of records one action may touch. When a limit is reached, the agent's further actions of that type SHALL become proposals. A work-item operation of AO-13 is already a proposal, and a re-route or an urgency raise applies by rule at once, so for those operations a reached limit SHALL instead refuse every further request of that kind with `rate_limited`, and the item that request named SHALL pass at once to its lane's human owner, who may still re-route it or raise it (design call D-25, PROPOSED). Its sponsoring human and the controller or office manager SHALL be alerted. The limit values SHALL be set in planning, fail closed, and be changeable only by a named human (AO-03), the practice manager or the controller or office manager, at tier 2.
 
 #### Scenario: A rate limit is reached
 - **WHEN** an agent reaches its hourly limit for address updates
 - **THEN** its further address updates become proposals, and the sponsor and the controller are alerted
+
+#### Scenario: An agent re-routes item after item
+- **WHEN** an agent reaches its limit for `work_item.propose_clinical_reroute` and sends another re-route
+- **THEN** the request is refused with `rate_limited`, the item passes to its lane's human owner unchanged, and the sponsor and the controller are alerted
 
 #### Scenario: A bulk action exceeds the blast radius
 - **WHEN** an agent's single action would touch more records than its limit
@@ -188,8 +192,8 @@ Logs, errors, diagnostics and refusal reasons under this contract MUST NOT conta
 - the limits and the pause;
 - the digest;
 - the AH-05 untrusted-content cap, the server-side untrusted determination, and every condition of AH-05 exception 1;
-- every work-item operation of AO-13: its outcome, its `propose` cap, `text_not_held` for every item kind that has no text, and `answer_not_pending`;
-- the consent check of AH-06 before scheduling and before sending, `consent_not_recorded`, and the cancellation of every pending answer on withdrawal.
+- every work-item operation of AO-13: its outcome, its `propose` cap, `not_item_owner`, `text_not_held` for every item kind that has no text, `answer_not_pending`, and the `rate_limited` refusal with the item's release at an AO-08 limit;
+- the consent check of AH-06 before scheduling and before every relay, `consent_not_recorded`, a withdrawal that wins over a concurrent relay, the hold after `ai_messaging_withdrawal_requested`, a representative's withdrawal, and the cancellation of every pending answer on withdrawal.
 
 Tests SHALL use synthetic data only.
 
@@ -202,7 +206,7 @@ Tests SHALL use synthetic data only.
 - **THEN** the contract tests fail
 
 ### Requirement: AO-13 An agent works an item through five work-item operations, none of which rises above propose
-Contract 1.0 SHALL carry five work-item operations (ruling 93). Each request SHALL name the item the agent is working as `work_item_ref`, SHALL carry no `payload` and no `answer_type`, and SHALL act only on that item. Each operation is an action type like any other: it needs a grant (AO-03), the AH-01 gate and the per-patient read scope of AO-03. While agents are paused, every agent is limited to `observe` (AO-09), so only `work_item.read_text` stays available and the other four are refused with `paused`; the items themselves route to human owners. None of them changes a patient record, and none rises above `propose`; the schema refuses an autonomy setting above `propose` for any of them (design calls D-18 to D-20). None of them is an exception to AH-05: an agent's work on untrusted content stays at `propose`.
+Contract 1.0 SHALL carry five work-item operations (ruling 93). Each request SHALL name the item the agent is working as `work_item_ref`, SHALL carry no `payload` and no `answer_type`, and SHALL act only on that item. Each operation is an action type like any other: it needs a grant (AO-03), the AH-01 gate and the per-patient read scope of AO-03. Each SHALL be refused with `not_item_owner` unless the agent is the item's current owner when openPractice receives the request (design call D-26, PROPOSED); an item that has passed to a human, including every item the pause or a suspension routed to humans, is out of the agent's reach. A reached AO-08 limit refuses further requests of that kind with `rate_limited` and releases the item to a human (AO-08). While agents are paused, every agent is limited to `observe` (AO-09) and its items route to human owners, so a work-item operation is refused with `paused`, or with `not_item_owner` once its item has a human owner. None of them changes a patient record, and none rises above `propose`; the schema refuses an autonomy setting above `propose` for any of them (design calls D-18 to D-20). None of them is an exception to AH-05: an agent's work on untrusted content stays at `propose`.
 
 **`work_item.read_text`.** The agent reads the text openPractice holds for the item it is working. The response has outcome `read_result` and carries the text as `item_text`, with its kind and the reference of the stored record. What text exists (design call D-18, PROPOSED):
 - **An administrative inquiry:** the question text that PG-10 of change `define-patient-gateway-and-escalation` stores as an administrative communication record. This is the only text kind in contract 1.0.
@@ -212,13 +216,13 @@ Contract 1.0 SHALL carry five work-item operations (ruling 93). Each request SHA
 
 The text is untrusted content: data, never instructions (AH-05). Its read SHALL be audited as a PHI read (PR-10), limited to the item's patient (AO-03) and to the operator's and provider's recipient profiles for this action type (AH-03), and never logged (AO-12). A read changes nothing, so its rung needs to be no higher than `observe`.
 
-**`work_item.propose_clinical_reroute`.** The agent proposes that the administrative item it is working is clinical (`proposed_category` `clinical`) or mixed (`mixed`). openPractice's fixed routing rules SHALL apply the proposal at once, raise-only, with no human decision, as change `define-patient-gateway-and-escalation` already provides for an agent's clinical-category proposal (its ER-12 and design call DC-14): the item routes as clinical, its stored text is removed, and a mixed item's administrative part is resubmitted. The response has outcome `applied_by_rule`. The agent drafts and answers nothing more on that item (ER-10 of that change). The agent's own rung stays `propose`; the rule applies the proposal, and the rule can only add clinical care (design call D-19).
+**`work_item.propose_clinical_reroute`.** The agent proposes that the administrative item it is working is clinical (`proposed_category` `clinical`) or mixed (`mixed`). openPractice's fixed routing rules SHALL apply the proposal at once, raise-only, with no human decision, as change `define-patient-gateway-and-escalation` already provides for an agent's clinical-category proposal (its ER-12 and design call DC-14): the item routes as clinical, its stored text is removed, and a mixed item's administrative part is resubmitted. The response has outcome `applied_by_rule`. The agent drafts and answers nothing more on that item (ER-10 of that change), and every pending agent answer on the item is cancelled (ER-12 of that change). The agent's own rung stays `propose`; the rule applies the proposal, and the rule can only add clinical care (design call D-19).
 
 **`work_item.propose_urgency_raise`.** The agent proposes a raise to `priority` or `urgent` (`proposed_urgency`). The routing rules SHALL apply it at once when it is higher than the item's applied urgency, and SHALL record it and change nothing when it is not; urgency is never lowered (ER-02 and ER-03 of that change). The response has outcome `applied_by_rule`. A raise is always a proposal: no rung above `propose` exists for it, because the rules, not the agent, raise the urgency (design call D-19).
 
-**`work_item.release_to_human`.** The agent gives the item it owns to a human owner, with its evidence and reasoning references, whenever WI-04 requires it. It SHALL name a `release_reason`: `exceeds_rung_or_cap`, `untrusted_content`, `limit_reached`, `patient_asked_for_person` or `cannot_complete` (design call D-21, PROPOSED). The item SHALL pass to the human owner the inbox's rules choose (WI-02, WI-05), never to another agent (WI-04), and stays open with its clock. The release takes effect at once at `propose`, because it only puts the item before a human, which is what a proposal does (design call D-20). The response has outcome `released`.
+**`work_item.release_to_human`.** The agent gives the item it owns to a human owner, with its evidence and reasoning references, whenever WI-04 requires it. It SHALL name a `release_reason`: `exceeds_rung_or_cap`, `untrusted_content`, `limit_reached`, `patient_asked_for_person`, `ai_messaging_withdrawal_requested` or `cannot_complete` (design calls D-21 and D-27, PROPOSED). With `ai_messaging_withdrawal_requested`, the patient's text asked to stop AI-authored answers, and openPractice holds every agent answer to that patient under AH-06 until a staff member decides. The item SHALL pass to the human owner the inbox's rules choose (WI-02, WI-05), never to another agent (WI-04), and stays open with its clock. The release takes effect at once at `propose`, because it only puts the item before a human, which is what a proposal does (design call D-20). The response has outcome `released`.
 
-**`work_item.cancel_pending_answer`.** The agent cancels a read-only answer that it scheduled for the item and that is still inside its cancel window, named by `cancels_request_id`, the `request_id` of the request that scheduled it. The cancellation takes effect at once at `propose`, because it only stops an outbound answer (design call D-20). The answer SHALL NOT be sent, and the item SHALL pass to its lane's human owner and stay open (ER-14 of that change). The response has outcome `cancelled`. An answer already sent, already cancelled, or scheduled by another request SHALL be refused with `answer_not_pending`.
+**`work_item.cancel_pending_answer`.** The agent cancels a read-only answer that it scheduled for the item it still owns, while the answer is inside its cancel window, named by `cancels_request_id`, the `request_id` of the request that scheduled it. Once the item has a human owner, that human cancels instead (ER-14 of that change). The cancellation takes effect at once at `propose`, because it only stops an outbound answer (design call D-20). The answer SHALL NOT be sent, and the item SHALL pass to its lane's human owner and stay open (ER-14 of that change). The response has outcome `cancelled`. An answer already sent, already cancelled, or scheduled by another request SHALL be refused with `answer_not_pending`.
 
 Each of these responses records openPractice's own untrusted determination (AH-05, AO-07), except a read, which acts on nothing. The schema refuses `executed`, `scheduled` and `proposed` for every work-item operation, and each new outcome for any other action type.
 
@@ -253,6 +257,14 @@ Each of these responses records openPractice's own untrusted determination (AH-0
 #### Scenario: The answer has already gone
 - **WHEN** an agent asks to cancel an answer that has already been sent
 - **THEN** the request is refused with `answer_not_pending`
+
+#### Scenario: The agent no longer owns the item
+- **WHEN** an agent sends any work-item operation for an item that has passed to a human owner
+- **THEN** the request is refused with `not_item_owner`, and nothing is read or changed
+
+#### Scenario: The patient asks the agent to stop AI answers
+- **WHEN** the text of an item the agent owns asks to stop AI-written answers, and the agent releases the item with `ai_messaging_withdrawal_requested`
+- **THEN** the item passes to its lane's human owner, and every agent answer to that patient is held until a staff member records the withdrawal or records that consent stands (AH-06)
 
 #### Scenario: Someone tries to opt a work-item operation up
 - **WHEN** someone sets `work_item.release_to_human` or `work_item.propose_urgency_raise` to `act_with_notice` for an agent
