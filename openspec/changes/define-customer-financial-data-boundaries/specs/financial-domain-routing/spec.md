@@ -8,7 +8,7 @@ and reconcile their accounting effects without duplicate debt, revenue or cash.
 ## ADDED Requirements
 
 ### Requirement: Offerings determine financial routing at line level
-Each financial offering SHALL identify its effective version, selling entity, billing route, authoritative obligation owner, category, currency, approved accounting/tax mapping and disclosure profile. Supported routes SHALL distinguish insurance-billed healthcare, direct-pay healthcare, memberships and retail or separately sold services. Mixed orders SHALL preserve those distinctions per line. Medical charge finalization SHALL check a line's route and membership entitlement before any medical invoice or claim, as `define-mvp-practice-foundation` BAB-16 requires.
+Each financial offering SHALL identify its effective version, selling entity, billing route, authoritative obligation owner, category, currency, approved accounting/tax mapping and disclosure profile. For an insurance-billed or direct-pay healthcare service, the offering is the catalog item of `define-revenue-cycle-core` SC-01, a draft not yet on `main`, which carries these facts (SC-06; PROPOSED, design Decision 3). Supported routes SHALL distinguish insurance-billed healthcare, direct-pay healthcare, memberships and retail or separately sold services. Mixed orders SHALL preserve those distinctions per line. Medical charge finalization SHALL check a line's route and membership entitlement before any medical invoice or claim, as `define-mvp-practice-foundation` BAB-16 requires.
 
 #### Scenario: Mixed healthcare and retail order
 - **WHEN** an order includes an insurance-billed service and a retail product

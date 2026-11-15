@@ -180,7 +180,7 @@ The MVP SHALL build the contract only for these operations:
 - the read-only answer types of AH-05 exception 1 (rulings 45 and 46): `patient_answer.coverage_on_file`, `patient_answer.balance`, `patient_answer.appointment_time` and `patient_answer.practice_information`;
 - the work-item operations of AO-13 (ruling 93): `work_item.read_text`, `work_item.propose_clinical_reroute`, `work_item.propose_urgency_raise`, `work_item.release_to_human` and `work_item.cancel_pending_answer`.
 
-In the MVP, Hermes answers routine administrative questions through the read-only answer types. Each answer type SHALL be available only once the openPractice data it reads exists under a ratified change: appointment times wait for a ratified scheduling change, and balances for the patient receivables of `define-mvp-practice-foundation` (design call D-15). Until then the practice cannot switch that answer type on. Each practice-approved answer type is a versioned document under the contract, with its template reference, allowlisted fields, topics and approvals. A hard delete is offered only as a proposal (tier 4). Every later feature SHALL add its operations to the contract as a MINOR version when it ships. A request for an operation the deployed version lacks SHALL be refused.
+In the MVP, Hermes answers routine administrative questions through the read-only answer types. Each answer type SHALL be available only once the openPractice data it reads exists under a ratified change: appointment times wait for the booking of `define-revenue-cycle-core` (AP-01 to AP-09), and balances for its guarantor-account balances (PS-01, PS-09); that change is a draft not yet on `main` (design calls D-15 and D-41, PROPOSED). Until then the practice cannot switch that answer type on. Each practice-approved answer type is a versioned document under the contract, with its template reference, allowlisted fields, topics and approvals. A hard delete is offered only as a proposal (tier 4). Every later feature SHALL add its operations to the contract as a MINOR version when it ships. A request for an operation the deployed version lacks SHALL be refused.
 
 #### Scenario: A registry update through the contract
 - **WHEN** an agent updates a coverage priority under contract 1.0
@@ -191,7 +191,7 @@ In the MVP, Hermes answers routine administrative questions through the read-onl
 - **THEN** openPractice assembles the reply from the approved template and the bound patient's coverage fields, and schedules it behind the lane's cancel window
 
 #### Scenario: An answer type whose data does not exist yet
-- **WHEN** a practice tries to switch on `patient_answer.appointment_time` before a ratified scheduling change supplies appointment data
+- **WHEN** a practice tries to switch on `patient_answer.appointment_time` before the booking of `define-revenue-cycle-core`, a draft not yet on `main`, is ratified and supplies appointment data
 - **THEN** the change is refused, and appointment questions go to staff
 
 #### Scenario: An operation not yet in the contract

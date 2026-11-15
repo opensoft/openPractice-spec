@@ -45,7 +45,7 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - clinical routing cannot be enabled without full on-call cover (DC-27).
 
   Hermes read-only answers are enabled only after change A's AH-01 gate, including the AH-02 operator and provider BAAs, and each answer type's approval and switch-on. Hermes drafting is enabled only after the agent-operations MINOR (DC-22). Live interoperation waits for the openChart and HealthLinc companion changes (task 1.4).
-- [ ] 2.3 **Feature 3: payment hold.** Owns PH-01 to PH-09. Gate: Feature 1 merged, and patient receivables available from `define-mvp-practice-foundation` Feature 3 with its prerequisites (the FD-7 Thread contract and the money ledger). Acceptance evidence:
+- [ ] 2.3 **Feature 3: payment hold.** Owns PH-01 to PH-09. Gate: Feature 1 merged, and patient receivables available from `define-revenue-cycle-core` features 1 and 2: the thread contract, the money ledger, and the guarantor-account balances and balance events of PS-01 and PS-09 (that change is a draft not yet on `main`; this gate is its conforming amendment PA-8, PROPOSED). Acceptance evidence:
   - placement refused with no approved policy, and refused for an incomplete policy version;
   - the hold withholds only the three capabilities of PH-01 and never the three always-granted ones, nor HealthLinc's coach;
   - PH-01's scheduling clause applies only with a ratified scheduling change, and a clinician's marker or a verified urgent escalation always lets an appointment through;

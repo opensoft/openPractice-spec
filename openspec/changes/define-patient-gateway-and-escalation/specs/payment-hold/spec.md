@@ -5,11 +5,12 @@ A payment hold SHALL block only three things: non-urgent clinical messaging and 
 
 In openPractice's own scheduling, a hold SHALL refuse only a new non-urgent appointment for the held patient. This scheduling clause SHALL take effect only when a ratified scheduling change gives openPractice a booking function, and that change SHALL apply it with the exceptions below. Until then, a hold affects scheduling only through the gateway capability `scheduling_new_nonurgent`.
 
-A hold SHALL NOT cancel or change an appointment already booked (design call DC-26). An appointment SHALL NOT be blocked when either of these holds:
+A hold SHALL NOT cancel or change an appointment already booked (design call DC-26). The list of exceptions below is closed; ruling 178 adds its third member. An appointment SHALL NOT be blocked when any of these holds:
 - a clinician has marked it clinically needed: a valid `appointment_needed` marker, recorded and attributed in openChart and received through the clinical handoff contract (ER-18);
-- it arises from an urgent escalation: the booking carries that escalation's routing id, and openPractice's own routing record shows that id with applied urgency `urgent` for the same patient.
+- it arises from an urgent escalation: the booking carries that escalation's routing id, and openPractice's own routing record shows that id with applied urgency `urgent` for the same patient;
+- it records the arrival of a patient who is present, as the next paragraph states (ruling 178).
 
-No one in openPractice can mark an appointment clinically needed. Every other capability and function SHALL stay available, including administrative questions and demographic and coverage proposals.
+No one in openPractice can mark an appointment clinically needed. Recording the arrival of a patient who is present without a booking, a walk-in, is not new scheduling, and a hold SHALL NOT refuse it (ruling 178; `define-revenue-cycle-core` AP-05, AP-07, a draft not yet on `main`). Staff who record it see the hold (ruling 178). Every other capability and function SHALL stay available, including administrative questions and demographic and coverage proposals.
 
 #### Scenario: A held patient sends a routine clinical message
 - **WHEN** a patient on a hold submits a clinical inquiry with routine urgency
@@ -30,6 +31,10 @@ No one in openPractice can mark an appointment clinically needed. Every other ca
 #### Scenario: Staff claim a clinical need without a marker
 - **WHEN** staff try to book a non-urgent appointment for a held patient by stating that it is clinically needed, with no valid marker and no urgent routing id
 - **THEN** the booking is refused, because only a clinician's marker or a verified urgent escalation lifts the block
+
+#### Scenario: A held patient walks in
+- **WHEN** a ratified scheduling change provides booking, and a patient on a hold who has no booking comes to the desk, and staff record their arrival
+- **THEN** the arrival is recorded, because recording a patient who is present is not new scheduling, and the hold is shown to the staff member
 
 #### Scenario: A hold is placed on a patient with a booked visit
 - **WHEN** a hold takes effect for a patient who already has a booked appointment
@@ -84,7 +89,7 @@ Placing and lifting a hold SHALL each be a logged, tiered action, with the actio
 
 Both action types SHALL start at `propose` for agents (ruling 37; change A AO-04). An agent can never act with less friction than the tier requires. Above `propose`, an agent may place a hold only at `act_after_delay`, so the countdown and cancel window always run, and may lift a hold at `act_with_notice` or `act_after_delay`. Each rung above `propose` is reached only through that action type's BAB-17 opt-in. Agent placement SHALL obey AO-08's rate and blast-radius limits.
 
-Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the named human who placed or lifted it where a human did, the signer where one signs (BAB-17), the time and the provenance. A named human SHALL NOT place or lift a hold on a patient who is their own party or in its same-person group, or whom their own party, or a party in that group, represents, or on a balance that their own party, or a party in that group, owes or guarantees, while another named human who may do so is on the roster, and an agent SHALL NOT do so where any of those holds for its sponsor's party or for the party of a person on whose request or behalf it acts (its principal, change A AM-03), or for either's group; `define-mvp-practice-foundation` PR-15's own-record rule and its one-person alternative govern, and the record then keeps both roles and that fact (its design call F-7, PROPOSED). It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
+Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the named human who placed or lifted it where a human did, the signer where one signs (BAB-17), the time and the provenance. A named human SHALL NOT place or lift a hold on a patient who is their own party or in its same-person group, or whom their own party, or a party in that group, represents, or on a balance that their own party, or a party in that group, owes or guarantees, while another named human who may do so is on the roster, and an agent SHALL NOT do so where any of those holds for its sponsor's party or for the party of a person on whose request or behalf it acts (its principal, change A AM-03), or for either's group; `define-mvp-practice-foundation` PR-15's own-record rule and its one-person alternative govern, and the record then keeps both roles and that fact (its design call F-7, PROPOSED). Ruling 185 rules the case of lifting a hold on a balance the person owes: it needs a second person where one exists, and uses ruling 144's one-person alternative where none does (ruling 185); the other cases in this paragraph are F-7's. It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
 
 #### Scenario: A staff member places a hold
 - **WHEN** a biller places a hold under an approved policy
