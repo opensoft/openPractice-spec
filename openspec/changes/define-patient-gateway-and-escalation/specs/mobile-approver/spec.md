@@ -39,12 +39,22 @@ The physician's clinical work SHALL stay in openChart, on mobile or workstation 
 - **WHEN** a clinician tries to answer a clinical item from the mobile approver
 - **THEN** the app offers no reply path, because clinical replies belong to openChart
 
-### Requirement: MA-04 Notifications carry no PHI, and deep links need re-authentication
-Push notifications from the mobile approver MUST NOT contain PHI. Their text SHALL be generic, and they SHALL carry only an opaque item reference. A deep link SHALL open the item only after the user re-authenticates. When the session is absent or expired, the deep link SHALL fail closed to the sign-in screen. The app SHALL log the user off automatically when idle (constitution Principle I).
+### Requirement: MA-04 Notifications carry no PHI, and a deep link opens an item only after a fresh user verification
+Push notifications from the mobile approver MUST NOT contain PHI. Their text SHALL be generic, and they SHALL carry only an opaque item reference. On the mobile approver, re-authentication SHALL be a user verification by face, fingerprint or passkey, through an OS-backed, phishing-resistant authenticator bound to the device, and never a typed password (ruling 105). A deep link SHALL open the item only after such a verification, unless the session's last verification was within the last 60 seconds (ruling 105). When the session is absent or expired, the deep link SHALL fail closed to the sign-in screen. The app SHALL log the user off automatically when idle (constitution Principle I).
+
+These are design calls under ruling 105 (DC-59, PROPOSED): a typed password is used only to enrol a device and its authenticator and to recover access, and never to open an item or to sign; where the face or fingerprint check is unavailable or fails, the device PIN of the same OS-backed authenticator is the fallback.
 
 #### Scenario: An approval is waiting
 - **WHEN** a work-inbox item needs a user's approval
-- **THEN** the push text is generic, and opening it asks the user to re-authenticate before the item appears
+- **THEN** the push text is generic, and opening it asks for a face, fingerprint or passkey verification before the item appears
+
+#### Scenario: A second item within a minute
+- **WHEN** a user verified 30 seconds ago and opens another deep link
+- **THEN** the item opens without a new prompt
+
+#### Scenario: A typed password is offered to open an item
+- **WHEN** a user tries to open an item by typing a password
+- **THEN** the app does not accept it, and asks for a face, fingerprint or passkey verification
 
 #### Scenario: The session has expired
 - **WHEN** a user opens a deep link after the session expired
@@ -72,12 +82,16 @@ Each device session SHALL be revocable. The user, the office manager, or same-da
 - **WHEN** a revoked device sends a request
 - **THEN** the request is refused and no data is returned
 
-### Requirement: MA-07 Sign-offs on mobile follow the FD-5 tiers and BAB-17, with re-authentication at signing
-A sign-off on the mobile approver SHALL follow the action's FD-5 tier and BAB-17, exactly as on the workstation. Tier-4 actions SHALL be signed by a named human only. The D8 approval and estimator-version approvals SHALL be given by the practice's accountant only. Each mobile sign-off SHALL require re-authentication at the moment of signing (design call DC-19). It SHALL record the signer, the time, the device-session reference and the provenance. The server SHALL refuse a sign-off that the user's role does not allow.
+### Requirement: MA-07 Sign-offs on mobile follow the FD-5 tiers and BAB-17, each with its own user verification at signing
+A sign-off on the mobile approver SHALL follow the action's FD-5 tier and BAB-17, exactly as on the workstation. Tier-4 actions SHALL be signed by a named human only. The D8 approval and estimator-version approvals SHALL be given by the practice's accountant only. Each mobile sign-off SHALL require its own user verification at the moment of signing, by face, fingerprint or passkey and never a typed password, and a verification made to open the item SHALL NOT stand in for it, however recent (ruling 105). The sign-off's verification SHALL produce an assertion bound to the item, the decision and the time, which the server verifies and records with the sign-off (design call DC-59, PROPOSED). The sign-off SHALL record the signer, the time, the device-session reference, that assertion and the provenance. The server SHALL refuse a sign-off that the user's role does not allow.
 
 #### Scenario: A practice manager approves a refund on a phone
 - **WHEN** a named human with the authority approves a refund leaving the practice on the mobile approver
-- **THEN** they re-authenticate, and the tier-4 sign-off is recorded with their identity, the time and the device-session reference
+- **THEN** they verify with face, fingerprint or passkey for the sign-off itself, and the tier-4 sign-off is recorded with their identity, the time, the device-session reference and the assertion bound to that refund, the approval and the time
+
+#### Scenario: A sign-off right after opening the item
+- **WHEN** a user opens an item with a fingerprint check and approves it ten seconds later
+- **THEN** the app asks for a new verification for the approval, and the opening verification is not used
 
 #### Scenario: A non-accountant tries to approve an estimator version
 - **WHEN** a user who is not the practice's accountant tries to approve an estimator version on the mobile approver

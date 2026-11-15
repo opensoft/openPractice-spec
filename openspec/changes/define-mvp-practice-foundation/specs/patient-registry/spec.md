@@ -196,3 +196,36 @@ Test fixtures, seed data, examples and documentation for the patient registry MU
 #### Scenario: Fixture review
 - **WHEN** a reviewer inspects the registry's fixtures and examples
 - **THEN** every person, identifier, address and contact value carries a synthetic marker and none is real
+
+### Requirement: PR-15 One party per real person or organization; every other identity is a role or a link
+openPractice SHALL keep one party record per real person or organization in its party register (ruling 32, adopting framework D1; this requirement's wording is spec-critique correction SC-2, design call F-6, PROPOSED). Everything else SHALL be a role of a party or a link between parties, never a second person record:
+- the administrative patient record of PR-01 is the patient role of a party;
+- a guarantor who is another person (PR-06), a subscriber who is not the patient (PR-07), a person named as a contact, and a representative (change `define-patient-gateway-and-escalation` PG-06) are roles of, or links to, a party;
+- a person who later becomes a patient, such as a guarantor parent, keeps the same party and gains the patient role;
+- a payer and the practice are parties of type organization.
+
+Search before create (PR-08) SHALL also show every party that exactly matches and holds another role, so that an existing party gains the patient role instead of a second record. Each human roster entry SHALL reference exactly one party (change `define-actors-agents-and-work-inbox` AM-01). An AI agent and a named integration identity SHALL NOT be parties. The commerce customer role SHALL follow ruling 32: it applies only to membership and retail buyers, and a medical-billing accounting customer is derived from the guarantor or payer role (change `define-customer-financial-data-boundaries`, customer-role-boundaries). Table and DocType names are set in planning.
+
+Sharing one party SHALL NOT merge what belongs to a role or a link. Confidential-communication instructions (PR-05), communication authority, effective dates, provenance and visibility stay with the role or link they belong to, and authority held through one role grants nothing through another (customer-role-boundaries). Deactivation (PR-11) and hard delete (PR-12, PR-13) act on the patient role: a party that still holds another role or link keeps it, and its shared identity facts are not removed while any role or link remains. The party is openPractice's own record. It is never shared with, or matched to, an identity in HealthLinc or the EHR, which link to it only through their own link contracts (ruling 39; EB-01; PG-05). Finding that one person has two party records SHALL NOT merge them automatically (PR-08): it raises review work, and a merge is a tier-4 action signed by a named human (BAB-17).
+
+**A staff member who is also a patient, guarantor, subscriber or representative.** One person may hold several roles (ruling 107): the roster entry and the other role reference the same party, and every sign-off records the role used. Work that changes, adjusts, writes off, approves or signs anything on a record where the actor's own party holds a role SHALL be owned and decided by another roster entry that holds the grant (design call F-7, PROPOSED). Where the practice has no other roster entry that holds the grant, ruling 107's one-person alternative applies: the person may act, and the action records the role used and that the actor's own party holds a role on the record. An accountant's or counsel's sign-off SHALL NOT be self-approved (ruling 107). How such actions are reviewed in a one-person practice belongs to the practice-readiness change of ruling 107.
+
+#### Scenario: A guarantor later becomes a patient
+- **WHEN** staff register as a patient a parent who is already recorded as a guarantor
+- **THEN** search before create shows the existing party, the party gains the patient role, no second person record is created, and the guarantor history is unchanged
+
+#### Scenario: A staff member's own balance
+- **WHEN** a front-desk staff member who is also a patient of the practice starts a write-off on their own balance, and another roster entry holds the grant
+- **THEN** the write-off is routed to that roster entry to decide, and the staff member's attempt is recorded with the role used
+
+#### Scenario: An AI agent joins the roster
+- **WHEN** an AI agent is added to the roster
+- **THEN** its roster entry references no party, and no party record is created for it
+
+#### Scenario: One person is found twice
+- **WHEN** staff find that a guarantor's party and a patient's party are the same person
+- **THEN** review work is raised, and the two are merged only by a named human's tier-4 sign-off
+
+#### Scenario: A patient record is deactivated while its party is a guarantor
+- **WHEN** a deceased patient's record is deactivated, and the same party is the guarantor of a minor's balance
+- **THEN** the patient role is deactivated, and the guarantor role, its contact facts and its balances continue unchanged

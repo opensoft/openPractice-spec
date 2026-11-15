@@ -4,9 +4,9 @@ Status: **PENDING — SPECKIT FEATURE CREATION IS NOT AUTHORIZED**
 
 This record is the mandatory, durable owner gate for OpenSpec change `define-patient-gateway-and-escalation`. Creating any Speckit feature before this record is completed exactly as required is prohibited.
 
-The rulings this change encodes (34 to 54, with 68 to 71) were made by Brett Heap on 2026-11-14, and rulings 93 and 97, which govern this change's follow-up, on 2026-11-15. They are recorded in `design.md` under "Owner rulings (2026-11-14)", and the follow-up's edits under "Follow-up of 2026-11-15". Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
+The rulings this change encodes (34 to 54, with 68 to 71) were made by Brett Heap on 2026-11-14, and rulings 93 and 97, which govern this change's follow-up, on 2026-11-15, followed the same day by rulings 101, 102 and 104 to 106, which govern its corrections. They are recorded in `design.md` under "Owner rulings (2026-11-14)", the follow-up's edits under "Follow-up of 2026-11-15", and the corrections under "Corrections from the 2026-11-15 spec critique". Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
 
-The 53 design calls in `design.md` under "Design calls for owner review" have not been ruled; DC-46 to DC-53 come from the 2026-11-15 follow-up and its review. Ratification records the owner's disposition of each.
+The 59 design calls in `design.md` under "Design calls for owner review" have not been ruled; DC-46 to DC-53 come from the 2026-11-15 follow-up and its review, and DC-54 to DC-59 are design calls under rulings 101, 104, 105 and 106. Ratification records the owner's disposition of each.
 
 ## Required Validation Evidence
 
@@ -42,11 +42,13 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
   - Namespace `healthlinc` and issuer handling match: _pending_
   - Entitlement semantics match (three always-granted capabilities; no derived restrictions): _pending_
   - The entitlement assertion is requested for a relying party and passed on unchanged (PG-16); a representative's relationship and authority are taken from openPractice (PG-06); `clinician_acknowledged` is reported only when `inquiry.status` carries it (ER-19): _pending_
+  - A late split's administrative part resubmitted as the same question, with its own `inquiry_ref`, `recategorizes_routing_id`, and no second notice to the patient (ER-12): _pending_
 - **`MedxSoft/medXfactory`, change `define-care-organization-hermes-openpractice-operations`** (agent operations only)
   - Companion change and revision compared: _pending_
   - Read-only answer types and work-item operations in agent-operations 1.0, and the MINOR carrying `gateway.administrative_reply`, `payment_hold.place` and `payment_hold.lift`: _pending_
   - openPractice's consent check relied on for patient answers (change A AH-06); Hermes's administrative messages separated from clinical ones (ruling 68); no clinical answering: _pending_
   - Ladder from `propose`, the AH-05 cap and the pause switch honored: _pending_
+  - Model providers under verified zero data retention, and the operator's deletion of misrouted copies confirmed within the deadline (ER-12; change A AH-02): _pending_
 - **`MedxSoft/medXfactory`, change `define-patient-medical-ai-connection`** (the medical AI; ruling 93)
   - Companion change and revision compared: _pending_
   - Clinical AI answering and its clinical-safety governance owned there; `medxfactory` conversation references; the medical AI's records reaching openChart through MedxEHR, outside openPractice (rulings 53 and 70): _pending_
@@ -57,7 +59,8 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending; must be exactly `A — ordered multi-feature handoff` or `B — split into per-capability changes` (design call DC-21 proposes `A`; no ruling states a shape)_
-- Design-call dispositions (DC-1 to DC-53, each accepted, changed or rejected; DC-39 is marked for the owner, and DC-46 to DC-53 are PROPOSED by the 2026-11-15 follow-up and its review): _pending_
+- Design-call dispositions (DC-1 to DC-59, each accepted, changed or rejected; DC-39 is marked for the owner, DC-46 to DC-53 are PROPOSED by the 2026-11-15 follow-up and its review, and DC-54 to DC-59 are PROPOSED under rulings 101, 104, 105 and 106): _pending_
+- Open Questions 22 (the on-call alert for a missing clinician acknowledgment) and 23 (a split that openChart asks for) dispositioned: _pending_
 - Tension dispositions (T-1 to T-12; T-9, T-10 and T-12 are recorded as resolved by rulings 50, 52 and 71, and T-11 proposes a follow-up): _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 

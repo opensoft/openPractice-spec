@@ -180,3 +180,25 @@ Every action this change defines SHALL follow its FD-5 tier (ruling 33). Its tie
 #### Scenario: An opted-in agent signs
 - **WHEN** batch release is opted in for agent signing and a named AI agent releases a batch
 - **THEN** the release is recorded with the agent's name, its openWallet ID, the time and the provenance
+
+### Requirement: BAB-18 Every openPractice contract carries money in one format
+Every `openpractice-*` contract SHALL carry an amount as decimal text plus a currency code (ruling 103): a JSON string holding a decimal number with exactly the currency's minor-unit digits and an explicit leading minus sign when negative, never a JSON number, together with the amount's ISO 4217 alphabetic currency code, which travels on the object that holds the amount or on the object that holds its lines. This is the form `openpractice-accounting-integration/1.0` uses (AI-02). openPractice SHALL store every amount as a whole number of the currency's minor units: whole cents for USD (ruling 103).
+
+These rules are design calls under ruling 103 (F-8 to F-10, PROPOSED):
+- version 1.0 of every contract supports USD only, so every 1.0 amount has exactly two decimal places. Supporting another currency needs a governed MINOR version that states its minor-unit digits from ISO 4217; a currency with no minor unit carries no decimal point (F-8);
+- each contract states its rounding rule once. openPractice rounds an amount only when it computes one, such as an estimate or an allocation, and rounds it once, to the minor unit; every total is the sum of amounts already rounded, so a batch balances exactly (F-9);
+- a batch, and every message that holds several amounts, carries one currency, and a batch with a second currency is refused at release (F-10).
+
+A future contract that carries money, such as a claim, remittance or payment contract, SHALL meet this requirement and state its own rounding rule.
+
+#### Scenario: An amount is sent as a number
+- **WHEN** a message carries an amount as the JSON number 123.45
+- **THEN** it fails the canonical schema
+
+#### Scenario: A batch holds two currencies
+- **WHEN** an assembled batch holds lines in USD and in another currency
+- **THEN** release is refused and the lines are named
+
+#### Scenario: An estimate has a fraction of a cent
+- **WHEN** openPractice computes an estimated amount of 33.335 USD
+- **THEN** it rounds it once, to 33.34 under the accounting contract's rule, stores 3334 cents, and adds the rounded amount into every total

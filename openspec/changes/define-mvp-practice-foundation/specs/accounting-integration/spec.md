@@ -23,6 +23,8 @@ This contract SHALL own posting mechanics (ruling 26): posting identity and idem
 ### Requirement: AI-02 The accounting contract has one canonical schema identified by digest
 The canonical schema SHALL be `openpractice-accounting-integration-1.0.schema.json` in this change's `contracts/` directory, identified by the SHA-256 digest of its bytes. It defines batch content, postings, summary lines, bank-line read results and recipient-profile documents (AI-23). Every adapter SHALL validate batch content against the schema with the recorded digest.
 
+Its amounts follow BAB-18 (ruling 103): decimal text with two places and an ISO 4217 code, USD only in 1.0, one currency per batch, and one currency per bank-lines result, which carries its `currency` once. Its rounding rule, stated once here (design call F-9 under ruling 103, PROPOSED): when openPractice computes an amount, it rounds it once to the cent, half away from zero, and every summary line and total is the sum of amounts already rounded.
+
 #### Scenario: A batch fails the schema
 - **WHEN** an assembled batch does not validate against the canonical schema
 - **THEN** release is refused and the failing postings are named

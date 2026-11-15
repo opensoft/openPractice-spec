@@ -12,7 +12,7 @@ openPractice SHALL recognize exactly these actor types:
 - patient or representative, acting only through the HealthLinc gateway (change `define-patient-gateway-and-escalation`);
 - system integration.
 
-Staff, VAs, nurses, clinicians, the medical director, the controller or office manager, and AI agents SHALL each be a roster entry. A system integration SHALL be a named integration identity, as PR-10 already allows. A patient or representative SHALL NOT be a roster entry. The system SHALL refuse any action from an actor whose type it cannot determine.
+Staff, VAs, nurses, clinicians, the medical director, the controller or office manager, and AI agents SHALL each be a roster entry. A system integration SHALL be a named integration identity, as PR-10 already allows. A patient or representative SHALL NOT be a roster entry. Each human roster entry SHALL reference exactly one party in the party register of `define-mvp-practice-foundation` PR-15, and an AI agent or a system integration SHALL reference none; a person who is both staff and a patient holds one roster entry, for the staff role only, acts as a patient only through the gateway, and both reference the same party (spec-critique correction SC-2, PROPOSED). The system SHALL refuse any action from an actor whose type it cannot determine.
 
 #### Scenario: A remote VA signs in
 - **WHEN** a remote VA signs in

@@ -61,7 +61,7 @@ For every linked patient, the result SHALL always grant `urgent_escalation`, `bi
 ### Requirement: PG-04 Active means an active registry record, plus a current membership where the practice sells memberships
 openPractice SHALL treat a linked patient as active only when two conditions hold (ruling 42):
 - the patient's registry record is active under change `define-mvp-practice-foundation` (PR-01, PR-11);
-- where the practice sells memberships, the patient's membership is current under the entitlement rules of change `define-customer-financial-data-boundaries` (PR #3, not yet on main).
+- where the practice sells memberships, the patient's membership is current under the entitlement rules of change `define-customer-financial-data-boundaries`, merged on `main`.
 
 A linked patient who is not active SHALL keep the three always-granted capabilities. Every other capability SHALL be withheld, with reason `registry_inactive`, `membership_not_current` or `membership_entitlement_unresolved`, subject to ruling 50's safeguards below. This extends ruling 34 for patient safety (design call DC-4). How the membership condition applies to a patient with no membership, in a practice that also serves non-members, is design call DC-10.
 

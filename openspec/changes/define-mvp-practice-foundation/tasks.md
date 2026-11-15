@@ -8,18 +8,19 @@
 
 Each feature is gated on task 1.2 and is created from the assembly root `opensoft/openPractice` on its base branch.
 
-- [ ] 2.1 **Feature 1: patient registry (Slice 0). Created first.** Owns PR-01 to PR-14. Gate: task 1.2. Acceptance evidence:
+- [ ] 2.1 **Feature 1: patient registry (Slice 0). Created first.** Owns PR-01 to PR-15. Gate: task 1.2. Acceptance evidence:
   - every PR requirement and scenario is traced to planned work and tests;
   - the PHI safeguard plan, security review and risk-analysis update are recorded;
   - the tamper-evident audit and its redaction mechanism (T-14) are chosen and tested;
-  - fixtures are synthetic only.
+  - fixtures are synthetic only;
+  - one party per person (PR-15): roles and links instead of second person records, search before create showing parties that hold other roles, no automatic merge, and a staff member's own record decided by another roster entry or under the recorded one-person alternative.
 - [ ] 2.2 **Feature 2: EHR patient link and demographic publication, openPractice side (Slice 0).** Owns EB-01 to EB-12, EB-19 and EB-20. Gate: task 1.2, and Feature 1 merged. Acceptance evidence:
   - contract tests validate every message against the patient-link canonical schema at its recorded digest;
   - the suspension, correction-request and single-resolver paths are covered;
   - all tests run against an EHR contract double.
 
   Live interoperation with openChart waits until openChart's change has been ratified and implemented.
-- [ ] 2.3 **Feature 3: billing–accounting boundary, banks, accounting contract and ERPNext adapter (Slice 4).** Owns BAB-01 to BAB-17 and AI-01 to AI-23. Gate: task 1.2. Two prerequisites must be complete first, each under its own governance: the FD-7 Thread contract must be versioned, and the money ledger and reason taxonomy must be defined. Acceptance evidence:
+- [ ] 2.3 **Feature 3: billing–accounting boundary, banks, accounting contract and ERPNext adapter (Slice 4).** Owns BAB-01 to BAB-18 and AI-01 to AI-23. Gate: task 1.2. Two prerequisites must be complete first, each under its own governance: the FD-7 Thread contract must be versioned, and the money ledger and reason taxonomy must be defined. Acceptance evidence:
   - contract tests for every operation, AI-13 event, key and `supersedes` case, mode lock, date rule, constrained-estimate revenue with evidence true-ups and close re-estimates, and summary-journal control-account reconciliation by payer class;
   - the ERPNext adapter passes over REST against the **remote** topology, using a contract double or a disposable synthetic instance (the remote topology alone satisfies acceptance);
   - openPractice tests green with no ERPNext present;
@@ -30,7 +31,8 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - customer names and billing contacts reach a destination only in customer-detail mode with its gate satisfied; summary-journal batches carry no customer record; every customer-detail batch records its recipient-profile version, and no profile adds an excluded field (AI-10, AI-15, AI-16, AI-23);
   - openPractice is the single poster of each deposit it explains, other-route shares post as `other_route_share`, refund disbursements are matched, and charge finalization checks the offering route, with tier-3 release at the filing threshold (BAB-14, BAB-16, AI-17);
   - summary-journal minimum group size and roll-up (AI-15), and automatic close re-estimates (AI-12);
-  - sign-offs per BAB-17: agent sign-off refused when not opted in and at tier 4, and recorded with its openWallet ID when allowed.
+  - sign-offs per BAB-17: agent sign-off refused when not opted in and at tier 4, and recorded with its openWallet ID when allowed;
+  - money per BAB-18: every amount a decimal string with two places and a currency code, never a JSON number, USD only in 1.0, one currency per batch and per bank-lines result, the rounding rule of AI-02, and whole cents in storage.
 - [ ] 2.4 **Feature 4: clinical-fact consumption for charge capture (Slice 3).** Owns EB-13 to EB-18. It consumes the Thread, because waiting on clinical documentation and the deadline escape are thread conditions. Gate: task 1.2, Feature 2 merged, and the FD-7 Thread contract versioned. The owner may fold this feature into the Slice 3 charge-capture feature, provided ownership is recorded. Acceptance evidence:
   - contract tests run against the clinical-facts canonical schema at its recorded digest;
   - manual entry is marked manual while the capability result is false;
@@ -51,7 +53,7 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - Open Question 4, the legacy-collections account: blocks Feature 3's first release for any practice with legacy run-off.
   - Open Question 5, the mode continuity procedure: blocks any post-release mode change (AI-09). Feature 3 records the refusal path.
   - Open Question 6, R-2: blocks any future automatic batch release. Feature 3 records explicit release.
-  - Open Question 7, two receivable routes in one destination (rulings 24 and 26): owned by change `define-customer-financial-data-boundaries`, on branch `define-customer-financial-data-boundaries` and not yet on main. It blocks Feature 3's go-live in a destination that also carries membership or retail customers, or whose explained deposits fund their balances. Ratifying that change does not by itself lift the block: it lifts only when that change is ratified and Feature 3 has accepted evidence for the single deposit poster with `other_route_share` (BAB-14) and the offering-route check before charge finalization (BAB-16). Feature 3 tests AI-22 in every case.
+  - Open Question 7, two receivable routes in one destination (rulings 24 and 26): owned by change `define-customer-financial-data-boundaries`, merged on `main` as a draft. It blocks Feature 3's go-live in a destination that also carries membership or retail customers, or whose explained deposits fund their balances. Ratifying that change does not by itself lift the block: it lifts only when that change is ratified and Feature 3 has accepted evidence for the single deposit poster with `other_route_share` (BAB-14) and the offering-route check before charge finalization (BAB-16). Feature 3 tests AI-22 in every case.
   - Open Question 8, telling withdrawals apart for claims already sent: blocks nothing; Feature 4 lets staff choose the claim action (F-4).
   - Open Question 9, the PROPOSED follow-up calls F-1 to F-4: block Feature 4's retraction handling until the owner dispositions them at ratification.
 

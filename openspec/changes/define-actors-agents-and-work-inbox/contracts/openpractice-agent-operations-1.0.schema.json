@@ -663,7 +663,8 @@
     },
     "executes_at": {
      "type": "string",
-     "format": "date-time"
+     "format": "date-time",
+     "description": "When the scheduled action runs. Present only when outcome is scheduled."
     },
     "refusal_reason": {
      "enum": [
@@ -691,7 +692,7 @@
       "consent_not_recorded",
       "not_item_owner"
      ],
-     "description": "Coded reasons only. text_not_held: openPractice holds no text for that item (AO-13). answer_not_pending: the answer to cancel is not this agent's, or is no longer pending (AO-13). consent_not_recorded: the patient's consent to AI-authored administrative messaging is not in force, or is held for review (AH-06). not_item_owner: the agent is not the current owner of the item a work-item operation names (AO-13). rate_limited on a work-item operation: the item is released to its lane's human owner (AO-08)."
+     "description": "Coded reasons only. text_not_held: openPractice holds no text for that item (AO-13). answer_not_pending: the answer to cancel is not this agent's, or is no longer pending (AO-13). consent_not_recorded: the patient's consent to AI-authored administrative messaging is not in force, or is held for review (AH-06). not_item_owner: the agent is not the current owner of the item a work-item operation names (AO-13). rate_limited on a work-item operation: the item is released to its lane's human owner (AO-08). Present only when outcome is refused."
     },
     "item_text": {
      "$ref": "#/$defs/itemText"
@@ -1130,6 +1131,40 @@
       "properties": {
        "outcome": {
         "const": "read_result"
+       }
+      },
+      "required": [
+       "outcome"
+      ]
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "refusal_reason"
+      ]
+     },
+     "then": {
+      "properties": {
+       "outcome": {
+        "const": "refused"
+       }
+      },
+      "required": [
+       "outcome"
+      ]
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "executes_at"
+      ]
+     },
+     "then": {
+      "properties": {
+       "outcome": {
+        "const": "scheduled"
        }
       },
       "required": [

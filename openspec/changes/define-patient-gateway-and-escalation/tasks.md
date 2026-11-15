@@ -26,7 +26,7 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - the PHI safeguard plan, security review and risk-analysis update are recorded.
 
   Live interoperation waits for the HealthLinc companion change to be ratified and to match (task 1.4).
-- [ ] 2.2 **Feature 2: escalation routing and clinical handoff, openPractice side.** Owns ER-01 to ER-19. Gate: Feature 1 merged, the EHR-link feature of `define-mvp-practice-foundation` merged, and change A's actor-model and work-inbox features merged. Acceptance evidence:
+- [ ] 2.2 **Feature 2: escalation routing and clinical handoff, openPractice side.** Owns ER-01 to ER-20. Gate: Feature 1 merged, the EHR-link feature of `define-mvp-practice-foundation` merged, and change A's actor-model and work-inbox features merged. Acceptance evidence:
   - contract tests validate every handoff message against the clinical-handoff schema at its recorded digest, against openChart and HealthLinc doubles;
   - the reference-only payload is tested, including refusal of any content field;
   - urgency is never lowered, by any path;
@@ -39,7 +39,8 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - `clinician_acknowledged`: recorded, acknowledged, passed to HealthLinc only while the item is open, a late one not forwarded, a nurse owner covered, and changing no alert, fallback, retry or clock;
   - a recategorization cancels every pending agent answer on the item;
   - Hermes never decides its own draft, and read-only answers follow change A's AH-05 exception 1;
-  - the link precondition, re-routing, splitting and text removal are tested;
+  - the link precondition, re-routing, splitting and text removal are tested, including a late split's continuation, the lane reminder and its alert, and the operator's deletion confirmation and its deadline (ER-12);
+  - the office manager's alert for an urgent item with no clinician acknowledgment in time is tested, and changes no routing, clock, fallback or retry (ER-20);
   - the pause switch sends administrative items to staff and leaves urgent routing untouched;
   - clinical routing cannot be enabled without full on-call cover (DC-27).
 
@@ -57,10 +58,10 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   Holds stay refused in production until the medical director approves a counsel-reviewed policy version (Open Question 3).
 - [ ] 2.4 **Feature 4: mobile approver.** Owns MA-01 to MA-07. Gate: change A's work-inbox feature merged; Feature 2 merged before alerts are enabled. Acceptance evidence:
   - every action goes through the versioned API, with server-side checks;
-  - notifications carry no PHI, and deep links need re-authentication;
+  - notifications carry no PHI, and a deep link opens an item only after a face, fingerprint or passkey verification, skipped within 60 seconds of the last one, and never after a typed password;
   - no PHI remains on the device after logoff, idle timeout or revocation;
   - lost-device revocation through AM-05;
-  - sign-offs follow FD-5 and BAB-17, with re-authentication at signing, tier 4 human-only and D8 accountant-only;
+  - sign-offs follow FD-5 and BAB-17, each with its own verification and an assertion bound to the item, the decision and the time, tier 4 human-only and D8 accountant-only;
   - no clinical content is shown.
 
 ## 3. Planning Gates For Every Feature
@@ -88,9 +89,11 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - Open Question 16, the HealthLinc operator agreement: blocks enabling the gateway for any HealthLinc deployment (PG-15).
   - Open Question 17, distinguishing a demographic hold from a linkage conflict: blocks nothing here; a follow-up change owns it (T-11).
   - Open Question 18, the assertion's pin form, lifetime, skew and registration record: blocks issuing assertions in Feature 1; every other gateway function proceeds, and urgent access never depends on it.
-  - Open Question 19, an alert on a missing clinician acknowledgment: blocks nothing; Feature 2 records that the status changes no safety path.
+  - Open Question 19, an alert on a missing clinician acknowledgment: closed by ruling 101; Feature 2 builds ER-20, with the window of DC-58.
   - Open Question 20, the PROPOSED calls DC-46 to DC-53: block the features that build them until the owner dispositions them at ratification.
   - Open Question 21, per-audience identifiers: blocks nothing in 1.0 (DC-53).
+  - Open Question 22, the on-call alert for a missing clinician acknowledgment: blocks nothing; ER-20 alerts the office manager only.
+  - Open Question 23, a split that openChart asks for: blocks nothing in openPractice; the lane reminder covers the splits openPractice asks for.
 
 ## 4. Acceptance and Closure
 

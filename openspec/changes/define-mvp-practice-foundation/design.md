@@ -24,12 +24,12 @@ Ideation paths are relative to the root of `opensoft/openPractice-spec`. All of 
 - [`ideation/brainstorm/openpractice-small-practice-beta-enrollment-gated-billing.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-enrollment-gated-billing.md) and [`ideation/brainstorm/openpractice-small-practice-beta-provider-enrollment-and-directory.md`](../../../ideation/brainstorm/openpractice-small-practice-beta-provider-enrollment-and-directory.md): the participation tuple and enrollment cases.
 - [`ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md`](../../../ideation/brainstorm/openpractice-feature-list-registration-and-demographics.md) and [`ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md`](../../../ideation/brainstorm/openpractice-feature-list-interoperability-and-exchange.md).
 - [`ideation/review/openpractice-feat-review-synthesis.md`](../../../ideation/review/openpractice-feat-review-synthesis.md): §2(m) clinical boundary, §6.7 period close, and §6.11 append-only integrity versus deletion.
-- Change `define-customer-financial-data-boundaries` (`openspec/changes/define-customer-financial-data-boundaries/`) and its brainstorm packet `openpractice-customer-financial-separation` (`ideation/brainstorm/openpractice-customer-financial-separation-overview.md`, with its `-identity`, `-financial-routing`, `-business-views` and `-synthesis-customer-to-books` documents). These are on branch `define-customer-financial-data-boundaries`, not yet on main, and the change is a draft. It owns customer and party roles, routing by offering, obligation ownership and purpose-bound business views, and it references this change's accounting contract for posting (ruling 26). The paths are given as text, not links, because they do not yet resolve on main.
-- Brainstorm `ideation/brainstorm/openpractice-domain-framework.md` (branch `docs/ideation-domain-framework-revenue-recognition`, not yet on main), proposal status. It covers bounded contexts, the source-of-truth table, receivable options A, B and C, the posting contract and revenue recognition (§5A). Rulings 28 to 31 adopt or amend parts of it. Its posting contract (§5.4, §7) is governed by this change's `openpractice-accounting-integration/1.0` (ruling 26).
+- Change `define-customer-financial-data-boundaries` (`openspec/changes/define-customer-financial-data-boundaries/`) and its brainstorm packet `openpractice-customer-financial-separation` (`ideation/brainstorm/openpractice-customer-financial-separation-overview.md`, with its `-identity`, `-financial-routing`, `-business-views` and `-synthesis-customer-to-books` documents). Both are merged on `main`, and the change is a draft. It owns customer and party roles, routing by offering, obligation ownership and purpose-bound business views, and it references this change's accounting contract for posting (ruling 26).
+- Brainstorm `ideation/brainstorm/openpractice-domain-framework.md` (merged on `main`), proposal status. It covers bounded contexts, the source-of-truth table, receivable options A, B and C, the posting contract and revenue recognition (§5A). Rulings 28 to 31 adopt or amend parts of it. Its posting contract (§5.4, §7) is governed by this change's `openpractice-accounting-integration/1.0` (ruling 26).
 
 ## Owner rulings (2026-11-14)
 
-Rows 1 to 33 have the same source: **Brett Heap, 2026-11-14, authoring session.** Rows marked (2026-11-15) have the source **Brett Heap, 2026-11-15, accepting the recommendations on decisions 79 to 98 except 80**; each quotes the question and the accepted wording. The requirement text matches each ruling.
+Rows 1 to 33 have the same source: **Brett Heap, 2026-11-14, authoring session.** Rows marked (2026-11-15) have the source **Brett Heap, 2026-11-15, accepting the recommendations on decisions 79 to 98 except 80**, except rows 103 and 107, whose source is **Brett Heap, 2026-11-15, accepting the recommendations on decisions 99 to 111** ("accept your recs for 99-111"); each quotes the question and the accepted wording. The requirement text matches each ruling.
 
 | # | Ruling | Governs |
 |---|---|---|
@@ -70,6 +70,8 @@ Rows 1 to 33 have the same source: **Brett Heap, 2026-11-14, authoring session.*
 | 88 | (2026-11-15) Question: a patient link is revoked or superseded while corrections are queued; do the retractions still go out? Accepted: "Yes. Retractions of facts already published under that link are delivered, as pointers only. No new facts and no reads are served. Otherwise openPractice keeps billing withdrawn facts." | EB-15 (accepted after a link ends), EB-13, clinical-facts schema `link_id` note |
 | 89 | (2026-11-15) Question: the clinical-facts contract has only one retraction message, "entered in error", now also used where that reason is wrong. Accepted: "Add a retraction reason code to the contract now, while 1.0 is still unratified. That is a small follow-up PR in openPractice-spec …" The same follow-up also carries the erratum to the gateway change's companion list. | EB-15, clinical-facts schema `retraction_reason`, F-1 to F-3 |
 | 93 | (2026-11-15) Question: follow-up change to the merged openPractice contracts. Accepted: "Yes, one draft PR carrying: the agent operations Hermes lacks and the consent check; a verifiable entitlement; a clinician-acknowledged status; the representative's relationship and authority; the retraction reason code …" The list ends with an erratum to the gateway change's companion list: agent operations belong to medXfactory change `define-care-organization-hermes-openpractice-operations`, and clinical AI answering to medXfactory change `define-patient-medical-ai-connection`. | Here, the retraction reason code only; "Follow-up of 2026-11-15" below |
+| 103 | (2026-11-15) Question: one money format for every contract. Accepted: "Decimal text plus a currency code on the wire, as the accounting contract already does. Whole cents in storage." | BAB-18; AI-02; accounting schema `money`, `currency` and the bank-lines result's `currency`; F-8 to F-10 are design calls under it |
+| 107 | (2026-11-15) Question: one person in several roles. Accepted: "Allowed, with each sign-off recording the role used. A rule that needs two people names a one-person alternative, as ruling 98 does. Accountant and counsel sign-offs cannot be self-approved. The readiness checklist and starter policies go in a new change." | PR-15 (a staff member who is also a patient, guarantor, subscriber or representative); F-7 is a design call under it. The readiness checklist and starter policies belong to a new change, not this one |
 
 **Mode names.** To implement ruling 26, the posting-mode names were aligned across this change, `define-customer-financial-data-boundaries` and openChart's `define-openpractice-boundary`. The pair is `summary-journal` and `customer-detail`; they replace this change's earlier "summary" and "patient-level". Rows 7 and 12 use the new names, and their substance is unchanged.
 
@@ -203,7 +205,7 @@ Banks (ruling 5) are covered by these requirements:
 
 ### 7. The accounting contract: `openpractice-accounting-integration/1.0`
 
-The canonical schema is `contracts/openpractice-accounting-integration-1.0.schema.json`, SHA-256 `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885`.
+The canonical schema is `contracts/openpractice-accounting-integration-1.0.schema.json`, SHA-256 `a244a6df01f93924b456c5cb04ec6abf7870f71d5c9087b8415e89a2cd3af988` (it was `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885` before the corrections of 2026-11-15).
 
 **Ownership** (AI-01, ruling 26). This change owns the contract's posting mechanics: posting identity and idempotency, batches and their freeze, release, retries, the reconciliation report, the posting modes and the BAA gate. Change `define-customer-financial-data-boundaries` owns customer and party roles, routing by offering, obligation ownership and purpose-bound business views. That change references this contract for posting and defines no second posting mechanism.
 
@@ -463,10 +465,44 @@ This change was merged to `main` as an unratified draft. On 2026-11-15 the owner
 | F-4 | **PROPOSED.** Both codes have the same billing effect: the facts stop being billable, unfinalized charges are held, and staff choose a corrected or voided claim for a claim already sent. | EB-15 |
 | F-5 | **Fix round 1.** A retraction applies only to facts openPractice received under the same `link_id` and subject; any other reference changes nothing and raises an integration exception. This is a safety rule, not a design choice the owner must make. | EB-15 |
 
-| Contract | Digest before | Digest now |
+| Contract | Digest before | Digest after the follow-up |
 |---|---|---|
 | `openpractice-ehr-clinical-facts/1.0` | `6b2071fe61693d144aa91f4fc68e51d0cd7563d66b5cd2086f281a959f7e69ec` | `3aac773e9e8a8a370e1a78c845e5837d059b60146e411d973e0c54464aad12db` |
 | `openpractice-ehr-patient-link/1.0` | `76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802` | unchanged |
 | `openpractice-accounting-integration/1.0` | `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885` | unchanged |
 
 Every message valid before stays valid: the new field is optional, and is refused only on a notification that is not a retraction, as a value that is not a lowercase code, or as `entered_in_error` on an encounter-level or multi-resource retraction.
+
+## Corrections from the 2026-11-15 spec critique
+
+On 2026-11-15 the owner asked for the owner-supplied spec critique dated 2026-11-15 ([`ideation/review/openpractice-spec-critique-2026-11-15.md`](../../../ideation/review/openpractice-spec-critique-2026-11-15.md), added to the repository under ruling 111) to be worked through, and the same day accepted the recommendations that came out of it as rulings 99 to 111. Rulings 103 and 107 govern this change and are recorded in the Owner rulings table above. The critique was written against `main` at `0a82fc2`, before the ruling 93 follow-up, and each claim was checked against the text as it now stands. These corrections edit this unratified draft in place. Where a ruling's words decide something, the text states it as ruled; anything further is a design call under it, marked PROPOSED. `Status` stays `draft`, and `owner-ratification.md` stays PENDING.
+
+| # | Correction | Critique item | Where | What stays open |
+|---|---|---|---|---|
+| SC-1 | Cross-branch caveats made true: `define-customer-financial-data-boundaries` and the domain framework are cited as merged on `main` | D.1 | "Sources" above; `proposal.md` "Framework document"; `tasks.md` Open Question 7 routing | Nothing |
+| SC-2 | One party per real person or organization: the patient record, guarantor, subscriber, contact and representative are roles of, or links to, a party; a person who later becomes a patient keeps the same party; a human roster entry references one party; agents and integrations are not parties; the commerce customer role follows ruling 32; a staff member who is also a patient follows ruling 107 | B.1 | PR-15 (new); change `define-actors-agents-and-work-inbox` AM-01; one cross-reference sentence in `define-customer-financial-data-boundaries` `design.md` | F-6 and F-7 (PROPOSED). Table and DocType names are planning matters. How own-record actions are reviewed in a one-person practice belongs to the readiness change of ruling 107 |
+| SC-3 | One money format (ruling 103): decimal text plus an ISO 4217 code on the wire, whole cents in storage, for every `openpractice-*` contract. The critique cites AI-03 for the format; AI-03 is the ERPNext-only adapter rule, and until now the format lived only in the accounting schema's `money` definition, with no requirement stating it. The bank-lines result carried amounts with no currency code, so it gains a required `currency`, the one schema change here | B.2 | BAB-18 (new); AI-02; accounting schema | F-8 to F-10 (PROPOSED) |
+
+**Proposed calls under the corrections (for the owner).**
+
+| # | Call | Where |
+|---|---|---|
+| F-6 | **PROPOSED.** PR-15's wording of ruling 32: roles and links instead of second person records, search before create showing parties that hold other roles, deactivation and hard delete acting on the patient role while a party keeps its other roles, and no automatic merge. | PR-15 |
+| F-7 | **PROPOSED, under ruling 107.** Work on a record where the actor's own party holds a role is decided by another roster entry that holds the grant; where none exists, ruling 107's one-person alternative lets the person act, recording the role used and the own-party fact. | PR-15 |
+| F-8 | **PROPOSED, under ruling 103.** Version 1.0 of every contract supports USD only, with two decimal places; another currency needs a governed MINOR version stating its minor-unit digits, and a currency with no minor unit carries no decimal point. | BAB-18, accounting schema |
+| F-9 | **PROPOSED, under ruling 103.** Each contract states its rounding once. For the accounting contract: an amount openPractice computes is rounded once to the cent, half away from zero, and every total is the sum of rounded amounts. | BAB-18, AI-02 |
+| F-10 | **PROPOSED, under ruling 103.** One currency per batch and per message that holds several amounts; a batch with a second currency is refused at release. | BAB-18, AI-02, accounting schema |
+
+**Critique items answered elsewhere.**
+- **A** (the revenue-cycle core): ruling 110, "Yes. Its scope and decisions will follow as their own list." It is new work, not drafted here.
+- **C.1** (readiness and one person holding several authorities): ruling 107. Its readiness checklist and starter policies go in a new change, `define-practice-readiness`, by another author. PR-15 uses only the parts of ruling 107 that decide what happens when a staff member is also a patient.
+- **D.1**, second half, and **D.2**: ruling 108, the owner drafts a framing-decisions v2 that folds in rulings 1 to 98 with an index of every ruling, and version 1 stays as history. Ruling 109: nothing is promoted to canonical specs before building; the owner ratifies first, and each change is archived after its feature lands.
+- **B.3**, **C.2** and **C.3** are answered in `define-actors-agents-and-work-inbox` and `define-patient-gateway-and-escalation`.
+
+| Contract | Digest before | Digest now |
+|---|---|---|
+| `openpractice-accounting-integration/1.0` | `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885` | `a244a6df01f93924b456c5cb04ec6abf7870f71d5c9087b8415e89a2cd3af988` |
+| `openpractice-ehr-patient-link/1.0` | `76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802` | unchanged |
+| `openpractice-ehr-clinical-facts/1.0` | `3aac773e9e8a8a370e1a78c845e5837d059b60146e411d973e0c54464aad12db` | unchanged |
+
+The accounting change is one tightening: a bank-lines result must now carry `currency`. No consumer outside openPractice cites that digest.

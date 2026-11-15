@@ -40,14 +40,14 @@ Ideation paths are relative to the root of `opensoft/openPractice-spec`. FD-1 to
   - an urgent fallback, including on an expired or silent clock, with tracked on-call alerts escalated to the medical director, that tells HealthLinc to show its own emergency guidance;
   - Hermes answers under change A's ladder: read-only answers under change A's AH-05 exception 1 (rulings 45 and 46), and drafts at `propose`; staff answers by lane;
   - a clinician's clinical-need marker from openChart (ER-18);
-  - re-routing and splitting, so no clinical part stays in openPractice;
+  - re-routing and splitting, so no clinical part stays in openPractice; a mixed question found late comes back as the same question, with a reminder on the lane until it does (ruling 106); the agent operator deletes its copies of removed text and confirms, and model providers keep none (ruling 104);
   - after-hours cover, ownership at all times, and the pause switch;
   - an identity state on every handoff, so urgent and priority items are offered even on a link in review or with no chart link;
   - clinician urgency raises from openChart, which get the urgent path;
-  - a clinician's acknowledgment in openChart, reported to openPractice as `handoff.status` `clinician_acknowledged` and passed to HealthLinc as `inquiry.status` `clinician_acknowledged`, changing no safety path (ER-19, ruling 93).
+  - a clinician's acknowledgment in openChart, reported to openPractice as `handoff.status` `clinician_acknowledged` and passed to HealthLinc as `inquiry.status` `clinician_acknowledged`, changing no safety path (ER-19, ruling 93); and an alert to the office manager when an urgent item has no clinician acknowledgment in time, which changes no clinical path (ER-20, ruling 101).
 - **`payment-hold` (PH-01 to PH-09).** A hold blocks only routine clinical messaging, new non-urgent scheduling and non-urgent medical-AI consults, and never urgent help, billing contact or the patient's own records (rulings 41 and 52). No hold is placed before the medical director approves a versioned, counsel-reviewed policy. Placing is tier 3 and lifting tier 2, both proposed. The patient is told. Disputed balances and GFE dispute windows never count until the policy states their treatment. A hold stalls no claim.
-- **`mobile-approver` (MA-01 to MA-07).** A thin client on the same versioned API, for approvals, administrative escalations, the day-close signature and alerts (rulings 35 and 38). No PHI in notifications or on the device; re-authentication for deep links and sign-offs; lost-device revocation through AM-05. The physician's clinical work stays in openChart.
-- **Design calls.** Fifty-three items that go beyond the rulings are listed in `design.md` under "Design calls for owner review". Each either fails closed in binding text or is cited there as proposed.
+- **`mobile-approver` (MA-01 to MA-07).** A thin client on the same versioned API, for approvals, administrative escalations, the day-close signature and alerts (rulings 35 and 38). No PHI in notifications or on the device; a face, fingerprint or passkey verification, never a typed password, to open an item (skipped within 60 seconds of the last one) and for every sign-off (ruling 105); lost-device revocation through AM-05. The physician's clinical work stays in openChart.
+- **Design calls.** Fifty-nine items that go beyond the rulings are listed in `design.md` under "Design calls for owner review". Each either fails closed in binding text or is cited there as proposed.
 
 ## Required companion changes
 
@@ -60,9 +60,9 @@ Ruling 40 requires three companion changes. Rulings 47 to 49 asked for them to b
 
 ## Dependencies
 
-- **`define-mvp-practice-foundation`** (PR opensoft/openPractice-spec#2): the registry (PR-01 to PR-14), the EHR link (EB-01, EB-02, EB-04, EB-05, EB-06, EB-12), AI-22, AI-23 and BAB-17.
-- **`define-actors-agents-and-work-inbox`** (change A): AM-01 to AM-06, AO-01 to AO-12, WI-01 to WI-07, VA-01 to VA-05 and AH-01 to AH-05, and its amendments of FD-1 (ruling 38) and FD-10(b) (ruling 36). This change's branch is stacked on change A.
-- **`define-customer-financial-data-boundaries`** (PR opensoft/openPractice-spec#3, on branch `define-customer-financial-data-boundaries`, not yet on main): membership entitlement rules (PG-04) and obligation ownership (PH-07).
+- **`define-mvp-practice-foundation`** (merged on `main`): the registry (PR-01 to PR-14), the EHR link (EB-01, EB-02, EB-04, EB-05, EB-06, EB-12), AI-22, AI-23 and BAB-17.
+- **`define-actors-agents-and-work-inbox`** (change A): AM-01 to AM-06, AO-01 to AO-12, WI-01 to WI-07, VA-01 to VA-05 and AH-01 to AH-05, and its amendments of FD-1 (ruling 38) and FD-10(b) (ruling 36), all merged on `main`. This change builds on change A.
+- **`define-customer-financial-data-boundaries`** (merged on `main`): membership entitlement rules (PG-04) and obligation ownership (PH-07).
 
 ## Non-goals
 
@@ -78,7 +78,7 @@ Ruling 40 requires three companion changes. Rulings 47 to 49 asked for them to b
 
 ### New Capabilities
 - `patient-app-gateway` (PG-01 to PG-16): the gateway contract and schema, the operator-agreement gate, patient notices, entitlement and "active", the verifiable entitlement assertion, account and representative links, revocation, patient proposals, inquiry intake, reply relay, 1.0 scope, no-PHI rules and contract tests.
-- `escalation-routing` (ER-01 to ER-19): the routing record, rules and urgency, the clinical handoff contract and its exact payload, the link precondition, acknowledgment and clocks, the urgent fallback with tracked alerts, Hermes and staff lanes, re-routing and splitting, on-call cover, ownership, the pause switch, no-PHI rules, contract tests, the clinical-need marker and the clinician-acknowledged status.
+- `escalation-routing` (ER-01 to ER-20): the routing record, rules and urgency, the clinical handoff contract and its exact payload, the link precondition, acknowledgment and clocks, the urgent fallback with tracked alerts, Hermes and staff lanes, re-routing and splitting, on-call cover, ownership, the pause switch, no-PHI rules, contract tests, the clinical-need marker and the clinician-acknowledged status.
 - `payment-hold` (PH-01 to PH-09): what a hold blocks (three non-urgent capabilities) and never blocks, the policy gate, tiers, patient notice, disputes and GFE windows, memberships, no claim stall, and lifting.
 - `mobile-approver` (MA-01 to MA-07): the thin client, its scope, the clinical boundary, notifications, no PHI on the device, lost-device revocation and sign-offs.
 

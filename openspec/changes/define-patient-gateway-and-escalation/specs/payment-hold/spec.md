@@ -145,7 +145,7 @@ A hold policy SHALL state how disputed balances, and balances inside an open GFE
 - **THEN** the hold is re-evaluated at once and lifts if the criteria are no longer met
 
 ### Requirement: PH-07 A hold counts only medical-billing balances unless the policy says otherwise, and a lapsed membership is not a hold
-A hold SHALL count only balances that openPractice medical billing owns, including self-pay and direct-pay healthcare charges (FD-4). It MAY count membership obligations only when the approved policy explicitly includes them, and then only as change `define-customer-financial-data-boundaries` (PR #3, not yet on main) assigns their ownership. A lapsed or unpaid membership SHALL NOT by itself place a payment hold; membership affects access only through the entitlement check (PG-04, ruling 42) (design call DC-9). A hold SHALL NOT create, move or duplicate a collectible balance (AI-22).
+A hold SHALL count only balances that openPractice medical billing owns, including self-pay and direct-pay healthcare charges (FD-4). It MAY count membership obligations only when the approved policy explicitly includes them, and then only as change `define-customer-financial-data-boundaries`, merged on `main`, assigns their ownership. A lapsed or unpaid membership SHALL NOT by itself place a payment hold; membership affects access only through the entitlement check (PG-04, ruling 42) (design call DC-9). A hold SHALL NOT create, move or duplicate a collectible balance (AI-22).
 
 #### Scenario: An overdue self-pay balance
 - **WHEN** a self-pay patient's undisputed balance meets the approved policy's criteria
