@@ -4,7 +4,7 @@
 openPractice SHALL keep a service catalog with one item for each service the practice books or charges. Each item SHALL carry:
 - an identifier and an administrative name that describes the service for staff and statements, never a clinical description;
 - the billing code references it uses, each as a code system and a code only (SC-02);
-- default units (the place of service comes from the location's record, never from the item);
+- default units (the place of service never comes from the item; CG-01 states where it comes from);
 - whether it can be booked, and if so its usual duration;
 - its service category (SC-05) and its offering-route facts (SC-06);
 - its effective dates and status.

@@ -19,7 +19,7 @@ The difference between the gross charge and the constrained expected entitlement
 - **THEN** the charge is final and billable, its estimate is awaiting an estimator, and no batch can carry its revenue line until the deduction exists
 
 ### Requirement: RE-02 Only the practice's accountant approves an estimator version
-An estimator version SHALL apply only after the practice's accountant approves it, and only from a stated effective date forward (AI-12, BAB-17, ruling 30). The approval SHALL never be opted in for agent signing, SHALL record the role used (`define-practice-readiness` SR-02), and SHALL never be self-approved (ruling 107; the test of who counts as the practice's accountant is `define-practice-readiness` design call RD-11, PROPOSED there). An agent MAY draft a proposed version at `propose` (TH-13). Until the roster can hold the practice's accountant (`define-practice-readiness` RI-51), no version SHALL be approved, no estimate SHALL be produced, and no accounting destination can go live (AI-20).
+An estimator version SHALL apply only after the practice's accountant approves it, and only from a stated effective date forward (AI-12, BAB-17, ruling 30). The approval SHALL never be opted in for agent signing, SHALL record the role used (`define-practice-readiness` SR-02), and SHALL never be self-approved (ruling 107). The practice's accountant SHALL be the outside accountant that rulings 139 to 141 define: engaged from outside the practice and neither an owner nor an employee, judged against the practice's recorded owners (ruling 145) and staff; a licensed CPA whose licence is checked against the state board's public record and who attests in their own name; and holding the roster's outside-accountant entry, which can read the books and approve accounting policy, estimator versions and the write-off threshold, and nothing else. An agent MAY draft a proposed version at `propose` (TH-13). Until the roster holds such an accountant, no version SHALL be approved, no estimate SHALL be produced, and no accounting destination can go live (AI-20).
 
 #### Scenario: An agent proposes a version
 - **WHEN** an agent drafts a new estimator version and tries to approve it
@@ -28,6 +28,10 @@ An estimator version SHALL apply only after the practice's accountant approves i
 #### Scenario: The owner tries to approve
 - **WHEN** the practice's physician-owner tries to approve an estimator version
 - **THEN** the approval is refused, because the owner is not the practice's accountant
+
+#### Scenario: An employed accountant tries to approve
+- **WHEN** a licensed CPA whom the practice employs tries to approve an estimator version
+- **THEN** the approval is refused, because an employee is not the outside accountant (ruling 139)
 
 ### Requirement: RE-03 The first method is simple and the accountant sets its numbers
 The first estimator method SHALL be (ruling 123; design call CR-17, PROPOSED):

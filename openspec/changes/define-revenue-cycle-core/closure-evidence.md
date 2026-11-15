@@ -8,7 +8,7 @@ This record collects acceptance evidence for OpenSpec change `define-revenue-cyc
 
 - Owner ratification reference: `owner-ratification.md` — _pending completion_
 - Hand-off shape ratified, and the resulting feature list: _pending_
-- Dispositions of PA-1 to PA-6, with the changes and revisions that carry them: _pending_
+- Dispositions of PA-1 to PA-10, with the changes and revisions that carry them: _pending_
 - Constitution version and per-feature Constitution Check evidence: _pending_
 - Per-feature security review records and risk-analysis updates: _pending_
 - Speckit feature identifiers and paths (foundations; self-pay visit; claims against a simulated payer; remittance posting and full balances; live clearinghouse and Medicare adapter; payment processor and pay link): _pending_
@@ -34,7 +34,7 @@ This record collects acceptance evidence for OpenSpec change `define-revenue-cyc
 - Requirement and scenario traceability for `remittance-posting`: _pending_
 - Contract tests for `openpractice-thread/1.0` at its recorded digest, with every legal move tested and every other move refused: _pending_
 - Every ledger entry balanced, never edited, reversed for correction, and answerable as of a past date; whole cents and one rounding rule: _pending_
-- Summary-journal batches with this change's revenue refused until the service-category field existed, then carrying it with its mapping version (RT-04, PA-1): _pending_
+- Summary-journal batches with this change's revenue refused until the service-category field existed, then carrying it with its mapping version, and payer-share transfers carrying both payer classes (RT-04, PA-1): _pending_
 - Estimator versions and the policy record approved only by the practice's accountant, never self-approved, before any destination went live (RE-02, RE-09): _pending_
 - Codes from EHR facts or marked manual, confirmed by a named biller, never inferred (CG-02, CG-04): _pending_
 - No Good Faith Estimate issued without a counsel-verified parameter set; delivery proved; disputes marking money disputed (GF-03, GF-07, GF-10): _pending_

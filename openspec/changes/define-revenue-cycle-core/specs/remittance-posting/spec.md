@@ -70,7 +70,7 @@ Posting a claim payment SHALL make these entries (AI-12, AI-15):
 - `contractual_adjustment` for the billed amount less the allowed amount;
 - a true-up for any difference between the estimate and what the answer shows (RE-05);
 - `payer_payment` for what the payer paid;
-- `patient_share_transfer` for the patient's responsibility, unless the patient has a later coverage position for that date, in which case the share SHALL wait as work for a person to decide whether a later payer is billed first (design call CR-54, PROPOSED). When the person decides to bill the later payer, the amount SHALL move to that coverage's payer receivable as `payer_share_transfer`, posted with the decision and under its governance; when they decide not to, it moves to the patient as `patient_share_transfer` (design call CR-91, PROPOSED).
+- `patient_share_transfer` for the patient's responsibility, unless the patient has a later coverage position for that date, in which case the share SHALL wait as work for a person to decide whether a later payer is billed first (design call CR-54, PROPOSED). When the person decides to bill the later payer, the amount SHALL move to that coverage's payer receivable as `payer_share_transfer`, posted with the decision and under its governance; when they decide not to, it moves to the patient as `patient_share_transfer` (design call CR-91, PROPOSED). If the later coverage's claim is rejected and then dropped (CL-09), or that payer's answer or a recorded eligibility check (EV-01) shows that its plan does not cover the service, the `payer_share_transfer` SHALL be reversed under SL-05, returning the amount to the earlier coverage's payer receivable, and the decision SHALL be made again (design call CR-91, PROPOSED).
 
 A denied amount SHALL never be written off automatically: it SHALL become work for a person to appeal, which marks it disputed (SL-10), or to write off under PS-11 (design call CR-55, PROPOSED). The thread SHALL move from `claimed` to `remitted` (TH-04).
 
@@ -81,6 +81,10 @@ A denied amount SHALL never be written off automatically: it SHALL become work f
 #### Scenario: A Medigap plan pays the rest
 - **WHEN** Medicare pays 96.00 on a 120.00 allowed amount, the patient has a Medigap plan for that date, and a person decides to bill it
 - **THEN** 24.00 moves from Medicare's coverage account to the Medigap coverage account as `payer_share_transfer`, and recording the Medigap claim's acceptance posts nothing more (CL-12)
+
+#### Scenario: The Medigap claim is dropped
+- **WHEN** 24.00 has moved to the Medigap coverage account, the Medigap claim is rejected, and the biller records it as dropped
+- **THEN** the `payer_share_transfer` is reversed, the 24.00 is back in Medicare's coverage account, and a person decides again whether another payer or the patient is billed
 
 #### Scenario: A denied line
 - **WHEN** a payer denies one line of a claim

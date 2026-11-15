@@ -565,6 +565,59 @@
           "appointment_ref"
         ]
       }
+    },
+    {
+      "name": "move: a dispute ends with no hold left",
+      "rule": "TH-05, TH-07",
+      "instance": {
+        "record_kind": "transition",
+        "contract": "openpractice-thread",
+        "contract_version": "1.0",
+        "transition_id": "trn_SYN_2",
+        "thread_id": "thr_SYN_1",
+        "to_station": "charged",
+        "to_condition": "moving",
+        "effective_at": "2026-11-15T10:00:00Z",
+        "recorded_at": "2026-11-15T10:00:00Z",
+        "actor_ref": "ros_SYN_1",
+        "actor_type": "human",
+        "justifying_fact": {
+          "kind": "dispute",
+          "ref": "thr_SYN_9"
+        },
+        "fd5_tier": "tier_1",
+        "left_building": false,
+        "from_station": "charged",
+        "from_condition": "disputed"
+      }
+    },
+    {
+      "name": "move: a hold released while the dispute stays",
+      "rule": "TH-05, TH-07",
+      "instance": {
+        "record_kind": "transition",
+        "contract": "openpractice-thread",
+        "contract_version": "1.0",
+        "transition_id": "trn_SYN_2",
+        "thread_id": "thr_SYN_1",
+        "to_station": "charged",
+        "to_condition": "disputed",
+        "effective_at": "2026-11-15T10:00:00Z",
+        "recorded_at": "2026-11-15T10:00:00Z",
+        "actor_ref": "ros_SYN_1",
+        "actor_type": "human",
+        "justifying_fact": {
+          "kind": "booking",
+          "ref": "apt_SYN_1"
+        },
+        "fd5_tier": "tier_1",
+        "left_building": false,
+        "from_station": "charged",
+        "from_condition": "disputed",
+        "release_hold_id": "hld_SYN_2",
+        "dispute_counterparty_kind": "guarantor_account",
+        "dispute_ref": "thr_SYN_9"
+      }
     }
   ],
   "invalid": [
@@ -1229,6 +1282,149 @@
         "left_building": false,
         "from_station": "booked",
         "from_condition": "moving"
+      }
+    },
+    {
+      "name": "record: the same hold listed twice",
+      "rule": "TH-06: uniqueItems",
+      "instance": {
+        "record_kind": "thread",
+        "contract": "openpractice-thread",
+        "contract_version": "1.0",
+        "thread_id": "thr_SYN_1",
+        "thread_type": "visit",
+        "minted_under": "1.0",
+        "minted_at": "2026-11-15T10:00:00Z",
+        "minting_event": "booking",
+        "station": "charged",
+        "condition": "held",
+        "station_entered_at": "2026-11-15T10:00:00Z",
+        "owner_ref": "ros_SYN_1",
+        "as_of": "2026-11-15T10:00:00Z",
+        "holds": [
+          {
+            "hold_id": "hld_SYN_1",
+            "reason": "participation_not_effective",
+            "release": {
+              "tuple": "prt_SYN_1",
+              "date_of_service": "2026-11-14"
+            },
+            "owner_ref": "ros_SYN_2"
+          },
+          {
+            "hold_id": "hld_SYN_1",
+            "reason": "participation_not_effective",
+            "release": {
+              "tuple": "prt_SYN_1",
+              "date_of_service": "2026-11-14"
+            },
+            "owner_ref": "ros_SYN_2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "move: moving from a held thread with no hold released",
+      "rule": "TH-07: moving only when the last hold is released",
+      "instance": {
+        "record_kind": "transition",
+        "contract": "openpractice-thread",
+        "contract_version": "1.0",
+        "transition_id": "trn_SYN_2",
+        "thread_id": "thr_SYN_1",
+        "to_station": "charged",
+        "to_condition": "moving",
+        "effective_at": "2026-11-15T10:00:00Z",
+        "recorded_at": "2026-11-15T10:00:00Z",
+        "actor_ref": "ros_SYN_1",
+        "actor_type": "human",
+        "justifying_fact": {
+          "kind": "booking",
+          "ref": "apt_SYN_1"
+        },
+        "fd5_tier": "tier_1",
+        "left_building": false,
+        "from_station": "charged",
+        "from_condition": "held"
+      }
+    },
+    {
+      "name": "move: a hold released from a moving thread",
+      "rule": "TH-07: only a held or disputed thread has a hold to release",
+      "instance": {
+        "record_kind": "transition",
+        "contract": "openpractice-thread",
+        "contract_version": "1.0",
+        "transition_id": "trn_SYN_2",
+        "thread_id": "thr_SYN_1",
+        "to_station": "charged",
+        "to_condition": "moving",
+        "effective_at": "2026-11-15T10:00:00Z",
+        "recorded_at": "2026-11-15T10:00:00Z",
+        "actor_ref": "ros_SYN_1",
+        "actor_type": "human",
+        "justifying_fact": {
+          "kind": "booking",
+          "ref": "apt_SYN_1"
+        },
+        "fd5_tier": "tier_1",
+        "left_building": false,
+        "from_station": "charged",
+        "from_condition": "moving",
+        "release_hold_id": "hld_SYN_2"
+      }
+    },
+    {
+      "name": "move: held from a moving thread by releasing a hold",
+      "rule": "TH-07: held from moving needs a hold placed",
+      "instance": {
+        "record_kind": "transition",
+        "contract": "openpractice-thread",
+        "contract_version": "1.0",
+        "transition_id": "trn_SYN_2",
+        "thread_id": "thr_SYN_1",
+        "to_station": "charged",
+        "to_condition": "held",
+        "effective_at": "2026-11-15T10:00:00Z",
+        "recorded_at": "2026-11-15T10:00:00Z",
+        "actor_ref": "ros_SYN_1",
+        "actor_type": "human",
+        "justifying_fact": {
+          "kind": "booking",
+          "ref": "apt_SYN_1"
+        },
+        "fd5_tier": "tier_1",
+        "left_building": false,
+        "from_station": "charged",
+        "from_condition": "moving",
+        "release_hold_id": "hld_SYN_2"
+      }
+    },
+    {
+      "name": "mint: releasing a hold",
+      "rule": "TH-07: a minting transition has no hold to release",
+      "instance": {
+        "record_kind": "transition",
+        "contract": "openpractice-thread",
+        "contract_version": "1.0",
+        "transition_id": "trn_SYN_1",
+        "thread_id": "thr_SYN_1",
+        "minting_event": "booking",
+        "thread_type": "visit",
+        "to_owner_ref": "ros_SYN_1",
+        "to_station": "booked",
+        "to_condition": "moving",
+        "effective_at": "2026-11-15T10:00:00Z",
+        "recorded_at": "2026-11-15T10:00:00Z",
+        "actor_ref": "ros_SYN_1",
+        "actor_type": "human",
+        "justifying_fact": {
+          "kind": "booking",
+          "ref": "apt_SYN_1"
+        },
+        "fd5_tier": "tier_1",
+        "left_building": false,
+        "release_hold_id": "hld_SYN_1"
       }
     }
   ]

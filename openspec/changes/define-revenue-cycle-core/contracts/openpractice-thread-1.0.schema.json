@@ -77,7 +77,7 @@
       }
     },
     "hold": {
-      "description": "One hold on a thread (TH-05, TH-06). A thread may carry several at once, each with its own reason, release condition, owner and clock. hold_id is unique among a thread's holds (TH-06); a schema cannot check that.",
+      "description": "One hold on a thread (TH-05, TH-06). A thread may carry several at once, each with its own reason, release condition, owner and clock. hold_id is unique among a thread's holds (TH-06). The holds list refuses a hold listed twice; a schema cannot check that two different holds share an identifier.",
       "type": "object",
       "additionalProperties": false,
       "required": ["hold_id", "reason", "release", "owner_ref"],
@@ -220,6 +220,7 @@
           "description": "Every hold in force, each with its own reason, release condition, owner and clock (TH-06).",
           "type": "array",
           "minItems": 1,
+          "uniqueItems": true,
           "items": { "$ref": "#/$defs/hold" }
         },
         "dispute_counterparty_kind": { "$ref": "#/$defs/disputeCounterpartyKind" },
@@ -301,7 +302,10 @@
         "from_station": { "$ref": "#/$defs/station" },
         "to_station": { "$ref": "#/$defs/station" },
         "from_condition": { "$ref": "#/$defs/condition" },
-        "to_condition": { "$ref": "#/$defs/writableCondition" },
+        "to_condition": {
+          "description": "The condition TH-05 derives once this transition applies, from the holds and dispute then in force; moving means neither (TH-07). stuck is derived on the snapshot and never written. A schema can refuse only what one transition shows to be wrong; whether a released hold was the last one is checked against the thread's holds.",
+          "$ref": "#/$defs/writableCondition"
+        },
         "place_hold": {
           "description": "A hold this transition places (TH-06).",
           "$ref": "#/$defs/hold"
@@ -400,7 +404,6 @@
           "then": {
             "anyOf": [
               { "required": ["place_hold"] },
-              { "required": ["release_hold_id"] },
               { "properties": { "from_condition": { "enum": ["held", "disputed"] } }, "required": ["from_condition"] }
             ]
           }
@@ -408,6 +411,14 @@
         {
           "if": { "properties": { "to_condition": { "const": "moving" } }, "required": ["to_condition"] },
           "then": { "not": { "required": ["place_hold"] } }
+        },
+        {
+          "if": { "properties": { "to_condition": { "const": "moving" }, "from_condition": { "const": "held" } }, "required": ["to_condition", "from_condition"] },
+          "then": { "required": ["release_hold_id"] }
+        },
+        {
+          "if": { "required": ["release_hold_id"] },
+          "then": { "properties": { "from_condition": { "enum": ["held", "disputed"] } }, "required": ["from_condition"] }
         },
         {
           "if": { "properties": { "to_condition": { "const": "disputed" } }, "required": ["to_condition"] },
