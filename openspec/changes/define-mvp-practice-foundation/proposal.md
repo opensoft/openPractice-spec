@@ -16,7 +16,7 @@ Brett Heap, the product owner, settled these boundaries on 2026-11-14 and ruled 
 All ideation paths below are relative to the root of `opensoft/openPractice-spec`. Every cited ideation document is `Status: brainstorm`, except the framing decisions FD-1 to FD-11 in [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md), which were ratified on 2026-08-27. This change contradicts none of them, with two recorded exceptions:
 
 - It adds tier-4 gates beyond FD-5's list: hard delete and `customer-detail` enablement (ruling 12, tension T-13).
-- It keeps explicit sign-offs below tier 4 where FD-5 relies on reversibility and delay: `link_existing` confirmation and review resolution (EB-04, EB-05, ruling 12), export-batch release (AI-06, avoiding R-2), and the manual-entry attestation under identity review (EB-17). These are tension T-17.
+- It keeps explicit sign-offs below tier 4 where FD-5 relies on reversibility and delay. These are `link_existing` confirmation, `create_new` and revocation requests, and identity-review resolution (EB-04, EB-05, ruling 12). They also include accepting or declining a correction request and re-asserting a rejected date of birth (EB-08, EB-09), export-batch release (AI-06, avoiding R-2), and the manual-entry attestation under identity review (EB-17). Together these are tension T-17.
 
 Close re-estimates post automatically, as FD-3 requires. Every hold keeps FD-5's tier-3 deadline escape. Signers follow ruling 33.
 

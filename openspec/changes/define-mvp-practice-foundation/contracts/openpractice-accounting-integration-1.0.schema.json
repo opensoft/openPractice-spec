@@ -189,7 +189,8 @@
         "amount": { "$ref": "#/$defs/money" },
         "currency": { "$ref": "#/$defs/currency" },
         "payer_class": { "$ref": "#/$defs/payerClass" },
-        "group_level": { "description": "Span the group covers. A day-level group below the destination's minimum group size rolls up to week, then period (AI-15); day-level detail stays in the detail manifest.", "enum": ["day", "week", "period"] },
+        "group_level": { "description": "Span the group covers. A day-level group below the destination's minimum group size rolls up to week, then period (AI-15). A group never crosses an accounting-period boundary: a week spanning a period end is split there. Day-level detail stays in the detail manifest.", "enum": ["day", "week", "period"] },
+        "late_charge": { "description": "True when posting_date is the first open date because the group's own date fell in a period the destination has closed (AI-11).", "type": "boolean" },
         "effective_date": { "$ref": "#/$defs/date" },
         "estimate_ref": { "$ref": "#/$defs/estimateRef" },
         "deposit_bank_line_ref": { "type": "string", "maxLength": 128 }

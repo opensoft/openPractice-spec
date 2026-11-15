@@ -199,7 +199,7 @@ Banks (ruling 5) are covered by these requirements:
 
 ### 7. The accounting contract: `openpractice-accounting-integration/1.0`
 
-The canonical schema is `contracts/openpractice-accounting-integration-1.0.schema.json`, SHA-256 `c63be3d0c6c6f7dbc4139971e5d215ba41ecf69ad1a84b0a5f31bc4029026350`.
+The canonical schema is `contracts/openpractice-accounting-integration-1.0.schema.json`, SHA-256 `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885`.
 
 **Ownership** (AI-01, ruling 26). This change owns the contract's posting mechanics: posting identity and idempotency, batches and their freeze, release, retries, the reconciliation report, the posting modes and the BAA gate. Change `define-customer-financial-data-boundaries` owns customer and party roles, routing by offering, obligation ownership and purpose-bound business views. That change references this contract for posting and defines no second posting mechanism.
 
@@ -221,7 +221,7 @@ Ruling 25 governs those customers. They exist only in `customer-detail` mode, be
 
 ### 8. The posting map
 
-**Revenue recognition** (AI-12, ruling 30). Net revenue is the constrained expected entitlement, estimated at the date of service from a versioned estimator and re-estimated at each close. The gross charge is a gross line carried with its gross-to-net deduction. Billing, adjudication, cash and disputes are evidence events that update the estimate. Each re-estimate or true-up is a new dated entry that references its estimate version or close snapshot. Close re-estimates post automatically from the approved estimator version (FD-3). Only estimator versions and the D8 policy items need approval, by the accountant or the owner. A payer with no history gets a conservative constrained estimate, and there is no gross-then-adjust fallback. Credit losses are an expense, separate from revenue.
+**Revenue recognition** (AI-12, ruling 30). Net revenue is the constrained expected entitlement, estimated at the date of service from a versioned estimator and re-estimated at each close. The gross charge is a gross line carried with its gross-to-net deduction. Billing, adjudication, cash and disputes are evidence events that update the estimate. Each re-estimate or true-up is a new dated entry that references its estimate version or close snapshot. Close re-estimates post automatically from the approved estimator version (FD-3). Only estimator versions and the D8 policy items need approval, by the practice's accountant only, never by an opted-in agent. A payer with no history gets a conservative constrained estimate, and there is no gross-then-adjust fallback. Credit losses are an expense, separate from revenue.
 
 **`summary-journal` (the default, ruling 28).** Balanced category totals post to payer-class control accounts, summarized by period, payer class, benign service category and account (AI-15). Service performed posts the gross line and its deduction. Claim submission reclassifies unbilled to billed receivable. Adjudication realizes the contractual adjustment against the allowance and trues up any difference. Payments move cash clearing against the payer-class or patient receivable, and patient-share transfers move between control accounts. Disputes, credit losses, refund liabilities and reversals are new entries. A day-level group below the destination's minimum group size (default 11 visits) rolls up to the week, then to the period (AI-15). Patient-level and day-level detail stays in openPractice's detail manifest, which the batch identifies by digest. No customer record is created.
 
@@ -281,12 +281,12 @@ QuickBooks Online is a vendor-operated cloud service. Business Central is offere
 | Edit demographics, contacts, confidential-communication instructions, coverage or guarantor; deactivate or reactivate | 2 | No sign-off; notification |
 | Hard delete of a record created in error | **4** (T-13) | Named human only |
 | EHR link `create_new` or `link_existing`; identity-review resolution; link revocation | 2 (the explicit confirmation is the sign-off; T-17) | Named human, or an opted-in named agent |
-| Accept or decline an EHR correction request; re-assert a rejected date of birth | 2 | Named human, or an opted-in named agent |
+| Accept or decline an EHR correction request; re-assert a rejected date of birth | 2 (T-17) | Named human, or an opted-in named agent |
 | Manual-entry attestation under identity review (EB-17) | Gate (T-17) | Named human, or an opted-in named agent |
 | Practice bank register or payer deposit-link change | 2 | No sign-off; notification |
 | Change an account mapping | 2 | No sign-off; notification |
 | Release an export batch | Explicit release decision (tier 2). No tier-3 countdown while R-2 is unresolved (T-17). | Named human, or an opted-in named agent |
-| Approve an estimator version or a D8 policy item | Approval (D8) | The practice's accountant or the owner |
+| Approve an estimator version or a D8 policy item | Approval (D8) | The practice's accountant only; never opted in for agent signing |
 | Close re-estimate | Automatic, from the approved estimator (FD-3) | No sign-off |
 | Enable `customer-detail` mode (before first release only) | **4** (T-13) | Named human only |
 | Refund leaving the practice; material adjustment | **4** (FD-5) | Named human only |
@@ -394,7 +394,7 @@ Agent signing is opt-in per action type and off by default. Every sign-off recor
 | T-14 | **Tamper-evident audit versus removal of audit values** (PR-10 versus PR-13) | Mechanism chosen in planning (Decision 3) |
 | T-15 | `define-customer-financial-data-boundaries` called the summary journal the baseline posting route, while this change once made `customer-detail` the default | **Resolved** by rulings 26 and 28. Posting modes belong to this contract, and `summary-journal` is the default in both changes. `customer-detail` is an opt-in, allowed only after the BAA gate and before a destination's first release (AI-09). That change's design §4 cites this rule. |
 | T-16 | That change's accounting projection lists a "scoped payer relationship" for a customer | **Interpretation.** In this contract the payer relationship is carried by invoicing the payer customer. A payer field on a guarantor-account customer needs a recipient-profile entry (AI-10). The schema enforces this: a `guarantor_account` customer cannot carry `payer_id` or `payer_name`, only a `profile_fields` entry. |
-| T-17 | **Sign-offs below tier 4.** FD-5 relies on reversibility and delay below tier 4. This change keeps explicit sign-offs for `link_existing` confirmation and review resolution, export-batch release and the EB-17 attestation. | **Conscious exception** (ruling 12, R-2, re-review N5). Signers follow ruling 33. |
+| T-17 | **Sign-offs below tier 4.** FD-5 relies on reversibility and delay below tier 4. This change keeps explicit sign-offs for: `link_existing` confirmation, `create_new` and revocation requests, and identity-review resolution (EB-04, EB-05); accepting or declining a correction request and re-asserting a rejected date of birth (EB-08, EB-09); export-batch release (AI-06); and the EB-17 attestation. | **Conscious exception** (ruling 12, R-2, re-review N5). Signers follow ruling 33. |
 
 ## Risks / Trade-offs
 

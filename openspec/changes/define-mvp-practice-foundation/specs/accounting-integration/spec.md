@@ -179,7 +179,7 @@ In both posting modes, the system SHALL recognize net revenue as the constrained
 
 Billing, adjudication, remittance, cash and disputes SHALL be evidence events that update the estimate, never revenue triggers. Each re-estimate or true-up, whether from evidence or from the estimate run at each close, SHALL be a new dated entry referencing the estimate version or close snapshot it applies, and MUST NOT edit an earlier entry (FD-3). A disputed amount SHALL stay out of the recognized amount until including it meets the constraint. Price concessions SHALL reduce revenue, while the later non-payment of an amount that was expected to be collected SHALL post as a credit loss, separately from revenue.
 
-Every estimate SHALL record its estimator version, input window, cohort and evidence references in openPractice. Close re-estimates SHALL post automatically from the approved estimator version, with no approval step at close (FD-3: month-end is printing, not a procedure), and each close SHALL store a reproducible snapshot automatically. Only estimator versions and the D8 policy items SHALL need approval, by the practice's accountant or the owner (AI-20).
+Every estimate SHALL record its estimator version, input window, cohort and evidence references in openPractice. Close re-estimates SHALL post automatically from the approved estimator version, with no approval step at close (FD-3: month-end is printing, not a procedure), and each close SHALL store a reproducible snapshot automatically. Only estimator versions and the D8 policy items SHALL need approval. The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, and neither SHALL be opted in for agent signing (BAB-17).
 
 #### Scenario: Payer with history
 - **WHEN** a 200.00 charge is captured for a payer whose fee schedule allows 120.00 and whose history supports a constrained expected entitlement of 114.00
@@ -199,7 +199,7 @@ Every estimate SHALL record its estimator version, input window, cohort and evid
 
 #### Scenario: A new estimator version is proposed
 - **WHEN** automation proposes a new estimator version
-- **THEN** it applies only after the practice's accountant or the owner approves it, from a stated effective date
+- **THEN** it applies only after the practice's accountant approves it, from a stated effective date
 
 ### Requirement: AI-13 The contract posts every money event that touches a receivable or a deposit
 In customer-detail mode, the contract SHALL define the following postings. Each SHALL keep the deposit entry equal to its bank line.
@@ -261,14 +261,14 @@ Enabling customer-detail mode SHALL be a governance tier-4 hard stop. When the B
 - patient-share transfers between control accounts, with no revenue effect;
 - disputes, credit losses, refund liabilities and reversals, each as a new entry.
 
-Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference, and SHALL carry a payer class where it touches a receivable or revenue.
-
-Each destination SHALL have a minimum group size, which defaults to 11 underlying visits. A day-level group for a payer class and category that falls below it SHALL roll up to the week. If the week group is still below it, the group SHALL roll up to the accounting period. A rolled-up group SHALL record its group level and be dated on the last day of the span it covers, or on the first open date if that period is closed. Day-level detail SHALL stay in openPractice's detail manifest. A revenue or deduction line SHALL carry the estimate version or close snapshot it applies, by reference. Deposits SHALL be grouped per explained bank line. The contract SHALL NOT create or update any customer record in this mode. Summary postings MUST NOT contain any of the following:
+Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference, and SHALL carry a payer class where it touches a receivable or revenue. A revenue or deduction line SHALL carry the estimate version or close snapshot it applies, by reference. Deposits SHALL be grouped per explained bank line. The contract SHALL NOT create or update any customer record in this mode. Summary postings MUST NOT contain any of the following:
 - customer records or customer names, or account numbers of patients or guarantors;
 - member, claim or subscriber identifiers;
 - a per-visit or per-person date of service;
 - addresses or contact details;
 - any element that identifies an individual or relates a line to one.
+
+Each destination SHALL have a minimum group size, which defaults to 11 underlying visits. A day-level group for a payer class and category that falls below it SHALL roll up to the week. If the week group is still below it, the group SHALL roll up to the accounting period. A rolled-up group SHALL record its group level and SHALL NOT cross an accounting-period boundary. A week that spans a period end SHALL be split at the boundary, and each part SHALL be re-tested against the minimum group size within its own period. A part that meets the minimum SHALL be dated on its last day inside its own period. A part still below the minimum SHALL roll up to its own period, dated on that period's last day. When that date falls in a period the destination has closed, the group SHALL be dated on the first open date and flagged late (AI-11). Day-level detail SHALL stay in openPractice's detail manifest.
 
 #### Scenario: A summary batch is inspected
 - **WHEN** a reviewer inspects a summary-journal batch
@@ -281,6 +281,10 @@ Each destination SHALL have a minimum group size, which defaults to 11 underlyin
 #### Scenario: A small day rolls up
 - **WHEN** a practice captures three commercial-class office visits on one day and fewer than eleven in that week
 - **THEN** no day-level or week-level group posts for them; they roll up to the period-level group for that payer class and category, and the day-level detail stays in the manifest
+
+#### Scenario: A week crosses a month end
+- **WHEN** a week from October 28 to November 3 has 12 commercial-class office visits in October and 4 in November, with fewer than eleven on any day
+- **THEN** the week splits at October 31: the October part posts as a week-level group dated October 31, the November part rolls up to November's period-level group dated November 30, and no October revenue is dated in November
 
 ### Requirement: AI-16 Customer-detail postings carry the minimum necessary, with neutral labels
 Customer-detail postings created by this contract SHALL contain only:
@@ -360,7 +364,7 @@ Before any destination goes live, its adapter SHALL verify and record whether th
 
 A destination that cannot carry line service dates SHALL NOT go live in customer-detail mode until the owner decides how to proceed.
 
-No destination SHALL go live until the practice's accountant has approved, and openPractice has recorded, the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (ruling 30).
+No destination SHALL go live until the practice's accountant has approved, and openPractice has recorded, the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (ruling 30). The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, and neither SHALL be opted in for agent signing (BAB-17).
 
 #### Scenario: ERPNext verification
 - **WHEN** the ERPNext adapter is prepared for go-live
@@ -369,6 +373,10 @@ No destination SHALL go live until the practice's accountant has approved, and o
 #### Scenario: The accountant has not approved the policy
 - **WHEN** a destination is otherwise ready but no accountant approval of the revenue-recognition policy is recorded
 - **THEN** go-live is refused
+
+#### Scenario: Someone other than the accountant tries to approve
+- **WHEN** a named AI agent, or a person who is not the practice's accountant, tries to approve the D8 policy or an estimator version
+- **THEN** the approval is refused, whatever the agent opt-in settings, and the policy or version stays unapproved
 
 ### Requirement: AI-22 The contract never copies care linkage into records it does not own and never creates a second collectible balance
 This contract SHALL post only to customers it creates (AI-10), and only obligations that arise from openPractice medical billing. It MUST NOT copy care linkage or PHI into a customer record it does not own. Care linkage means patient, guarantor, visit, claim, coverage or clinical references. A record it does not own includes a membership or retail customer that another route created in the same destination.

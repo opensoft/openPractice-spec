@@ -34,7 +34,7 @@ openPractice SHALL create an EHR link only through an explicit `link.request` un
 - `create_new`: the EHR creates a new clinical patient from the demographic snapshot;
 - `link_existing`: the link goes to an EHR patient a user selected.
 
-A `link_existing` request SHALL require an authorized user's explicit confirmation, made after viewing both records' demographics side by side, at governance tier 2. That explicit confirmation is the approval. The system MUST NOT create a link from automatic demographic matching.
+A `link_existing` request SHALL require an explicit confirmation at governance tier 2, made after both records' demographics are compared side by side. The signer SHALL be an authorized named human or, where `link_existing` confirmation is opted in, a named AI agent identified by an openWallet ID (BAB-17). The confirmation SHALL be recorded with the signer's identity. That explicit confirmation is the approval. The system MUST NOT create a link from automatic demographic matching.
 
 #### Scenario: Staff link to an existing EHR patient
 - **WHEN** a user selects an existing EHR patient for an openPractice patient
