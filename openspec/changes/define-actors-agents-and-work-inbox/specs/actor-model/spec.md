@@ -14,7 +14,7 @@ openPractice SHALL recognize exactly these actor types:
 
 Staff, VAs, nurses, clinicians, the medical director, the controller or office manager, and AI agents SHALL each be a roster entry. A system integration SHALL be a named integration identity, as PR-10 already allows. A patient or representative SHALL NOT be a roster entry. Each human roster entry SHALL reference exactly one party in the party register of `define-mvp-practice-foundation` PR-15, and an AI agent or a system integration SHALL reference none; a person who is both staff and a patient, guarantor or representative holds one roster entry, for the staff role only, never acts as patient, guarantor or representative through that roster entry, and both reference the same party (spec-critique correction SC-2, PROPOSED). The system SHALL refuse any action from an actor whose type it cannot determine.
 
-**Contact points (design call D-33, PROPOSED, made for change `define-patient-gateway-and-escalation` DC-60).** A human roster entry MAY record contact points. Each is an email address or a telephone number, recorded for security notices and one-time codes only, never used for any other message, and no PHI is ever sent to it. Each contact point SHALL record when it was added. Every addition, change or removal of a contact point SHALL be audited (PR-10) and SHALL be notified, with no PHI, to every contact point recorded before the change, including the one replaced or removed.
+**Contact points (design call D-33, PROPOSED, made for change `define-patient-gateway-and-escalation` DC-60).** A human roster entry MAY record contact points. Each is an email address or a telephone number, recorded for security notices and one-time codes only, never used for any other message, and no PHI is ever sent to it. Each contact point SHALL record when it was added. Every addition, change or removal of a contact point SHALL be audited (PR-10) and SHALL be notified, with no PHI, to every contact point recorded before the change, including the one replaced or removed, and to the person's enrolled mobile approver devices (`define-patient-gateway-and-escalation` MA-04). A contact point removed or replaced is kept for 30 days for one purpose only: to receive MA-04's security notices.
 
 #### Scenario: A remote VA signs in
 - **WHEN** a remote VA signs in
@@ -22,7 +22,7 @@ Staff, VAs, nurses, clinicians, the medical director, the controller or office m
 
 #### Scenario: A contact point is replaced
 - **WHEN** the practice manager replaces the telephone number recorded as a contact point on a roster entry
-- **THEN** the change is audited, and a notice with no PHI goes to every contact point recorded before the change, including the number replaced
+- **THEN** the change is audited, and a notice with no PHI goes to every contact point recorded before the change, including the number replaced, and to the person's enrolled mobile approver devices
 
 #### Scenario: An unidentified caller
 - **WHEN** a request arrives whose actor type cannot be determined

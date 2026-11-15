@@ -58,8 +58,8 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   Holds stay refused in production until the medical director approves a counsel-reviewed policy version (Open Question 3).
 - [ ] 2.4 **Feature 4: mobile approver.** Owns MA-01 to MA-07. Gate: change A's work-inbox feature merged; Feature 2 merged before alerts are enabled. Acceptance evidence:
   - every action goes through the versioned API, with server-side checks;
-  - notifications carry no PHI, and a deep link opens an item only after a face, fingerprint or passkey verification on an enrolled device, skipped within 60 seconds of the last one on the server's clock, and never after a typed password;
-  - enrolment and recovery never rest on a typed password alone, follow DC-60's paths, with a replacement or recovery waiting 24 hours behind a cancellable notice, a one-person first device needing two contact points and a code sent only to one at least 7 days old, and no access when no path exists; a person without a face or fingerprint check is sent to the workstation;
+  - notifications carry no PHI, and a deep link opens an item only after a face, fingerprint or passkey verification on an enrolled device, or the device's unlock code where neither face nor fingerprint is available, with face or fingerprint asked first, skipped within 60 seconds of the last one on the server's clock, and never after a typed password;
+  - enrolment and recovery never rest on a typed password alone, follow DC-60's paths, with a replacement or recovery waiting 24 hours behind a cancellable notice that also reaches recently revoked devices and removed contact points, a cancellation raising an exception, a second person confirming only with a verification on their own enrolled device, a one-person first device needing codes from two contact points, at least one qualifying by age, a lost recovery code declared and notified, and no access when no path exists; a person whose device can complete no counted check is sent to the workstation;
   - no PHI remains on the device after logoff, idle timeout or revocation;
   - lost-device revocation through AM-05;
   - sign-offs follow FD-5 and BAB-17, each with its own verification answering a single-use, two-minute challenge and an assertion bound to the item, the decision and the time, tier 4 human-only and D8 accountant-only;
@@ -95,7 +95,7 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - Open Question 21, per-audience identifiers: blocks nothing in 1.0 (DC-53).
   - Open Question 22, the on-call alert for a missing clinician acknowledgment: blocks nothing; ER-20 alerts the office manager only.
   - Open Question 23, a split that openChart asks for: blocks nothing in openPractice; the lane reminder covers the splits openPractice asks for, and a split openChart asks for has none until a later handoff version reports it.
-  - Open Questions 24 and 25, synced passkeys and the phone's unlock code: block nothing; until the owner answers, only a face or fingerprint check on an enrolled device counts, so no passkey counts.
+  - Open Questions 24 and 25, synced passkeys and the phone's unlock code: closed by rulings 134 and 135; MA-04 carries them.
   - Open Question 26, how strong workstation sign-in is: blocks nothing in this change; DC-60's enrolment rules are only as strong as that sign-in.
 
 ## 4. Acceptance and Closure

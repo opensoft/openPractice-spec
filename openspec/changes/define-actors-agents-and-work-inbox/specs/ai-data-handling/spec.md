@@ -3,6 +3,7 @@
 ### Requirement: AH-01 These rules gate every agent grant at any rung, and a lapse suspends all agent PHI access
 No grant SHALL be made to any agent at any rung, `observe` and `propose` included (AO-03, AO-04), and no PHI SHALL reach an agent layer, until all of the following hold for that agent's operator and model-provider path:
 - AH-02's verified agreements, with the agent operator and with each model provider, and each model provider's verified zero-data-retention arrangement;
+- for any path whose arrangement allows a cache of content, counsel's recorded confirmation of ruling 133 (AH-02);
 - for any path that uses a model provider, counsel's recorded confirmation of ruling 97's answer (AH-06, ruling 102);
 - AH-03's recipient profiles;
 - AH-04's logging controls;
@@ -39,14 +40,16 @@ Before PHI reaches an agent layer or its model provider, an authorized person SH
 
 Where a model provider serves the operator rather than the practice, the record SHALL name both agreements in the chain, the provider's with the operator and the operator's with the practice, and each SHALL be verified. Each record follows the pattern of AI-14: counterparty, execution date, effective and renewal or expiry dates, scope statement, owner-local document reference, verifying person and time. Each operator and each provider SHALL be recorded separately. When any agreement on the path is missing or unverified, PHI SHALL NOT be sent anywhere on that path. The system MUST NOT assume that any operator or provider offers or has signed a BAA. This change asserts no legal rule; counsel confirms each agreement's form.
 
-**Zero data retention at every model provider (ruling 104).** A model provider keeps nothing: besides its BAA, each model provider on a path that carries PHI SHALL be used only under a zero-data-retention arrangement, recorded and verified the way the BAA is (ruling 104). What the arrangement covers, and how it is kept current, are design calls under ruling 104 (D-30, PROPOSED):
-- *zero data retention* means that the provider keeps no prompt, no completion and no content derived from them, such as embeddings, caches, transcripts or copies for human review, once the request ends, for any purpose, abuse monitoring and model training included;
+**Zero data retention at every model provider (rulings 104 and 133).** A model provider keeps nothing but the short-lived in-memory cache that ruling 133 allows: besides its BAA, each model provider on a path that carries PHI SHALL be used only under a zero-data-retention arrangement, recorded and verified the way the BAA is (ruling 104). What the arrangement covers, and how it is kept current, are design calls under ruling 104 (D-30, PROPOSED):
+- *zero data retention* means that the provider keeps no prompt, no completion and no content derived from them, such as embeddings, caches, transcripts or copies for human review, once the request ends, for any purpose, abuse monitoring and model training included, except the in-memory cache below;
 - it does not forbid operational metadata that carries no content: request identifiers, timestamps, token counts, the model and endpoint used, latency, error codes and billing records. Any identifier, tag or label the caller supplies and the provider keeps SHALL be opaque and carry no PHI (AO-12), and a retained error record SHALL carry no content;
-- a cache of prompt or completion content at the provider, however short-lived, is retention under this definition and fails it. Whether a volatile cache that is never written to durable storage or logs, and lives no longer than a stated short time, may be allowed is Open Question 10;
-- an authorized person records and verifies it on the pattern above: the provider, the party it is made with (the practice or the operator), the endpoints and models it covers, its effective and expiry dates, an owner-local document reference, and the verifying person and time;
+- a short-lived cache of prompt or completion content at the provider does not fail zero data retention (ruling 133) when the verified arrangement states that the cache is held in memory only, is never written to disk or logs, is not readable by a person, and expires within a stated time limit. The limit SHALL be recorded in the verification record, and SHALL NOT exceed a ceiling that is a policy value, proposed as one hour; the ceiling is a proposal, not a ruling (design call D-34, PROPOSED). Any other cache, or a cache whose terms the arrangement does not state, is retention and fails;
+- an authorized person records and verifies it on the pattern above: the provider, the party it is made with (the practice or the operator), the endpoints and models it covers, whether it allows a cache of content and, if it does, the cache's time limit, its effective and expiry dates, an owner-local document reference, and the verifying person and time;
 - it is re-verified before PHI goes to a different provider, endpoint or model, and when the provider changes its terms. A path whose exact provider, endpoint and model have no verified arrangement gets no PHI (AH-01).
 
-**The declared path (design call D-32, PROPOSED).** The agent operator SHALL declare on each agent's roster record (AM-04) the model provider, endpoint and model the agent uses, and SHALL declare again before any change. Its agreement SHALL forbid failing over to an endpoint or model it has not declared. openPractice SHALL send PHI to an agent only when a verified BAA and a verified zero-data-retention arrangement both cover that exact provider, endpoint and model on its declared path; when either is missing for any of them, it SHALL send none. Change `define-patient-gateway-and-escalation` ER-12 records the declared path.
+**The declared path (design call D-32, PROPOSED).** The agent operator SHALL declare on each agent's roster record (AM-04) the model provider, endpoint and model the agent uses, and SHALL declare again before any change. Its agreement SHALL forbid failing over to an endpoint or model it has not declared. openPractice SHALL send PHI to an agent only when a verified BAA and a verified zero-data-retention arrangement both cover that exact provider, endpoint and model on its declared path, and, where that arrangement allows a cache of content, counsel's confirmation of ruling 133 is recorded; when any of these is missing, it SHALL send none. Change `define-patient-gateway-and-escalation` ER-12 records the declared path.
+
+**Counsel's confirmation of the cache (ruling 133; design call D-35, PROPOSED).** Ruling 133 says "Counsel should confirm." Before any PHI goes to a path whose arrangement allows a cache of content, an authorized person SHALL record counsel's confirmation that such a cache is acceptable, on the pattern ruling 102 set for AH-06: the confirming counsel, the date, the scope (the providers, endpoints and models whose cache it covers, by their records above), an owner-local document reference, and the recording person and time. Until it is recorded, no PHI goes to a path that caches content (fail closed); a path whose arrangement allows no cache is not affected. When counsel withdraws or narrows the confirmation, the recorded change is a lapse under AH-01.
 
 The system MUST NOT assume that any provider offers zero data retention. Deletion with a receipt applies to the agent operator only (ruling 104; change `define-patient-gateway-and-escalation` ER-12).
 
@@ -65,6 +68,18 @@ The system MUST NOT assume that any provider offers zero data retention. Deletio
 #### Scenario: A provider endpoint without zero data retention
 - **WHEN** a provider's BAA is verified, but no zero-data-retention arrangement is verified for the endpoint and model an agent is configured on
 - **THEN** no PHI is sent to that endpoint, and no grant can be made to an agent on that path (AH-01)
+
+#### Scenario: A provider holds a short in-memory cache
+- **WHEN** a provider's verified arrangement states a cache held in memory only, never written to disk or logs, not readable by a person, with a 5-minute limit, and counsel's confirmation of ruling 133 is recorded
+- **THEN** PHI within the recipient profiles may reach that path, and the 5-minute limit is in the verification record
+
+#### Scenario: A cache without counsel's confirmation
+- **WHEN** a provider's arrangement allows an in-memory cache, and no counsel's confirmation of ruling 133 is recorded
+- **THEN** no PHI is sent to that path, and no grant can be made to an agent on it (AH-01)
+
+#### Scenario: A cache limit above the ceiling
+- **WHEN** a provider's arrangement states an in-memory cache with a 2-hour limit
+- **THEN** the arrangement does not meet zero data retention while the ceiling is one hour, and no PHI is sent to that path
 
 #### Scenario: The operator wants to move an agent to another endpoint
 - **WHEN** the operator plans to move an agent to an endpoint it has not declared
@@ -86,7 +101,7 @@ For each agent and action type, the PHI that may reach the agent layer SHALL be 
 - **THEN** the field is withheld, and the request is logged with a coded reason
 
 ### Requirement: AH-04 No PHI in agent logs
-Logs that openPractice writes about agent activity, and the agent layer's own logs that openPractice controls, MUST NOT contain names, dates of birth, contact details, identifier values or clinical content. They SHALL hold opaque references and coded reasons. A model provider retains nothing with content (AH-02, ruling 104). What the agent operator retains SHALL be governed by its AH-02 agreement and by the deletion duty of change `define-patient-gateway-and-escalation` ER-12, and recorded in the risk analysis.
+Logs that openPractice writes about agent activity, and the agent layer's own logs that openPractice controls, MUST NOT contain names, dates of birth, contact details, identifier values or clinical content. They SHALL hold opaque references and coded reasons. A model provider retains nothing with content beyond the in-memory cache that AH-02 allows, which expires within the limit recorded for its arrangement (AH-02, rulings 104 and 133). What the agent operator retains SHALL be governed by its AH-02 agreement and by the deletion duty of change `define-patient-gateway-and-escalation` ER-12, and recorded in the risk analysis.
 
 #### Scenario: An agent action is logged
 - **WHEN** an agent updates a record

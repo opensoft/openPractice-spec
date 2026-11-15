@@ -28,9 +28,9 @@ Brett Heap made rulings 34 to 54 on 2026-11-14, and on 2026-11-15 accepted rulin
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending owner confirmation. `tasks.md` §2 proposes folding the actor model and inbox into the registry feature or the feature right after it, followed by AI data handling, the agent contract and VA safeguards._
-- Design calls D-1 to D-33 accepted or amended (D-18 to D-29, from the 2026-11-15 follow-up and its review, D-30 to D-32, under rulings 104 and 102, and D-33, made for the sibling change's DC-60, are PROPOSED; ruling 99 confirms the operation D-18 describes): _pending_
+- Design calls D-1 to D-35 accepted or amended (D-18 to D-29, from the 2026-11-15 follow-up and its review, D-30 to D-32, under rulings 104 and 102, D-33, made for the sibling change's DC-60, and D-34 and D-35, under ruling 133, are PROPOSED; ruling 99 confirms the operation D-18 describes): _pending_
 - Corrections from the 2026-11-15 spec critique (SC-1, SC-2's AM-01 sentence, SC-4 under ruling 104, ruling 102's go-live condition, SC-7's schema hygiene) accepted or amended: _pending_
-- Open Questions 10 (a short-lived cache at the model provider) and 11 (messages for the operator's deletion request and receipt) dispositioned: _pending_
+- Open Questions 11 (messages for the operator's deletion request and receipt) and 12 (a sole staff member who decides a proposal they made as a patient) dispositioned; Open Question 10 is closed by ruling 133: _pending_
 - Tensions T-1 to T-7 dispositioned: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 

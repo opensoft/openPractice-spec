@@ -11,7 +11,7 @@ This record collects acceptance evidence for OpenSpec change `define-actors-agen
 - Contact points on human roster entries used only for security notices and one-time codes, with no PHI, and every change audited and notified to the contact points recorded before it (D-33): _pending_
 - Per-feature Constitution Check and security review records: _pending_
 - Verified VA-company BAAs, and verified BAAs with each agent operator and model provider, with risk-analysis entries: _pending_
-- Each model provider's verified zero-data-retention arrangement for its exact endpoints and models, matched to each agent's declared model path (ruling 104, D-32), and counsel's recorded confirmation of ruling 97's answer (ruling 102), before any PHI reached a model provider: _pending_
+- Each model provider's verified zero-data-retention arrangement for its exact endpoints and models, with any in-memory cache's limit recorded within the ceiling and counsel's confirmation of ruling 133 where a cache is allowed (D-34, D-35), matched to each agent's declared model path (ruling 104, D-32), and counsel's recorded confirmation of ruling 97's answer (ruling 102), before any PHI reached a model provider: _pending_
 - Approved read-only answer types and template versions, with medical-director sign-off where health-adjacent: _pending_
 
 ## Product Acceptance Evidence

@@ -37,7 +37,7 @@ The owner, or an authorized signer under BAB-17, SHALL be able to approve, chang
 
 An agent SHALL NOT decide its own proposal. An agent SHALL NOT decide another agent's proposal unless the deciding agent itself holds that action type at a rung above `propose` (AO-04), at or above the rung the decision exercises, so that it could have taken the action itself; the action then runs under the deciding agent's rung, so an `act_after_delay` decision runs its delay. A proposal that untrusted content contributed to SHALL be decided by a human (AH-05).
 
-Every decision SHALL record the signer's identity, including an agent's openWallet ID. A tier-4 proposal SHALL be decided by a named human only. A D8 or estimator-version proposal SHALL be decided by the practice's accountant only.
+Every decision SHALL record the signer's identity, including an agent's openWallet ID. A tier-4 proposal SHALL be decided by a named human only. A D8 or estimator-version proposal SHALL be decided by the practice's accountant only. How an accountant from outside the practice holds a roster entry is open with the owner as decision 141, since AM-01 and AM-02 give no actor type or recipe for one; until it is settled, these decisions wait. Which rule wins when a sole staff member decides a proposal they made as a patient, this requirement's rule that the decider is never the proposer or the one-person alternative of `define-mvp-practice-foundation` PR-15 (its design call F-7), is Open Question 12; this requirement picks no side.
 
 #### Scenario: Staff approve a proposed correction
 - **WHEN** front-desk staff approve an agent's proposed address correction
