@@ -55,8 +55,8 @@ A payer or cohort with no adjudication history SHALL receive the conservative ra
 Each evidence event SHALL be able to change the estimate: an adjudication (RM-07), a denial or an appeal outcome, a payment, a dispute opening or closing (RE-07), a write-off decision, or a coverage change. Each change SHALL be a new true-up record that references the estimate it changes and the evidence behind it, and SHALL post as `estimate_increase` or `estimate_decrease` (RT-02). No estimate record SHALL be edited (FD-3). Billing, cash and adjudication SHALL be evidence that updates the estimate and never a trigger that creates revenue by itself (AI-12).
 
 #### Scenario: Adjudication confirms the estimate
-- **WHEN** the payer allows exactly the 120.00 the estimate assumed and holds out no disputed amount
-- **THEN** the contractual adjustment is realized against the allowance and no true-up is needed
+- **WHEN** an estimate expected exactly 120.00, with nothing held back, and the payer allows 120.00 and denies nothing
+- **THEN** the contractual adjustment is realized against the allowance, and no true-up is recorded
 
 #### Scenario: A denial lowers the estimate
 - **WHEN** a payer denies 12.00 of a claim estimated at 114.00 and the practice disputes it
@@ -74,7 +74,7 @@ An amount under dispute, such as a denied amount under appeal or an amount insid
 
 #### Scenario: An appeal is won in part
 - **WHEN** an appeal of 12.00 is decided with 8.00 overturned and 4.00 upheld
-- **THEN** an `estimate_increase` of 8.00 is recorded when the outcome arrives, and the upheld 4.00 is written off against the allowance
+- **THEN** an `estimate_increase` of 8.00 is recorded when the outcome arrives, and the upheld 4.00 is written off against the allowance by a person under PS-11
 
 ### Requirement: RE-08 Estimates are checked against outcomes, and large misses become work
 At each close, openPractice SHALL compare each cohort's estimates with the final entitlements of the threads that closed in the period. A cohort whose difference exceeds the threshold the approved version states SHALL raise a work item, owned under AM-06 and notifying the practice's accountant (design call CR-18, PROPOSED). The check SHALL change no estimate by itself.

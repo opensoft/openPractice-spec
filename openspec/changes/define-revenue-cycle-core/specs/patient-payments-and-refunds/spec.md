@@ -1,0 +1,82 @@
+## ADDED Requirements
+
+### Requirement: PY-01 openPractice records patient payments and never moves money
+openPractice SHALL record each patient payment the practice receives: its amount and currency, the date received, the guarantor account, the method (cash, check, card on a standalone terminal, or another method on a shipped list), the person who recorded it, and an external reference such as a check number or a terminal approval code (ruling 122). It SHALL NOT store a full card number, a card security code, or a full bank account or routing number (BAB-10). Recording a payment SHALL post `patient_payment`, `patient_payment_unapplied` or `prepayment` (PY-03), and SHALL NOT instruct any bank, processor or person to move money (BAB-07). Recording a payment SHALL be FD-5 tier 1, done by the person who took it.
+
+#### Scenario: A copay at the desk
+- **WHEN** a patient pays 25.00 in cash at checkout for today's visit
+- **THEN** the payment is recorded against the guarantor account with the method, date and recorder, and allocated to the visit (PY-04)
+
+#### Scenario: Someone types a card number
+- **WHEN** a user tries to record a full card number as the payment's reference
+- **THEN** it is refused, and only a terminal approval code may be recorded
+
+### Requirement: PY-02 Every payment gets one frozen receipt
+Every recorded payment SHALL produce one receipt that states the amount, the date, the method and what it was applied to, frozen as issued (TH-14). A correction SHALL produce a new dated receipt that replaces the first; the first SHALL be kept and never reissued as if new. A receipt SHALL be handed over or sent only through a channel the patient's communication instructions allow (PR-05).
+
+#### Scenario: A receipt is corrected
+- **WHEN** a payment is moved to a different visit after its receipt was printed
+- **THEN** a new receipt is issued that replaces the first, and both are kept
+
+### Requirement: PY-03 Money received before the service is a liability, and money not yet applied is a credit
+A payment received before the service it pays for is given SHALL post as `prepayment` to `contract_liability`, and SHALL be applied with `prepayment_applied` when that service's charge is finalized (framework §5A.2.7; design call CR-11, PROPOSED). A payment received after the service and not yet allocated, or received beyond what the guarantor account owes, SHALL post to `unapplied_credit` (AI-13). No payment SHALL be recorded as revenue when it is received (AI-12).
+
+#### Scenario: A deposit before a procedure
+- **WHEN** a patient pays 100.00 a week before a scheduled self-pay procedure
+- **THEN** it posts as a prepayment, and it is applied to the procedure's charge when the charge is finalized
+
+### Requirement: PY-04 Payments are allocated when they are taken, and unapplied money is owned work
+A payment SHALL be allocated to charge lines when it is recorded wherever the person taking it knows what it pays for (SL-07). Otherwise it SHALL be allocated to the guarantor account's oldest undisputed charge lines first, unless the guarantor directs otherwise (design call CR-40, PROPOSED). Money left unapplied SHALL appear as owned work (TH-12) and SHALL never be left unowned. An agent MAY allocate payments at most at `act_with_notice` (ruling 132).
+
+#### Scenario: An unexplained check
+- **WHEN** a guarantor mails a 50.00 check with no note and owes on two visits
+- **THEN** it is allocated to the older undisputed visit first, and the guarantor's direction, if any arrives, overrides it by reallocation
+
+### Requirement: PY-05 openPractice generates the deposit slip
+openPractice SHALL generate a deposit slip for the cash and checks recorded and not yet deposited, per practice bank account in the register (BAB-09) (ruling 130). The slip SHALL list each item by its external reference and amount, carry its total, and show only the masked account number (BAB-10). Each slip SHALL be one deposit, and its total SHALL be the amount that deposit explanation matches to the bank line (BAB-14), so that desk money reconciles by construction. Card settlements SHALL NOT appear on a slip. The cash-drawer count and the day's close sheet are not part of this change (ruling 130).
+
+#### Scenario: The day's checks and cash are deposited
+- **WHEN** the front desk prepares the bank deposit for 85.00 in cash and two checks of 30.00 each
+- **THEN** openPractice prints one slip for 145.00 listing the three items, and the deposit is later matched to its bank line by that total
+
+### Requirement: PY-06 Money held that is not the practice's becomes a credit-balance case with a clock
+When money sits in `unapplied_credit`, `refund_liability` or `unidentified_receipts` and is not applied within the period the approved parameters set, or is identified as owed back, openPractice SHALL mint a `credit_balance` case thread (TH-08) recording its cause: an unidentified receipt, a patient credit or a payer overpayment. Its clock SHALL come from a parameter that counsel has verified for that cause, such as a payer overpayment's report-and-return deadline (framework §5A.2.7). Until such a parameter is verified, the case SHALL be due at once and owned (design call CR-41, PROPOSED).
+
+#### Scenario: A payer overpays
+- **WHEN** a remittance pays 20.00 more than the claim's balance
+- **THEN** the excess moves to `refund_liability` as `payer_overpayment`, a credit-balance case is minted with cause payer overpayment, and its clock is the verified deadline for that cause
+
+### Requirement: PY-07 Refunds are human-only and recorded only when issued
+A refund leaving the practice SHALL be FD-5 tier 4, signed by a named human only (ruling 122, ruling 33, BAB-17). An agent MAY only propose one (`refund.request`, ruling 132). openPractice SHALL record a refund as issued only after it was issued outside openPractice, with its method and reference, and SHALL post `refund_issued` then (BAB-07). Each refund disbursement on the bank SHALL be matched to its issued refund by deposit explanation (BAB-14, AI-17).
+
+#### Scenario: An agent proposes a refund
+- **WHEN** an agent finds a 15.00 patient credit and proposes a refund
+- **THEN** the proposal waits in the work inbox, and only a named human can sign it
+
+### Requirement: PY-08 A staff member's own refund follows the own-record rule
+A refund to a staff member's own guarantor account, or to an account whose party holds a role the staff member also holds, SHALL follow PR-15's rule for a staff member acting on their own record and its one-person alternative (PR #8, design call F-7): another human roster entry who holds the grant decides, and where none exists the alternative applies only while the practice's accountant can receive its notice.
+
+#### Scenario: The owner's own refund
+- **WHEN** the physician-owner, who is also a patient, would sign a refund to their own guarantor account and another named human holds the grant
+- **THEN** that other person decides the refund
+
+### Requirement: PY-09 A chargeback or a returned item reopens what it paid
+A card chargeback or a returned check SHALL reverse the allocation of the payment it undoes, reopen the patient receivable with `chargeback` or `returned_item`, and post any fee separately as `chargeback_fee` or `bank_fee` (AI-13). A thread the payment had closed SHALL move forward again (TH-07).
+
+#### Scenario: A returned check
+- **WHEN** a 60.00 check is returned unpaid with a 10.00 bank fee
+- **THEN** the receivable reopens by 60.00, the 10.00 fee posts as `bank_fee`, and the visit's thread reopens
+
+### Requirement: PY-10 The payment processor and the pay link come last, through a governed contract
+Taking card payments through a processor, refunding to the original card, and the no-account pay link of FD-10(b) SHALL come in the payment-processor feature (feature 6), through an adapter whose contract is defined before that feature starts (design call CR-24, PROPOSED). The pay link SHALL NOT depend on the patient-app gateway (PG-12), SHALL honor the patient's communication instructions (PR-05), and SHALL keep card data out of openPractice entirely.
+
+#### Scenario: A pay link before feature 6
+- **WHEN** a feature before feature 6 proposes sending pay links
+- **THEN** it is out of that feature's scope
+
+### Requirement: PY-11 A payment hold never blocks a payment
+A payment hold SHALL NOT block or delay recording a payment, issuing a receipt, or any way of paying (PH-02).
+
+#### Scenario: A held patient pays
+- **WHEN** a patient on a payment hold pays at the desk
+- **THEN** the payment is recorded and receipted as usual, and the hold is re-evaluated (PS-09)
