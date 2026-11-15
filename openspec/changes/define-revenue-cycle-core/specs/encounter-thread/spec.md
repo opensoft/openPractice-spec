@@ -116,7 +116,7 @@ A condition SHALL never replace the station: a held claim is still at `charged`,
 A hold SHALL use one reason from a closed list that the product ships and the practice cannot extend (FD-1; design call CR-4, PROPOSED):
 - `participation_not_effective` (EG-03);
 - `waiting_on_clinical_documentation` (EB-14, CG-07);
-- `clinical_fact_retracted` (EB-15 as PR #7 amends it, CG-05);
+- `clinical_fact_retracted` (EB-15, CG-05);
 - `identity_review` (EB-05, EB-18);
 - `offering_route_unresolved` (BAB-16);
 - `waiting_on_authorization` (EV-02);
@@ -175,7 +175,7 @@ A case type's amount and clock that depend on what it gates SHALL be derived fro
 - **THEN** it is refused, because the type is reserved
 
 ### Requirement: TH-09 Threads link to each other; they never inherit
-Threads SHALL reference each other only through named link types: `spawned_from`, `replaces`, `recoups`, `offsets` and `held_by`. The link type `merged_into` SHALL be reserved for re-pointing threads after a tier-4 party merge (PR-15 as PR #8 amends it). There SHALL be no parent-child inheritance and no cascade: a change to one thread SHALL NOT change a linked thread except through that thread's own transition.
+Threads SHALL reference each other only through named link types: `spawned_from`, `replaces`, `recoups`, `offsets` and `held_by`. The link type `merged_into` SHALL be reserved for re-pointing threads after a tier-4 party merge (PR-15). There SHALL be no parent-child inheritance and no cascade: a change to one thread SHALL NOT change a linked thread except through that thread's own transition.
 
 #### Scenario: A recoupment links to its visit
 - **WHEN** a payer demands money back on a paid visit
@@ -222,7 +222,7 @@ Every action type this change defines SHALL start at `propose` for agents (rulin
 | `statement.send` | `act_after_delay` |
 | `appointment.cancel`, `charge.finalize`, `gfe.issue`, `claim_batch.release`, `write_off.record`, `refund.request`, `estimator_version.propose` | `propose` |
 
-An action type this change defines that the table does not name SHALL stay at `propose` until a governed change sets its ceiling. An agent SHALL never act with less friction than the action's FD-5 tier requires (AO-04). There SHALL be no request mode below the rung the practice has set; the practice lowers the rung instead (ruling 100, as PR #8 records it in AO-04). Each feature SHALL add its action types to `openpractice-agent-operations` as a MINOR version (AO-11). An estimator version SHALL be approved only by the practice's accountant (RE-02), whatever an agent proposes.
+An action type this change defines that the table does not name SHALL stay at `propose` until a governed change sets its ceiling. An agent SHALL never act with less friction than the action's FD-5 tier requires (AO-04). There SHALL be no request mode below the rung the practice has set; the practice lowers the rung instead (ruling 100, AO-04). Each feature SHALL add its action types to `openpractice-agent-operations` as a MINOR version (AO-11). An estimator version SHALL be approved only by the practice's accountant (RE-02), whatever an agent proposes.
 
 #### Scenario: A practice tries to let an agent release claims
 - **WHEN** a practice manager tries to raise `claim_batch.release` to `act_with_notice`

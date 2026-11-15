@@ -54,7 +54,7 @@ A refund leaving the practice SHALL be FD-5 tier 4, signed by a named human only
 - **THEN** the proposal waits in the work inbox, and only a named human can sign it
 
 ### Requirement: PY-08 A staff member's own refund follows the own-record rule
-A refund to a staff member's own guarantor account, or to an account whose party holds a role the staff member also holds, SHALL follow PR-15's rule for a staff member acting on their own record and its one-person alternative (PR #8, design call F-7): another human roster entry who holds the grant decides, and where none exists the alternative applies only while the practice's accountant can receive its notice.
+A refund to a staff member's own guarantor account, or to an account whose party holds a role the staff member also holds, SHALL follow PR-15's rule for a staff member acting on their own record and its one-person alternative (design call F-7 of `define-mvp-practice-foundation`): another human roster entry who holds the grant decides, and where none exists the alternative applies only while the practice's accountant can receive its notice.
 
 #### Scenario: The owner's own refund
 - **WHEN** the physician-owner, who is also a patient, would sign a refund to their own guarantor account and another named human holds the grant

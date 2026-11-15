@@ -36,7 +36,7 @@ Each guarantor account SHALL be under one set of statement terms, versioned and 
 - **THEN** its due date is March 31
 
 ### Requirement: PS-06 Statements honor every communication restriction
-A statement SHALL be addressed to the guarantor and SHALL honor the confidential-communication instructions of PR-05, including a restriction or alternate channel recorded through any of the person's roles (PR-15 as PR #8 adds it), the more restrictive instruction winning a conflict. Where the patient is not the guarantor, the statement SHALL show the patient's name only as needed to identify the visit, and nothing more about the patient (AI-16's rule applied to statements; design call CR-37, PROPOSED). A representative SHALL receive a statement only where their proxy policy includes billing (PG-06).
+A statement SHALL be addressed to the guarantor and SHALL honor the confidential-communication instructions of PR-05, including a restriction or alternate channel recorded through any of the person's roles (PR-15), the more restrictive instruction winning a conflict. Where the patient is not the guarantor, the statement SHALL show the patient's name only as needed to identify the visit, and nothing more about the patient (AI-16's rule applied to statements; design call CR-37, PROPOSED). A representative SHALL receive a statement only where their proxy policy includes billing (PG-06).
 
 #### Scenario: A mail restriction through another role
 - **WHEN** a guarantor who is also a patient has recorded `no_home_mail` with an alternate address
@@ -71,7 +71,7 @@ Sending statements from openPractice, rather than printing them, SHALL be FD-5 t
 - **THEN** the biller cancels the run and nothing is sent
 
 ### Requirement: PS-11 Write-offs follow the material amount the practice sets
-Each practice SHALL set, at setup, the amount at which a write-off becomes material, and the practice's accountant SHALL confirm it in the policy record (RE-09, ruling 129). A write-off below that amount SHALL be FD-5 tier 2, done with a notification. A write-off at or above it SHALL be tier 4, signed by a named human only (BAB-17, ruling 33). Until the amount is set and confirmed, every write-off SHALL be tier 4 (design call CR-39, PROPOSED). Every write-off SHALL use a write-off kind (RT-02, RT-07), and an agent SHALL stay at `propose` for every write-off (ruling 132). A write-off on a balance the actor owes or guarantees SHALL follow PR-15's rule for a staff member acting on their own record (PR #8, design call F-7).
+Each practice SHALL set, at setup, the amount at which a write-off becomes material, and the practice's accountant SHALL confirm it in the policy record (RE-09, ruling 129). A write-off below that amount SHALL be FD-5 tier 2, done with a notification. A write-off at or above it SHALL be tier 4, signed by a named human only (BAB-17, ruling 33). Until the amount is set and confirmed, every write-off SHALL be tier 4 (design call CR-39, PROPOSED). Every write-off SHALL use a write-off kind (RT-02, RT-07), and an agent SHALL stay at `propose` for every write-off (ruling 132). A write-off on a balance the actor owes or guarantees SHALL follow PR-15's rule for a staff member acting on their own record (design call F-7 of `define-mvp-practice-foundation`).
 
 #### Scenario: A small balance below the amount
 - **WHEN** the material amount is 25.00, confirmed, and a biller writes off a 3.10 balance

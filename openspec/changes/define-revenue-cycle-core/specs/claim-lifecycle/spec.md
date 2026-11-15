@@ -29,7 +29,7 @@ Before a claim can join a released batch, openPractice SHALL check it against it
 - **THEN** the scrub holds it with reason `waiting_on_authorization`, and it cannot join a batch
 
 ### Requirement: CL-05 A named signer releases each claim batch
-Claims SHALL leave openPractice only in batches, each released by an explicit release decision of a named signer (ruling 119). The signer SHALL be a named human: an agent SHALL stay at `propose` for `claim_batch.release` (ruling 132). The release SHALL be a sign-off under BAB-17 recording the role used (`define-practice-readiness` SR-02). A claim in the batch on a record where the signer's own party holds a role SHALL follow PR-15's rule for a staff member acting on their own record (PR #8, design call F-7). There SHALL be no scheduled automatic release, except the deadline escape of CL-06. Release SHALL freeze each claim version as submitted (CL-07).
+Claims SHALL leave openPractice only in batches, each released by an explicit release decision of a named signer (ruling 119). The signer SHALL be a named human: an agent SHALL stay at `propose` for `claim_batch.release` (ruling 132). The release SHALL be a sign-off under BAB-17 recording the role used (`define-practice-readiness` SR-02). A claim in the batch on a record where the signer's own party holds a role SHALL follow PR-15's rule for a staff member acting on their own record (design call F-7 of `define-mvp-practice-foundation`). There SHALL be no scheduled automatic release, except the deadline escape of CL-06. Release SHALL freeze each claim version as submitted (CL-07).
 
 #### Scenario: The biller releases the day's claims
 - **WHEN** a biller reviews a batch of twelve scrubbed claims and releases it

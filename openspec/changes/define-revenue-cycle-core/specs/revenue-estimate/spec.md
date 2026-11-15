@@ -34,7 +34,7 @@ The first estimator method SHALL be (ruling 123; design call CR-17, PROPOSED):
 - **self-pay:** the price less the self-pay discount, less a collectibility constraint for the self-pay cohort. When the charge is paid in full by the time it is finalized, the constraint SHALL be zero;
 - **insured:** the gross charge multiplied by an expected-allowed ratio for the payer class and service category, less a constraint for denials and short payments.
 
-The accountant SHALL set every ratio and constraint in the version they approve. No loaded payer fee schedule SHALL be an input (ruling 126). Each computed amount SHALL be rounded once, half away from zero, to the cent (BAB-18 as PR #8 adds it). Later methods, such as one learned from the practice's own remittances (FD-2), SHALL each be a new version under RE-02.
+The accountant SHALL set every ratio and constraint in the version they approve. No loaded payer fee schedule SHALL be an input (ruling 126). Each computed amount SHALL be rounded once, half away from zero, to the cent (BAB-18). Later methods, such as one learned from the practice's own remittances (FD-2), SHALL each be a new version under RE-02.
 
 #### Scenario: A self-pay visit paid at checkout
 - **WHEN** a self-pay visit priced 200.00 with a 60.00 discount is paid in full at checkout

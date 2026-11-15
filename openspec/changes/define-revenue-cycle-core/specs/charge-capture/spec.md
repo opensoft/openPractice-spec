@@ -19,7 +19,7 @@ A charge line SHALL carry no payer, no allowed amount and no patient share; thos
 
 ### Requirement: CG-02 Codes come from the EHR's final facts or from staff, never from openPractice
 A charge line's procedure and diagnosis codes SHALL come from one of two sources (ruling 116):
-- the EHR's final, coded clinical facts for the encounter, read under `openpractice-ehr-clinical-facts/1.0` (EB-13, EB-14), which publishes only confirmed diagnoses (ruling 87, EB-13 as PR #7 amends it);
+- the EHR's final, coded clinical facts for the encounter, read under `openpractice-ehr-clinical-facts/1.0` (EB-13, EB-14), which publishes only confirmed diagnoses (ruling 87, EB-13);
 - manual entry by authorized staff in the cases EB-17 allows, marked manual, with its provenance (ruling 21).
 
 openPractice SHALL NOT infer, suggest or derive a code from any text, and SHALL NOT change a code the EHR supplied; a disagreement SHALL go back to the EHR as a question, outside this contract. A fact's procedure code SHALL map to a catalog item only by an exact match on code system and code; a code that matches no active item SHALL become a work item.
@@ -40,7 +40,7 @@ A charge set SHALL start as a draft. Staff MAY prepare a draft, and an agent MAY
 - **THEN** the draft exists, the biller is notified, and nothing posts until a person finalizes it
 
 ### Requirement: CG-04 A named human biller confirms the codes before a charge set is final
-A charge set SHALL become final only when a named human who holds the biller role confirms its codes (ruling 116). The confirmation SHALL be a sign-off under BAB-17 that records the role used (`define-practice-readiness` SR-02), and SHALL NOT be opted in for agent signing: an agent stays at `propose` for `charge.finalize` (ruling 132). Where the biller's own party holds a role on the patient's record, the confirmation SHALL follow PR-15's rule for a staff member acting on their own record and its one-person alternative (design call F-7 as PR #8 records it). Finalization SHALL move the thread from `seen` to `charged` (TH-04).
+A charge set SHALL become final only when a named human who holds the biller role confirms its codes (ruling 116). The confirmation SHALL be a sign-off under BAB-17 that records the role used (`define-practice-readiness` SR-02), and SHALL NOT be opted in for agent signing: an agent stays at `propose` for `charge.finalize` (ruling 132). Where the biller's own party holds a role on the patient's record, the confirmation SHALL follow PR-15's rule for a staff member acting on their own record and its one-person alternative (design call F-7 of `define-mvp-practice-foundation`). Finalization SHALL move the thread from `seen` to `charged` (TH-04).
 
 #### Scenario: An agent tries to finalize
 - **WHEN** an agent tries to finalize a charge set it drafted
@@ -54,7 +54,7 @@ A charge set SHALL become final only when a named human who holds the biller rol
 Before a charge set becomes final, openPractice SHALL check, and SHALL refuse finalization while any check fails:
 - the offering route and the patient's membership entitlement (BAB-16, SC-06). An unresolved route SHALL hold the thread with reason `offering_route_unresolved`, released at tier 3 as medical billing at the payer's filing threshold under BAB-16;
 - the date of service is on or before any deactivation date of the patient's record (PR-11);
-- every fact the charge set uses is final (EB-14), and none has been retracted (EB-15 as PR #7 amends it). A retraction SHALL hold the thread with reason `clinical_fact_retracted`;
+- every fact the charge set uses is final (EB-14), and none has been retracted (EB-15). A retraction SHALL hold the thread with reason `clinical_fact_retracted`;
 - for a manual entry under identity review, the attestation EB-17 requires is recorded.
 
 #### Scenario: A retracted diagnosis

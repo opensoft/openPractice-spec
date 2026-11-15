@@ -60,7 +60,7 @@ An entry missing any of these SHALL be refused.
 - **THEN** the entry is refused and the missing source is named
 
 ### Requirement: SL-04 Amounts are whole cents under the foundation's money rule
-Every amount in the ledger SHALL be stored as a whole number of cents with its ISO 4217 currency code, and SHALL follow BAB-18 as PR #8 adds it (ruling 103): decimal text with a currency code wherever an amount leaves openPractice, USD only in version 1, one rounding rule applied once when openPractice computes an amount, and cumulative rounding when a fixed amount is split, so the parts always equal the whole. A total SHALL be the sum of amounts already rounded, and a fixed amount, such as a payment, SHALL never be recomputed from its parts.
+Every amount in the ledger SHALL be stored as a whole number of cents with its ISO 4217 currency code, and SHALL follow BAB-18 (ruling 103): decimal text with a currency code wherever an amount leaves openPractice, USD only in version 1, one rounding rule applied once when openPractice computes an amount, and cumulative rounding when a fixed amount is split, so the parts always equal the whole. A total SHALL be the sum of amounts already rounded, and a fixed amount, such as a payment, SHALL never be recomputed from its parts.
 
 #### Scenario: A payment is split across three charge lines
 - **WHEN** a 100.00 payment is allocated equally across three charge lines
@@ -79,7 +79,7 @@ Every receivable, credit and liability entry SHALL name one counterparty account
 - a **payer coverage account**, the payer together with the coverage version the claim used (PR-07), for what a payer owes or is owed;
 - an **unidentified** account, for money whose owner is not yet known.
 
-A counterparty account SHALL reference parties only through their roles (PR-15 as PR #8 adds it), and SHALL NOT copy a party's identity facts.
+A counterparty account SHALL reference parties only through their roles (PR-15), and SHALL NOT copy a party's identity facts.
 
 #### Scenario: A parent guarantees two children
 - **WHEN** a parent is the guarantor for two children who each had a visit

@@ -43,7 +43,7 @@ When a change to the service, price, provider or date alters an issued estimate'
 - **THEN** a replacement estimate is issued naming the new provider, and the first is kept as replaced
 
 ### Requirement: GF-07 Delivery is proved, and only through permitted channels
-An estimate SHALL count as issued only when its delivery is recorded: handed over at the desk with the patient's signature, or sent through a channel that produces a delivery record, or mailed with the mailing recorded. Every delivery SHALL honor the patient's confidential-communication instructions (PR-05), including a restriction recorded through any of the person's roles (PR-15 as PR #8 adds it). An estimate with no recorded delivery SHALL appear as work and SHALL NOT count as issued.
+An estimate SHALL count as issued only when its delivery is recorded: handed over at the desk with the patient's signature, or sent through a channel that produces a delivery record, or mailed with the mailing recorded. Every delivery SHALL honor the patient's confidential-communication instructions (PR-05), including a restriction recorded through any of the person's roles (PR-15). An estimate with no recorded delivery SHALL appear as work and SHALL NOT count as issued.
 
 #### Scenario: A delivery fails
 - **WHEN** an emailed estimate bounces and nothing else is recorded
