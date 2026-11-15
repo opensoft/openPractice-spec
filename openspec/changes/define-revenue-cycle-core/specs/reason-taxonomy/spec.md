@@ -60,7 +60,7 @@ Each kind SHALL fix the bucket it debits, the bucket it credits (SL-01) and the 
 | `payer_interest` | `cash_clearing` | `non_patient_income` | `payer_interest` |
 | `unidentified_receipt` | `cash_clearing` | `unidentified_receipts` | `unidentified_receipt` |
 | `unidentified_receipt_identified` | `unidentified_receipts` | `unapplied_credit` | `unidentified_receipt_reclassified` |
-| `unidentified_receipt_to_payer` | `unidentified_receipts` | `payer_receivable` | `unidentified_receipt_reclassified` |
+| `unidentified_receipt_to_payer` | `unidentified_receipts` | `cash_clearing` | `unidentified_receipt_reclassified` |
 | `legacy_collection` | `cash_clearing` | `legacy_collections` | `legacy_collections` |
 | `other_route_share` | `cash_clearing` | `other_route_share` | `other_route_share` |
 | `deposit_explained` | `deposited` | `cash_clearing` | `deposit_clearing_release` |
@@ -71,7 +71,7 @@ An entry SHALL use the pair and label its kind fixes. A money event that no kind
 The kinds added for money that would otherwise have nowhere to go are design calls (PROPOSED): a prepayment that will not be applied, and a charge reduced below what was paid on it (CR-56, PY-03); a transfer between guarantor accounts (CR-57, PS-12); a balance passed from one payer to the next (CR-91, RM-07); money that arrived before its remittance (CR-58, RM-01); a payer's forwarding balance (CR-59, RM-08); a bank debit matched to money paid out (CR-60, SL-13); a patient write-off against the allowance (CR-61, RT-09); a direct credit-loss write-off (CR-62, RT-10); and a takeback that recovers an overpayment the practice already identified (CR-63, RM-09).
 
 #### Scenario: A contractual adjustment is posted
-- **WHEN** a payer allows 120.00 on a 200.00 charge
+- **WHEN** a payer allows 120.00 on a 200.00 charge and reports the 80.00 reduction with a code the table classifies as contractual
 - **THEN** an entry of kind `contractual_adjustment` moves 80.00, debiting `gross_to_net_allowance` and crediting `payer_receivable`, with the label `contractual_adjustment`
 
 #### Scenario: A cancelled procedure was prepaid
@@ -101,7 +101,7 @@ An entry's service category SHALL reach an accounting destination only on `summa
 - **THEN** release is refused and the reason names the missing field
 
 ### Requirement: RT-05 Payer adjustment codes are kept as received and normalized by a versioned table
-Every adjustment a payer reports SHALL keep its codes exactly as received: the group code, the claim adjustment reason code and any remark codes. Each SHALL also be normalized to a kind (RT-02) and a plain-language label by a versioned normalization table that the product ships from license-free code sets (FD-11). A code the table does not cover SHALL become a work item, and that adjustment SHALL NOT post until a person classifies it. Classifying it SHALL be done by a person at FD-5 tier 2, with a notification, and SHALL apply only to that adjustment; covering the code for later adjustments SHALL be a new version of the table (design call CR-66, PROPOSED). A change to the table SHALL apply only to adjustments received after its effective date.
+Every adjustment a payer reports SHALL keep its codes exactly as received: the group code, the claim adjustment reason code and any remark codes. Each SHALL also be normalized to a kind (RT-02), or to a denial, which posts no entry (RM-07), and to a plain-language label, by a versioned normalization table that the product ships from license-free code sets (FD-11). The table SHALL classify an adjustment as `contractual_adjustment` only where it reports a reduction the payer's contract or fee schedule makes to the amount billed, and as a denial where the payer refuses to pay for the service or a part of it; an adjustment it cannot place with certainty SHALL be classified as a denial, so that a person decides it (design call CR-55, PROPOSED). A code the table does not cover SHALL become a work item, and that adjustment SHALL NOT post until a person classifies it. Classifying it SHALL be done by a person at FD-5 tier 2, with a notification, and SHALL apply only to that adjustment; covering the code for later adjustments SHALL be a new version of the table (design call CR-66, PROPOSED). A change to the table SHALL apply only to adjustments received after its effective date.
 
 #### Scenario: An unknown adjustment code
 - **WHEN** a remittance line carries an adjustment reason code the table does not cover
