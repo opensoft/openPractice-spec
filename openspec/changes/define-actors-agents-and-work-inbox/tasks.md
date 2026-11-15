@@ -13,19 +13,21 @@
   - the suspension of all agent PHI access when a control lapses, and its lifting only by a named human;
   - the server-side untrusted determination, including a false-flag fixture;
   - prompt-injection test fixtures (synthetic) showing the `propose` cap, and every condition of AH-05 exception 1;
+  - the AH-06 consent check before scheduling and before sending, refusal with `consent_not_recorded`, the cancellation of every pending answer on withdrawal, and that provider processing for practice operations does not wait on per-patient consent (ruling 97);
   - a log scan showing no PHI.
-- [ ] 2.3 Agent operations contract (AO-01 to AO-12) for registry operations and the read-only answer types. Gate: tasks 2.1 and 2.2, and the registry API (PR-09). Acceptance evidence:
+- [ ] 2.3 Agent operations contract (AO-01 to AO-13) for registry operations, the read-only answer types and the work-item operations. Gate: tasks 2.1 and 2.2, and the registry API (PR-09). Acceptance evidence:
   - contract tests for every operation, rung, cap, limit, the pause, the digest and idempotency;
   - refusal of any grant, rung, limit or pause change not made by a named human, and of an agent deciding its own proposal;
   - the per-patient read scope, including the `patient_scope` refusal;
   - read-only answers: no payload, server assembly, eligibility, `act_after_delay` only, attribution, the automatic return to `propose` on a defect;
-  - agents start at `propose`.
+  - agents start at `propose`;
+  - the work-item operations of AO-13: each outcome, the `propose` cap, `text_not_held` for a clinical item, removed text and a document, and `answer_not_pending`.
 - [ ] 2.4 Remote VA safeguards (VA-01 to VA-05). Gate: the remote VA recipe's grant set is approved (design.md D-1). Acceptance evidence: tests for own-queue scoping, export refusal, masking, device and session refusal, and expiry.
 
 ## 3. Governance Constraints
 
 - [ ] 3.1 Each feature's plan performs a Constitution Check against v1.0.0 and records a security review. Agent grants, opt-ins above `propose`, read-only answer types and VA companies each get a risk-analysis entry.
-- [ ] 3.2 Route the open questions in design.md to the work they block. The recipe grant sets block 2.4 and the new recipes. The limit values and openWallet mechanics block opt-ins above `propose`. Each practice's answer types block switching them on.
+- [ ] 3.2 Route the open questions in design.md to the work they block. The recipe grant sets block 2.4 and the new recipes. The limit values and openWallet mechanics block opt-ins above `propose`. Each practice's answer types, and the consent record of Open Question 9, block switching them on. Open Question 7 (reading item text) blocks granting `work_item.read_text`. Open Question 6 (a request below openPractice's rung) blocks nothing.
 - [ ] 3.3 Keep this checklist governance-only. Executable tasks live in each feature's Speckit `tasks.md`.
 
 ## 4. Acceptance and Closure

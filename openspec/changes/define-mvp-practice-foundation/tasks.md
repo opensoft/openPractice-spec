@@ -34,7 +34,8 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
 - [ ] 2.4 **Feature 4: clinical-fact consumption for charge capture (Slice 3).** Owns EB-13 to EB-18. It consumes the Thread, because waiting on clinical documentation and the deadline escape are thread conditions. Gate: task 1.2, Feature 2 merged, and the FD-7 Thread contract versioned. The owner may fold this feature into the Slice 3 charge-capture feature, provided ownership is recorded. Acceptance evidence:
   - contract tests run against the clinical-facts canonical schema at its recorded digest;
   - manual entry is marked manual while the capability result is false;
-  - the deadline escape is tested, including manual entry only after the EB-17 staff attestation and refusal without it.
+  - the deadline escape is tested, including manual entry only after the EB-17 staff attestation and refusal without it;
+  - retractions (EB-15): both reason codes with the same billing effect, an absent code read as `withdrawn`, an unknown code applied as `withdrawn` with an exception, no cause inferred or shown, and retractions accepted after a link ends `revoked` or `superseded` (ruling 88).
 - [ ] 2.5 **Post-MVP: QuickBooks Online adapter, then Business Central adapter.** Each is a separate feature against `openpractice-accounting-integration/1.x` (same MAJOR). Each starts only after the vendor's authentication, API, rate limits, idempotency, data residency, line service dates, cash-basis reporting and BAA availability have been verified and recorded. Gate: task 1.2 and Feature 3 merged. These features are excluded from this change's closure.
 
 ## 3. Planning Gates For Every Feature
@@ -51,6 +52,8 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - Open Question 5, the mode continuity procedure: blocks any post-release mode change (AI-09). Feature 3 records the refusal path.
   - Open Question 6, R-2: blocks any future automatic batch release. Feature 3 records explicit release.
   - Open Question 7, two receivable routes in one destination (rulings 24 and 26): owned by change `define-customer-financial-data-boundaries`, on branch `define-customer-financial-data-boundaries` and not yet on main. It blocks Feature 3's go-live in a destination that also carries membership or retail customers, or whose explained deposits fund their balances. Ratifying that change does not by itself lift the block: it lifts only when that change is ratified and Feature 3 has accepted evidence for the single deposit poster with `other_route_share` (BAB-14) and the offering-route check before charge finalization (BAB-16). Feature 3 tests AI-22 in every case.
+  - Open Question 8, telling withdrawals apart for claims already sent: blocks nothing; Feature 4 lets staff choose the claim action (F-4).
+  - Open Question 9, the PROPOSED follow-up calls F-1 to F-4: block Feature 4's retraction handling until the owner dispositions them at ratification.
 
 ## 4. Acceptance and Closure
 

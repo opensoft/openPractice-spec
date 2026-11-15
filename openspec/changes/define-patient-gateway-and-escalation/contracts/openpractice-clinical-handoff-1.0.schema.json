@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:openpractice:contract:openpractice-clinical-handoff:1.0",
   "title": "openpractice-clinical-handoff 1.0",
-  "description": "Canonical message schema for the clinical handoff contract from openPractice to openChart (or another linked EHR). Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required openChart-spec companion change. Reference-only (design call DC-2): exactly the routing id (handoff_id), the EB-01 link_id, the EHR patient triple, HealthLinc's request reference, the conversation source (healthlinc or medxfactory) and conversation reference, the reply-path reference, category, urgency, timestamps, the clock policy reference, the origin, an optional split-group reference, and the identity state cross. A priority or urgent item on a link in review is offered with that state, and one with no chart link is offered unlinked with only legal name, birth date and administrative sex from the openpractice-ehr-patient-link/1.0 snapshot. openChart fetches the conversation by reference from whichever system holds it, through openchart-conversation-retrieval/1.0 (owned by openChart; ruling 69). openChart also reports a clinician's coded clinical-need marker. No message body, question text, reply text or other clinical content crosses or is stored in openPractice. Every object is closed. message_id is the idempotency key and carries no PHI. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
+  "description": "Canonical message schema for the clinical handoff contract from openPractice to openChart (or another linked EHR). Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required openChart-spec companion change. Reference-only (design call DC-2): exactly the routing id (handoff_id), the EB-01 link_id, the EHR patient triple, HealthLinc's request reference, the conversation source (healthlinc or medxfactory) and conversation reference, the reply-path reference, category, urgency, timestamps, the clock policy reference, the origin, an optional split-group reference, and the identity state cross. A priority or urgent item on a link in review is offered with that state, and one with no chart link is offered unlinked with only legal name, birth date and administrative sex from the openpractice-ehr-patient-link/1.0 snapshot. openChart fetches the conversation by reference from whichever system holds it, through openchart-conversation-retrieval/1.0 (owned by openChart; ruling 69). openChart also reports a clinician's coded clinical-need marker. No message body, question text, reply text or other clinical content crosses or is stored in openPractice. Every object is closed. message_id is the idempotency key and carries no PHI. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version. handoff.status reports clinician_acknowledged once, when the inbox item's owner first explicitly acknowledges it; system acceptance and notification delivery are not acknowledgment (ER-19).",
   "oneOf": [
     {
       "$ref": "#/$defs/handoffOffer"
@@ -881,13 +881,14 @@
           ],
           "properties": {
             "status": {
-              "description": "responded: a clinician replied to HealthLinc over openChart's reply path. clock_expired: openChart's response clock ran out. returned_not_clinical: a clinician judged the item administrative. content_unavailable: openChart could not fetch the message from HealthLinc. closed: done.",
+              "description": "clinician_acknowledged: the inbox item's owner, a named clinician, explicitly acknowledged the item in openChart; sent once, at the first acknowledgment, never after returned_not_clinical. handoff.ack accepted (system acceptance) and the delivery of a notification are not acknowledgment. It carries no clinician identity and changes no openPractice alert, fallback or clock (ER-19). responded: a clinician replied to HealthLinc over openChart's reply path. clock_expired: openChart's response clock ran out. returned_not_clinical: a clinician judged the item administrative. content_unavailable: openChart could not fetch the message from HealthLinc. closed: done.",
               "enum": [
                 "responded",
                 "clock_expired",
                 "returned_not_clinical",
                 "content_unavailable",
-                "closed"
+                "closed",
+                "clinician_acknowledged"
               ]
             },
             "status_at": {

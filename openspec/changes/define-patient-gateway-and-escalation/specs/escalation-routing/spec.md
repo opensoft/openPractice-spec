@@ -9,7 +9,7 @@ openPractice SHALL keep a routing record for every accepted inquiry, and that re
 - the proposed and applied urgency, with every raise and its source;
 - the current owner and lane;
 - HealthLinc's request reference, the conversation source and conversation reference (ruling 51), and the reply-path reference;
-- the handoff state and the clock policy version.
+- the handoff state, including the time openChart reported a clinician's acknowledgment (ER-19), and the clock policy version.
 
 For a clinical item, the routing record SHALL be all that openPractice keeps. No question text, reply text or other clinical content SHALL be stored in openPractice, in line with constitution Principle IV. Administrative question and reply text is kept only under PG-10 and PG-11.
 
@@ -279,7 +279,7 @@ Hermes SHALL answer an administrative item only in one of two forms, each at FD-
 
 An item that no read-only answer fits, or that is not eligible under AH-05 exception 1, routes to staff by lane (ER-11) until the drafted-reply MINOR exists. An item with `human_requested` set, and any follow-up on an item that already received a read-only answer, SHALL route to staff.
 
-Before Hermes processes any administrative question, change A's AH-01 gate SHALL be met: verified BAAs with the agent operator and with each model provider (AH-02), minimum necessary under AI-23 recipient profiles (AH-03), and no PHI in agent logs (AH-04). Hermes reads only the linked patient's data (AO-03). Before it drafts or answers, Hermes SHALL screen the item for clinical content; any hit makes it propose a re-route, which the rules apply as clinical (ER-12, DC-14). Hermes MUST NOT answer a clinical item or the clinical part of a mixed one. Hermes's administrative patient messages are kept separate from clinical ones under medXfactory's local policy (ruling 68): they follow ruling 45's guardrails, as change A's AH-05 exception 1 encodes them, and need no clinical review, while consent and data-sharing conditions still apply. Hermes acts only as a roster entry with an openWallet ID and a sponsoring human (AM-04).
+Before Hermes processes any administrative question, change A's AH-01 gate SHALL be met: verified BAAs with the agent operator and with each model provider (AH-02), minimum necessary under AI-23 recipient profiles (AH-03), and no PHI in agent logs (AH-04). Hermes reads only the linked patient's data (AO-03). Before it drafts or answers, Hermes SHALL screen the item for clinical content; any hit makes it propose a re-route, which the rules apply as clinical (ER-12, DC-14). Hermes MUST NOT answer a clinical item or the clinical part of a mixed one. Hermes's administrative patient messages are kept separate from clinical ones under medXfactory's local policy (ruling 68): they follow ruling 45's guardrails, as change A's AH-05 exception 1 encodes them, and need no clinical review, while consent and data-sharing conditions still apply. openPractice checks the patient's consent to AI-authored administrative messaging itself, before it schedules an answer and again before it sends it, and cancels every pending answer to that patient when consent is withdrawn (change A AH-06; ruling 97). Hermes works an item through change A's work-item operations (AO-13): it reads the administrative text openPractice holds for the item, proposes a clinical re-route or an urgency raise, which the rules apply at once, releases the item to a human owner, or cancels its own pending answer. Hermes acts only as a roster entry with an openWallet ID and a sponsoring human (AM-04).
 
 #### Scenario: Hermes gives a read-only answer
 - **WHEN** a patient asks on their own link about office hours, the item is eligible under change A's AH-05 exception 1, and the practice has switched the hours answer type on at `act_after_delay`
@@ -425,7 +425,8 @@ The handoff boundary SHALL be covered by contract tests, written first (constitu
 - the link precondition;
 - re-routing and splitting, with text removal;
 - paused agents;
-- no PHI in diagnostics.
+- no PHI in diagnostics;
+- `clinician_acknowledged`: recorded, acknowledged, reported to HealthLinc as `inquiry.status`, never sent after `returned_not_clinical`, and changing no alert, fallback, retry or clock (ER-19).
 
 The tests SHALL run against openChart and HealthLinc contract doubles, with synthetic data only.
 
@@ -461,3 +462,29 @@ The marker SHALL carry no reason, note or other clinical content (constitution P
 #### Scenario: Staff try to mark a need in openPractice
 - **WHEN** a staff member tries to mark an appointment as clinically needed in openPractice
 - **THEN** no marker is created, because only a clinician in openChart can record one
+
+### Requirement: ER-19 A clinician's acknowledgment in openChart reaches HealthLinc as a coded status, and changes no safety path
+When the owner of a routed item in openChart's clinical inbox, a named clinician, explicitly acknowledges it, openChart SHALL report `handoff.status` with status `clinician_acknowledged` under `openpractice-clinical-handoff/1.0` (ruling 93; design call DC-50, PROPOSED). openChart's system acceptance of the offer (`handoff.ack` `accepted`) is not acknowledgment, and neither is the delivery of a notification. openChart SHALL send `clinician_acknowledged` once per handoff, at the first acknowledgment, and never after `returned_not_clinical`. A `responded` status MAY arrive without an earlier `clinician_acknowledged`. Both are companion items for openChart.
+
+On `clinician_acknowledged`, openPractice SHALL:
+- record its time on the routing record (ER-01);
+- answer it with `message.ack`;
+- send HealthLinc `inquiry.status` with status `clinician_acknowledged` for that routing id, under `openpractice-patient-gateway/1.0`.
+
+Neither message carries clinical content, reply text, a note or the clinician's identity. The status SHALL NOT cancel, delay or close any alert, tracked alert, urgent fallback, retry or clock of ER-07 to ER-09, and SHALL NOT extend `respond_by` (design call DC-51, PROPOSED): a clinician's pickup is reported, and every safety path still runs on its own triggers. HealthLinc SHALL report the status only when openPractice sends it, and never infer it (companion item).
+
+#### Scenario: A clinician picks up an urgent item
+- **WHEN** the owner of an urgent inbox item acknowledges it in openChart
+- **THEN** openChart sends `handoff.status` `clinician_acknowledged`, openPractice records the time and answers `message.ack`, and HealthLinc receives `inquiry.status` `clinician_acknowledged` with no clinician identity
+
+#### Scenario: openChart accepts an offer but no clinician has acknowledged it
+- **WHEN** openChart answers `handoff.ack` `accepted` and no clinician has acknowledged the item
+- **THEN** no `clinician_acknowledged` status is sent or reported
+
+#### Scenario: The response deadline passes after an acknowledgment
+- **WHEN** an urgent item was acknowledged by a clinician, and `respond_by` passes with neither `responded` nor `clock_expired`
+- **THEN** ER-09's fallback still runs with cause `clinical_response_overdue`
+
+#### Scenario: A status carries a clinician reference
+- **WHEN** openChart sends `clinician_acknowledged` with a clinician reference or a note
+- **THEN** the message fails the canonical schema and is rejected

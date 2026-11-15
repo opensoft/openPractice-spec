@@ -40,7 +40,7 @@ In this change, "non-urgent" means applied urgency `routine` only (ruling 41; de
 
 For every linked patient, the result SHALL always grant `urgent_escalation`, `billing_contact` and `own_records_access`, whatever the registry status, membership or payment hold. The schema SHALL make those three impossible to withhold. A patient who is active (PG-04) and not on a payment hold SHALL be granted every capability the link's scope allows. A payment hold SHALL withhold only `clinical_messaging_nonurgent`, `scheduling_new_nonurgent` and `medical_ai_consult` (PH-01; rulings 41 and 52), and the schema SHALL refuse the reason `payment_hold` on any other capability. The result SHALL state the link kind.
 
-`own_records_access` covers the patient's records in openPractice. The result MUST NOT carry an amount, a balance or any detail beyond the codes. HealthLinc SHALL apply the result as given and SHALL NOT derive any other restriction from it, including on records another backend holds; this is a HealthLinc companion-change item.
+`own_records_access` covers the patient's records in openPractice. The result MUST NOT carry an amount, a balance or any detail beyond the codes. HealthLinc SHALL apply the result as given and SHALL NOT derive any other restriction from it, including on records another backend holds; this is a HealthLinc companion-change item. When the request names a registered relying party, the result also carries an assertion that the relying party verifies itself (PG-16).
 
 #### Scenario: An active patient with no hold
 - **WHEN** HealthLinc asks for the capabilities of an active, linked patient with no payment hold
@@ -146,6 +146,8 @@ A representative link SHALL be created only under an approved, versioned proxy p
 
 The granted scope SHALL always include `urgent_escalation`. For a representative, `billing_contact` and `own_records_access` reach only what the proxy policy and the patient's confidential-communication instructions (PR-05) allow for that relationship.
 
+A `link.result` that links a representative SHALL carry `representative`: the relationship and the authority reference recorded on the link when the named human confirmed it (design call DC-49, PROPOSED). The same pair travels, verifiable, in the entitlement assertion (PG-16). Both are already recorded on the representative link; only carrying them back out is new. The guarantor relationship that the registry records (PR-06) is a billing fact and SHALL NOT stand in for a representative's relationship or authority. A `link.result` for a patient's own link, or one that is `pending_review` or `refused`, carries no `representative`.
+
 A representative whose proxy policy gives no access to the patient's billing SHALL NOT learn of a payment hold (design call DC-34). For that representative, a capability that a hold withholds SHALL carry reason `representative_scope` instead of `payment_hold`, and no hold-policy reference SHALL be sent. The entitlement result states the link kind and whether billing is in the representative's scope, and the schema enforces this. The same rule SHALL apply to the withheld reasons of an `inquiry.ack`. Each representative link SHALL carry the expiry or review date the policy sets, and SHALL be revoked when the authority ends. This change asserts no legal rule about who may act for a patient; the proxy policy states those rules after counsel's review.
 
 #### Scenario: A parent links for a young child
@@ -159,6 +161,10 @@ A representative whose proxy policy gives no access to the patient's billing SHA
 #### Scenario: A caregiver without billing scope while the patient is on hold
 - **WHEN** a caregiver proxy whose policy excludes billing asks for capabilities while the patient is on a payment hold
 - **THEN** the withheld capabilities carry `representative_scope`, no `payment_hold` reason or hold-policy reference is sent, and a result that reveals the hold fails the schema
+
+#### Scenario: A representative link is confirmed
+- **WHEN** a staff member confirms a parent's documented authority and the link becomes `linked`
+- **THEN** the `link.result` carries `representative` with relationship `parent_or_guardian` and the authority reference recorded at confirmation, and a result without them fails the schema
 
 #### Scenario: The authority ends
 - **WHEN** a representative link reaches its policy expiry date without renewal
@@ -345,7 +351,10 @@ The gateway boundary SHALL be covered by contract tests, written first (constitu
 - proposal review with no automatic application;
 - the no-text rule for clinical inquiries;
 - reply relay and retry;
-- the no-PHI rules.
+- the no-PHI rules;
+- the entitlement assertion of PG-16: every required property, the representative's relationship and authority, `urgent_escalation` always present, no withheld reason, hold or patient reference, refusal of a tampered, expired, mis-addressed or replayed assertion by a relying-party double, and urgent access unchanged when no assertion can be verified;
+- `representative` on a linked representative `link.result`, and never on any other;
+- `inquiry.status` `clinician_acknowledged` (ER-19).
 
 The tests SHALL run against a HealthLinc contract double with synthetic data only. They MUST NOT depend on a live HealthLinc service or real PHI.
 
@@ -373,3 +382,49 @@ Until the agreement is verified, and at once if it expires or is revoked, openPr
 #### Scenario: The agreement lapses with an urgent item open
 - **WHEN** the operator agreement expires while an urgent item from that deployment is routed
 - **THEN** new messages are refused with `operator_agreement_unverified`, the routed item stays owned, and its fallback keeps running
+
+### Requirement: PG-16 An entitlement result can carry an assertion that a relying party other than HealthLinc verifies itself
+A relying party that is not the patient app, such as medXfactory's medical AI before a non-urgent consult (ruling 52), SHALL be able to verify an entitlement without trusting HealthLinc (ruling 93). When an `entitlement.request` names an `assertion_audience`, and that audience is a relying party the practice has registered (design call DC-47), openPractice SHALL add to the `entitlement.result` an `assertion`. The assertion SHALL give the relying party these properties (design call DC-46, PROPOSED):
+- **Issued by openPractice.** It carries the issuing openPractice deployment's configured issuer (EB-02) and a signature that only that deployment can make and any relying party can check. The signature is asymmetric, over the RFC 8785 canonical JSON of the assertion with the `signature` member removed, and `key_ref` names the key. The signature scheme and how relying parties obtain openPractice's keys are decided in planning; this change names no cryptographic product.
+- **For this patient link.** It carries the `gateway_link_id` and the link kind, and for a representative link the representative's relationship and authority reference (PG-06; design call DC-49).
+- **For this audience.** It carries the relying party's configured issuer as `audience`.
+- **At a stated time, with a stated expiry.** It carries `issued_at` and `expires_at`, no later than the result's `valid_until`.
+- **Not altered.** A change to any signed member breaks the signature.
+- **Not replayed.** It carries a unique `assertion_id`, it is bound to its audience, link and expiry, and when the relying party supplied an `audience_nonce` through HealthLinc, the nonce is echoed (design call DC-48).
+- **What it states.** Its `capabilities` are the capabilities the result grants, limited to those the practice registered that audience to rely on, and always include `urgent_escalation`.
+
+The assertion SHALL carry no PHI and no master identity: no name, date of birth, contact detail, openPractice patient reference, HealthLinc account reference, withheld capability, withheld reason, hold, hold policy, amount or balance. It therefore never reveals a payment hold, to a representative or to a relying party (DC-34). openPractice SHALL record each assertion it issues, by `assertion_id`, audience, link and times, with no PHI in any log (PG-13). HealthLinc SHALL pass the assertion on unchanged, and SHALL NOT alter, re-sign or vouch for it (companion item).
+
+A relying party SHALL accept an assertion only when every one of these checks passes: the signature verifies under a current key of the openPractice issuer it is configured to trust; `audience` is its own issuer; `gateway_link_id` is the link of its session; the current time is at or after `issued_at` and before `expires_at`; `audience_nonce` is its own, when it supplied one; and `assertion_id` has not been accepted for another session. Otherwise it SHALL treat the patient as holding no verified non-urgent capability.
+
+**When verification cannot be done, urgent access is never withheld.** No assertion, a refused or unregistered audience, an expired, unverifiable or mismatched assertion, a signing outage, or an unreachable openPractice SHALL withhold only non-urgent capabilities from the relying party's own service. `urgent_escalation` never depends on an assertion: openPractice SHALL accept and route every inquiry whose applied urgency is above `routine` under PG-10 and ER-09 whatever the state of any assertion, and the relying party SHALL hand priority and urgent need on at once (companion item). The absence of an assertion SHALL NOT remove any capability from the result.
+
+Registering or removing a relying party SHALL be a tier-2 action by a named human, the practice manager or the controller or office manager, never an agent (change `define-actors-agents-and-work-inbox` AO-03). Registration records the relying party's issuer and the capability codes it may rely on, and SHALL wait until an authorized person has recorded and verified the agreement counsel requires with that relying party's operator, following PG-15's pattern (design call DC-47, PROPOSED). For an audience that is not registered, openPractice answers the `entitlement.request` as before, with no assertion.
+
+#### Scenario: The medical AI verifies a consult entitlement
+- **WHEN** HealthLinc asks for capabilities with `assertion_audience` naming the practice's registered medical-AI relying party and a nonce that relying party issued, and the patient holds `medical_ai_consult`
+- **THEN** the result carries an assertion naming openPractice's issuer, that audience, the `gateway_link_id`, `urgent_escalation` and `medical_ai_consult`, the nonce, and times and a signature, and the relying party verifies it itself
+
+#### Scenario: An assertion is altered in transit
+- **WHEN** a relying party receives an assertion whose `capabilities` were changed after signing
+- **THEN** the signature fails, the relying party treats the patient as holding no verified non-urgent capability, and it still hands any priority or urgent need on at once
+
+#### Scenario: An assertion is replayed for another audience or after expiry
+- **WHEN** an assertion issued for one relying party is presented to another, or after its `expires_at`
+- **THEN** the relying party refuses it, and urgent need is still handed on
+
+#### Scenario: A representative's assertion
+- **WHEN** a caregiver proxy whose granted scope includes `medical_ai_consult` asks for capabilities with a registered audience
+- **THEN** the assertion carries link kind `representative`, relationship `caregiver_proxy` and the authority reference, and no hold, withheld reason or patient reference
+
+#### Scenario: A held patient's assertion
+- **WHEN** a patient on a payment hold asks for capabilities with a registered audience
+- **THEN** the assertion lists `urgent_escalation` and no `medical_ai_consult`, and states nothing about the hold
+
+#### Scenario: The audience is not registered
+- **WHEN** an `entitlement.request` names an audience the practice has not registered
+- **THEN** the result is answered as before, with no assertion, and no capability changes
+
+#### Scenario: openPractice cannot be reached
+- **WHEN** the relying party can obtain no assertion because openPractice is unreachable
+- **THEN** no non-urgent consult starts, and an urgent need is handed on at once, and openPractice routes it when it arrives

@@ -42,6 +42,9 @@ This record collects acceptance evidence for OpenSpec change `define-patient-gat
 - `proposal_source` on every inquiry, and the red-flag checklist's `urgent`, `routine` and `priority` proposals applied and never lowered: _pending_
 - The clinical-need marker: attribution, `valid_until`, the urgent-origin check, and no openPractice-created marker: _pending_
 - `representative_scope` in place of a hold for a representative without billing scope: _pending_
+- A linked representative's relationship and authority reference in `link.result` and in the assertion (PG-06): _pending_
+- Entitlement assertions (PG-16): registered relying parties only, every required property, no PHI or hold, verification and refusal by a relying-party double, and urgent access unchanged without one: _pending_
+- `clinician_acknowledged` (ER-19): recorded, acknowledged, passed to HealthLinc, never inferred, and changing no safety path: _pending_
 - Deletion of misrouted text from the agent layer and model provider under the AH-02 agreements: _pending_
 - Hermes drafts at `propose` only, decided by a human in the lane and never by Hermes; read-only answers only under change A's AH-05 exception 1; no drafted-reply or hold action type before the agent-operations MINOR: _pending_
 - Staff answers only in their lane; no openPractice answer to a clinical item: _pending_

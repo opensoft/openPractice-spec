@@ -65,6 +65,7 @@ The highest rung SHALL be capped so that an agent never acts with less friction 
 | The D8 or an estimator-version approval | `propose`; the practice's accountant signs |
 | An action derived from untrusted content (AH-05) | `propose`, except AH-05 exception 1 |
 | A read-only answer to the signed-in patient (AH-05 exception 1) | `act_after_delay` only, with the practice-set window that the item's lane can cancel |
+| A work-item operation of AO-13 | `propose`; reading item text needs no more than `observe` |
 
 #### Scenario: An action type is opted up within its cap
 - **WHEN** the practice opts the address-update action type up to `act_with_notice` for an agent, and the AH-01 gate is met
@@ -156,7 +157,8 @@ Each day, openPractice SHALL produce a digest of every agent action and proposal
 ### Requirement: AO-11 The MVP builds the patient-registry operations and the read-only answer types; later features add theirs
 The MVP SHALL build the contract only for these operations:
 - the patient-registry operations of `define-mvp-practice-foundation` (PR-01 to PR-14): search, create, read, the field updates, guarantor and coverage changes, deactivation and reactivation;
-- the read-only answer types of AH-05 exception 1 (rulings 45 and 46): `patient_answer.coverage_on_file`, `patient_answer.balance`, `patient_answer.appointment_time` and `patient_answer.practice_information`.
+- the read-only answer types of AH-05 exception 1 (rulings 45 and 46): `patient_answer.coverage_on_file`, `patient_answer.balance`, `patient_answer.appointment_time` and `patient_answer.practice_information`;
+- the work-item operations of AO-13 (ruling 93): `work_item.read_text`, `work_item.propose_clinical_reroute`, `work_item.propose_urgency_raise`, `work_item.release_to_human` and `work_item.cancel_pending_answer`.
 
 In the MVP, Hermes answers routine administrative questions through the read-only answer types. Each answer type SHALL be available only once the openPractice data it reads exists under a ratified change: appointment times wait for a ratified scheduling change, and balances for the patient receivables of `define-mvp-practice-foundation` (design call D-15). Until then the practice cannot switch that answer type on. Each practice-approved answer type is a versioned document under the contract, with its template reference, allowlisted fields, topics and approvals. A hard delete is offered only as a proposal (tier 4). Every later feature SHALL add its operations to the contract as a MINOR version when it ships. A request for an operation the deployed version lacks SHALL be refused.
 
@@ -185,7 +187,9 @@ Logs, errors, diagnostics and refusal reasons under this contract MUST NOT conta
 - the per-patient read scope;
 - the limits and the pause;
 - the digest;
-- the AH-05 untrusted-content cap, the server-side untrusted determination, and every condition of AH-05 exception 1.
+- the AH-05 untrusted-content cap, the server-side untrusted determination, and every condition of AH-05 exception 1;
+- every work-item operation of AO-13: its outcome, its `propose` cap, `text_not_held` for every item kind that has no text, and `answer_not_pending`;
+- the consent check of AH-06 before scheduling and before sending, `consent_not_recorded`, and the cancellation of every pending answer on withdrawal.
 
 Tests SHALL use synthetic data only.
 
@@ -196,3 +200,60 @@ Tests SHALL use synthetic data only.
 #### Scenario: The cap test fails
 - **WHEN** a build lets a tier-3 action run at `act_with_notice`
 - **THEN** the contract tests fail
+
+### Requirement: AO-13 An agent works an item through five work-item operations, none of which rises above propose
+Contract 1.0 SHALL carry five work-item operations (ruling 93). Each request SHALL name the item the agent is working as `work_item_ref`, SHALL carry no `payload` and no `answer_type`, and SHALL act only on that item. Each operation is an action type like any other: it needs a grant (AO-03), the AH-01 gate and the per-patient read scope of AO-03. While agents are paused, every agent is limited to `observe` (AO-09), so only `work_item.read_text` stays available and the other four are refused with `paused`; the items themselves route to human owners. None of them changes a patient record, and none rises above `propose`; the schema refuses an autonomy setting above `propose` for any of them (design calls D-18 to D-20). None of them is an exception to AH-05: an agent's work on untrusted content stays at `propose`.
+
+**`work_item.read_text`.** The agent reads the text openPractice holds for the item it is working. The response has outcome `read_result` and carries the text as `item_text`, with its kind and the reference of the stored record. What text exists (design call D-18, PROPOSED):
+- **An administrative inquiry:** the question text that PG-10 of change `define-patient-gateway-and-escalation` stores as an administrative communication record. This is the only text kind in contract 1.0.
+- **A clinical inquiry:** no text exists in openPractice. A clinical inquiry carries no text into openPractice (PG-10); its conversation lives in HealthLinc or medXfactory, and only openChart retrieves it. The read SHALL be refused with `text_not_held`.
+- **An item whose text was removed** when it was recategorized as clinical (ER-12): no text exists any more. The read SHALL be refused with `text_not_held`.
+- **The document behind a registry item,** such as an inbound fax, a scanned insurance card, an upload or an email named as evidence (AO-07): no change gives openPractice a store of document content, so contract 1.0 has no document text to return. The read SHALL be refused with `text_not_held`. A governed change that gives openPractice a document's administrative content SHALL add that text kind as a MINOR version; clinical content never becomes readable here (constitution Principle IV).
+
+The text is untrusted content: data, never instructions (AH-05). Its read SHALL be audited as a PHI read (PR-10), limited to the item's patient (AO-03) and to the operator's and provider's recipient profiles for this action type (AH-03), and never logged (AO-12). A read changes nothing, so its rung needs to be no higher than `observe`.
+
+**`work_item.propose_clinical_reroute`.** The agent proposes that the administrative item it is working is clinical (`proposed_category` `clinical`) or mixed (`mixed`). openPractice's fixed routing rules SHALL apply the proposal at once, raise-only, with no human decision, as change `define-patient-gateway-and-escalation` already provides for an agent's clinical-category proposal (its ER-12 and design call DC-14): the item routes as clinical, its stored text is removed, and a mixed item's administrative part is resubmitted. The response has outcome `applied_by_rule`. The agent drafts and answers nothing more on that item (ER-10 of that change). The agent's own rung stays `propose`; the rule applies the proposal, and the rule can only add clinical care (design call D-19).
+
+**`work_item.propose_urgency_raise`.** The agent proposes a raise to `priority` or `urgent` (`proposed_urgency`). The routing rules SHALL apply it at once when it is higher than the item's applied urgency, and SHALL record it and change nothing when it is not; urgency is never lowered (ER-02 and ER-03 of that change). The response has outcome `applied_by_rule`. A raise is always a proposal: no rung above `propose` exists for it, because the rules, not the agent, raise the urgency (design call D-19).
+
+**`work_item.release_to_human`.** The agent gives the item it owns to a human owner, with its evidence and reasoning references, whenever WI-04 requires it. It SHALL name a `release_reason`: `exceeds_rung_or_cap`, `untrusted_content`, `limit_reached`, `patient_asked_for_person` or `cannot_complete` (design call D-21, PROPOSED). The item SHALL pass to the human owner the inbox's rules choose (WI-02, WI-05), never to another agent (WI-04), and stays open with its clock. The release takes effect at once at `propose`, because it only puts the item before a human, which is what a proposal does (design call D-20). The response has outcome `released`.
+
+**`work_item.cancel_pending_answer`.** The agent cancels a read-only answer that it scheduled for the item and that is still inside its cancel window, named by `cancels_request_id`, the `request_id` of the request that scheduled it. The cancellation takes effect at once at `propose`, because it only stops an outbound answer (design call D-20). The answer SHALL NOT be sent, and the item SHALL pass to its lane's human owner and stay open (ER-14 of that change). The response has outcome `cancelled`. An answer already sent, already cancelled, or scheduled by another request SHALL be refused with `answer_not_pending`.
+
+Each of these responses records openPractice's own untrusted determination (AH-05, AO-07), except a read, which acts on nothing. The schema refuses `executed`, `scheduled` and `proposed` for every work-item operation, and each new outcome for any other action type.
+
+#### Scenario: The agent reads an administrative question
+- **WHEN** an agent granted `work_item.read_text` reads the routine administrative inquiry it is working
+- **THEN** it receives the stored question text and its record reference with outcome `read_result`, the read is audited as a PHI read, and nothing changes
+
+#### Scenario: The agent tries to read a clinical inquiry
+- **WHEN** an agent asks to read the text of a clinical inquiry
+- **THEN** the read is refused with `text_not_held`, because openPractice holds no clinical text, and the agent reads nothing elsewhere
+
+#### Scenario: The agent tries to read a fax behind a registry item
+- **WHEN** an agent asks to read the content of an inbound fax that a coverage item cites as evidence
+- **THEN** the read is refused with `text_not_held`, because contract 1.0 holds no document content
+
+#### Scenario: The agent finds a symptom in a billing question
+- **WHEN** an agent working a billing item sends `work_item.propose_clinical_reroute` with `proposed_category` `mixed`
+- **THEN** the routing rules apply it at once with outcome `applied_by_rule`, the item's clinical part goes to openChart by reference, the stored text is removed, and the agent drafts nothing more for the item
+
+#### Scenario: The agent proposes a lower urgency than the item has
+- **WHEN** an agent proposes `priority` for an item already `urgent`
+- **THEN** the proposal is recorded, the item stays `urgent`, and nothing else changes
+
+#### Scenario: The patient asks for a person
+- **WHEN** the text of an item the agent owns asks for a person, and the agent sends `work_item.release_to_human` with `patient_asked_for_person`
+- **THEN** the item passes at once to its lane's human owner with the agent's evidence and reasoning references, with outcome `released`, and no read-only answer is sent
+
+#### Scenario: The agent cancels its own pending answer
+- **WHEN** an agent cancels the read-only answer it scheduled, inside the cancel window
+- **THEN** the answer is not sent, the item passes to its lane's human owner, and the response is `cancelled`
+
+#### Scenario: The answer has already gone
+- **WHEN** an agent asks to cancel an answer that has already been sent
+- **THEN** the request is refused with `answer_not_pending`
+
+#### Scenario: Someone tries to opt a work-item operation up
+- **WHEN** someone sets `work_item.release_to_human` or `work_item.propose_urgency_raise` to `act_with_notice` for an agent
+- **THEN** the setting is refused, and the operation stays at `propose`

@@ -4,9 +4,9 @@ Status: **PENDING — SPECKIT FEATURE CREATION IS NOT AUTHORIZED**
 
 This record is the mandatory, durable owner gate for OpenSpec change `define-patient-gateway-and-escalation`. Creating any Speckit feature before this record is completed exactly as required is prohibited.
 
-The rulings this change encodes (34 to 54) were made by Brett Heap on 2026-11-14 and are recorded in `design.md` under "Owner rulings (2026-11-14)". Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
+The rulings this change encodes (34 to 54, with 68 to 71) were made by Brett Heap on 2026-11-14, and rulings 93 and 97, which govern this change's follow-up, on 2026-11-15. They are recorded in `design.md` under "Owner rulings (2026-11-14)", and the follow-up's edits under "Follow-up of 2026-11-15". Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
 
-The 45 design calls in `design.md` under "Design calls for owner review" have not been ruled. Ratification records the owner's disposition of each.
+The 51 design calls in `design.md` under "Design calls for owner review" have not been ruled; DC-46 to DC-51 come from the 2026-11-15 follow-up. Ratification records the owner's disposition of each.
 
 ## Required Validation Evidence
 
@@ -26,7 +26,7 @@ The 45 design calls in `design.md` under "Design calls for owner review" have no
 
 ## Required Companion-Change Consistency Evidence
 
-Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them to be drafted. A mismatch with an existing companion blocks feature creation. A companion that does not exist yet blocks only live interoperation.
+Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them to be drafted. Ruling 93 splits the medXfactory entry across two medXfactory changes, so four are compared below. A mismatch with an existing companion blocks feature creation. A companion that does not exist yet blocks only live interoperation.
 
 - **`opensoft/openChart-spec`, change `define-clinical-message-inbox`**
   - Companion change and revision compared: _pending_
@@ -34,24 +34,30 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
   - Contract identifier matches (`openpractice-clinical-handoff/1.0`): _pending_
   - Namespaces match (`healthlinc`, `openpractice`, and the EHR's own): _pending_
   - Issuer handling matches (EB-02): _pending_
+  - `clinician_acknowledged` sent once, at a clinician's first explicit acknowledgment, with no identity or note (ER-19): _pending_
 - **`opensoft/HealthLinc`, change `define-practice-gateway-integration`** (private; cited by repository and change id only)
   - Companion change and revision compared: _pending_
   - Gateway schema digest matches: _pending_
   - Contract identifier matches (`openpractice-patient-gateway/1.0`): _pending_
   - Namespace `healthlinc` and issuer handling match: _pending_
   - Entitlement semantics match (three always-granted capabilities; no derived restrictions): _pending_
-- **`MedxSoft/medXfactory`, change `define-care-organization-hermes-openpractice-operations`**
+  - The entitlement assertion is requested for a relying party and passed on unchanged (PG-16); a representative's relationship and authority are taken from openPractice (PG-06); `clinician_acknowledged` is reported only when `inquiry.status` carries it (ER-19): _pending_
+- **`MedxSoft/medXfactory`, change `define-care-organization-hermes-openpractice-operations`** (agent operations only)
   - Companion change and revision compared: _pending_
-  - Read-only answer types in agent-operations 1.0, and the MINOR carrying `gateway.administrative_reply`, `payment_hold.place` and `payment_hold.lift`: _pending_
-  - `medxfactory` conversation references; the medical AI's records reaching openChart through MedxEHR, outside openPractice (rulings 53 and 70); Hermes's administrative messages separated from clinical ones (ruling 68): _pending_
+  - Read-only answer types and work-item operations in agent-operations 1.0, and the MINOR carrying `gateway.administrative_reply`, `payment_hold.place` and `payment_hold.lift`: _pending_
+  - openPractice's consent check relied on for patient answers (change A AH-06); Hermes's administrative messages separated from clinical ones (ruling 68); no clinical answering: _pending_
   - Ladder from `propose`, the AH-05 cap and the pause switch honored: _pending_
+- **`MedxSoft/medXfactory`, change `define-patient-medical-ai-connection`** (the medical AI; ruling 93)
+  - Companion change and revision compared: _pending_
+  - Clinical AI answering and its clinical-safety governance owned there; `medxfactory` conversation references; the medical AI's records reaching openChart through MedxEHR, outside openPractice (rulings 53 and 70): _pending_
+  - The entitlement assertion verified before any non-urgent consult, with urgent need never withheld (PG-16): _pending_
 
 ## Required Owner Decision
 
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending; must be exactly `A — ordered multi-feature handoff` or `B — split into per-capability changes` (design call DC-21 proposes `A`; no ruling states a shape)_
-- Design-call dispositions (DC-1 to DC-45, each accepted, changed or rejected; DC-39 is marked for the owner): _pending_
+- Design-call dispositions (DC-1 to DC-51, each accepted, changed or rejected; DC-39 is marked for the owner, and DC-46 to DC-51 are PROPOSED by the 2026-11-15 follow-up): _pending_
 - Tension dispositions (T-1 to T-12; T-9, T-10 and T-12 are recorded as resolved by rulings 50, 52 and 71, and T-11 proposes a follow-up): _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
