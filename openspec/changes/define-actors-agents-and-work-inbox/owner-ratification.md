@@ -4,7 +4,7 @@ Status: **PENDING — SPECKIT FEATURE CREATION IS NOT AUTHORIZED**
 
 This record is the mandatory, durable owner gate for OpenSpec change `define-actors-agents-and-work-inbox`. Creating any Speckit feature before this record is completed exactly as required is prohibited.
 
-Brett Heap made rulings 34 to 44 on 2026-11-14, and they are recorded in `design.md`. Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
+Brett Heap made rulings 34 to 54 on 2026-11-14, and they are recorded in `design.md`. Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
 
 ## Required Validation Evidence
 
@@ -21,14 +21,15 @@ Brett Heap made rulings 34 to 44 on 2026-11-14, and they are recorded in `design
 - Cited requirement IDs exist at that revision (PR, EB, AI, BAB, including BAB-17 and AI-23): _pending_
 - Sibling change `define-patient-gateway-and-escalation` cites this change's IDs correctly: _pending_
 - Canonical schema digest matches `contracts/SHA256SUMS`: _pending_
-- Required companion changes (MedxFactory/Hermes, openChart-spec, HealthLinc) are recorded with their status: _pending_
+- Required companion changes are recorded with their status (rulings 47 to 49): `define-care-organization-hermes-openpractice-operations` in `MedxSoft/medXfactory`, `define-clinical-message-inbox` in `opensoft/openChart-spec`, and `define-practice-gateway-integration` in `opensoft/HealthLinc`: _pending_
 
 ## Required Owner Decision
 
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
-- Handoff shape: _pending owner confirmation. `tasks.md` §2 proposes folding the actor model and inbox into the registry feature or the feature right after it, followed by the agent contract, VA safeguards and AI data handling._
-- Design calls D-1 to D-13 accepted or amended: _pending_
+- Handoff shape: _pending owner confirmation. `tasks.md` §2 proposes folding the actor model and inbox into the registry feature or the feature right after it, followed by AI data handling, the agent contract and VA safeguards._
+- Design calls D-1 to D-17 accepted or amended: _pending_
+- Tensions T-1 to T-7 dispositioned: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
 Required owner statement:
@@ -37,7 +38,10 @@ Required owner statement:
 > - every agent action type starts at `propose`;
 > - no agent acts with less friction than the action's FD-5 tier;
 > - tier-4 actions stay human-only, and D8 approvals stay accountant-only;
-> - no PHI reaches an agent layer, and no remote VA reaches PHI, without the verified agreements this change requires;
+> - no agent receives a grant at any rung, and no PHI reaches an agent layer, without verified BAAs with the agent operator and each model provider, and a lapse suspends all agent PHI access;
+> - grants, rungs, limits and the pause are changed only by named humans, and an agent reads only its work item's patient;
+> - an agent answers a patient without a human only through AH-05 exception 1's read-only answers;
+> - no remote VA reaches PHI without the verified agreement this change requires;
 > - this change cannot be archived until the implementing work and the assembly pin bump are merged and accepted.
 
 ## Gate Semantics

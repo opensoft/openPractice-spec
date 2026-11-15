@@ -30,10 +30,12 @@ Every work item SHALL have an owner from creation until it closes. When an owner
 - **THEN** the controller or office manager receives it, and the defect is recorded
 
 ### Requirement: WI-03 A proposed action is approved, changed or rejected under its tier
-The owner, or an authorized signer under BAB-17, SHALL be able to approve, change or reject a proposed action.
+The owner, or an authorized signer under BAB-17, SHALL be able to approve, change or reject a proposed action, but the decider SHALL never be the proposer.
 - Approving executes the action under its FD-5 tier.
 - Changing replaces the proposal and repeats its dry run (AO-05).
 - Rejecting records a coded reason.
+
+An agent SHALL NOT decide its own proposal. An agent SHALL NOT decide another agent's proposal unless the deciding agent itself holds that action type at a rung above `propose` (AO-04), at or above the rung the decision exercises, so that it could have taken the action itself; the action then runs under the deciding agent's rung, so an `act_after_delay` decision runs its delay. A proposal that untrusted content contributed to SHALL be decided by a human (AH-05).
 
 Every decision SHALL record the signer's identity, including an agent's openWallet ID. A tier-4 proposal SHALL be decided by a named human only. A D8 or estimator-version proposal SHALL be decided by the practice's accountant only.
 
@@ -44,6 +46,14 @@ Every decision SHALL record the signer's identity, including an agent's openWall
 #### Scenario: An agent tries to approve a tier-4 proposal
 - **WHEN** an agent tries to approve a proposed hard delete
 - **THEN** the decision is refused, and the item waits for a named human
+
+#### Scenario: An agent tries to approve its own proposal
+- **WHEN** an agent that owns an item tries to approve the proposal it made
+- **THEN** the decision is refused, and the item waits for another authorized signer
+
+#### Scenario: An agent decides another agent's proposal without an opt-in
+- **WHEN** an agent at `propose` for address updates tries to approve another agent's proposed address update
+- **THEN** the decision is refused, and the item waits for a human or for an agent opted in above `propose` for that action type
 
 ### Requirement: WI-04 Agents hand work to humans with their evidence
 An agent SHALL hand a work item to a human owner, with its evidence and reasoning references (AO-07), whenever any of these holds:
