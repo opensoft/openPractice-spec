@@ -51,7 +51,7 @@ A payment hold MUST NEVER block an urgent escalation, billing contact, or access
 - **THEN** the version is refused and cannot be approved
 
 ### Requirement: PH-03 No hold is placed without an approved, counsel-reviewed, versioned policy
-openPractice SHALL refuse every attempt to place a payment hold until the practice has an approved, versioned hold policy (ruling 41). The practice's medical director, a named human, SHALL approve each policy version. The approval SHALL NOT be opted in for agent signing (design call DC-28). Counsel's review SHALL be recorded on each version, by reference, naming the counsel who gave it, with counsel's state bar, admission number, and the date and result of a check against that bar's public record, before approval, and SHALL NOT be self-approved (`define-practice-readiness` SR-04; ruling 149). The fields recorded are design call DC-65 (PROPOSED).
+openPractice SHALL refuse every attempt to place a payment hold until the practice has an approved, versioned hold policy (ruling 41). The practice's medical director, a named human, SHALL approve each policy version. The approval SHALL NOT be opted in for agent signing (design call DC-28). Counsel's review SHALL be recorded on each version, by reference, naming the counsel who gave it, with counsel's state bar, admission number, and the date and result of a check against that bar's public record, before approval, and SHALL NOT be self-approved (`define-practice-readiness` SR-04; ruling 149). The fields recorded are design call DC-65 (PROPOSED). Counsel SHALL be checked against the state bar's public record and matched against the practice's staff and owners (ruling 149); a match, or an admission that cannot be checked there or is not active, refuses it (`define-practice-readiness` SR-04).
 
 Each version SHALL state:
 - the coded criteria for placing a hold;
@@ -84,7 +84,7 @@ Placing and lifting a hold SHALL each be a logged, tiered action, with the actio
 
 Both action types SHALL start at `propose` for agents (ruling 37; change A AO-04). An agent can never act with less friction than the tier requires. Above `propose`, an agent may place a hold only at `act_after_delay`, so the countdown and cancel window always run, and may lift a hold at `act_with_notice` or `act_after_delay`. Each rung above `propose` is reached only through that action type's BAB-17 opt-in. Agent placement SHALL obey AO-08's rate and blast-radius limits.
 
-Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the named human who placed or lifted it where a human did, the signer where one signs (BAB-17), the time and the provenance. A named human SHALL NOT place or lift a hold on a balance that their own party, or a party in its same-person group, owes or guarantees, while another named human who may do so is on the roster; `define-mvp-practice-foundation` PR-15's own-record rule and its one-person alternative govern, and the record then keeps both roles and that fact (its design call F-7, PROPOSED). It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
+Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the named human who placed or lifted it where a human did, the signer where one signs (BAB-17), the time and the provenance. A named human SHALL NOT place or lift a hold on a patient who is their own party or in its same-person group, or on a balance that their own party, or a party in that group, owes or guarantees, while another named human who may do so is on the roster, and an agent SHALL NOT do so for its sponsor's party or that party's group; `define-mvp-practice-foundation` PR-15's own-record rule and its one-person alternative govern, and the record then keeps both roles and that fact (its design call F-7, PROPOSED). It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
 
 #### Scenario: A staff member places a hold
 - **WHEN** a biller places a hold under an approved policy
@@ -105,6 +105,14 @@ Every placement and lift SHALL record the policy version, the coded criteria met
 #### Scenario: A staff member's own balance is on hold
 - **WHEN** a biller tries to lift a hold on a balance the biller owes as guarantor, and another named human may lift it
 - **THEN** the lift is routed to that other person, and the attempt is recorded with both roles
+
+#### Scenario: A staff member is the held patient but not the guarantor
+- **WHEN** a staff member who is an adult patient on a parent's guarantor account tries to lift the hold that blocks their own booking, and another named human may lift it
+- **THEN** it is an own-record act: the lift is routed to that other person
+
+#### Scenario: An agent lifts its sponsor's hold
+- **WHEN** an agent at `act_with_notice` for lifts tries to lift a hold on its sponsor's own patient record
+- **THEN** the lift is refused as an own-record act of the sponsor, and the item goes to another named human
 
 ### Requirement: PH-05 The patient is told, with no PHI in push or text content
 openPractice SHALL tell the patient when a hold's countdown starts and when a hold lifts (ruling 41), with a `patient.notice` of kind `hold_countdown_started` or `hold_lifted` through HealthLinc. Its template is the hold policy's approved notice wording (PH-03), and its `effective_at` is when the hold would take effect or when it lifted. The notice SHALL say what the hold blocks, what it never blocks (urgent help, billing contact and own records), and how to resolve it.
