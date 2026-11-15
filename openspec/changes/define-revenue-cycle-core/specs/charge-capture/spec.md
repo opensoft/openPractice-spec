@@ -1,0 +1,103 @@
+## ADDED Requirements
+
+### Requirement: CG-01 A charge line is a priced, payer-agnostic statement that a service was given
+openPractice SHALL record each billable service as a charge line in the visit's one charge set (one charge set per visit thread). A charge line SHALL carry:
+- its catalog item (SC-01), and the procedure code and any modifiers it bills under, each as a code system and a code only;
+- the units and the date of service;
+- the rendering provider and the billing entity, identified by TIN and NPI;
+- the location and place of service;
+- the price, which is the catalog item's price on the date of service times the units (SC-03);
+- pointers to the visit's ranked diagnosis references, held once on the charge set;
+- its source: references to the EHR facts and their versions, or the manual-entry record (CG-02);
+- its thread.
+
+A charge line SHALL carry no payer, no allowed amount and no patient share; those belong to claims and remittances.
+
+#### Scenario: A charge line is recorded
+- **WHEN** an office visit and a lab draw are given to Pat Example on one day
+- **THEN** the visit's charge set holds two charge lines, each with its item, code, units, date, providers, place of service, price and source, and neither names a payer
+
+### Requirement: CG-02 Codes come from the EHR's final facts or from staff, never from openPractice
+A charge line's procedure and diagnosis codes SHALL come from one of two sources (ruling 116):
+- the EHR's final, coded clinical facts for the encounter, read under `openpractice-ehr-clinical-facts/1.0` (EB-13, EB-14), which publishes only confirmed diagnoses (ruling 87, EB-13 as PR #7 amends it);
+- manual entry by authorized staff in the cases EB-17 allows, marked manual, with its provenance (ruling 21).
+
+openPractice SHALL NOT infer, suggest or derive a code from any text, and SHALL NOT change a code the EHR supplied; a disagreement SHALL go back to the EHR as a question, outside this contract. A fact's procedure code SHALL map to a catalog item only by an exact match on code system and code; a code that matches no active item SHALL become a work item.
+
+#### Scenario: openChart cannot yet supply facts
+- **WHEN** a patient is linked to openChart and openChart reports no billable-facts support
+- **THEN** staff enter the codes from the superbill, and each charge line is marked manual with that reason (EB-17)
+
+#### Scenario: A fact code with no catalog item
+- **WHEN** final facts carry a procedure code that no active catalog item uses
+- **THEN** no charge line is created for it, and a work item names the code
+
+### Requirement: CG-03 A charge set starts as a draft, and a draft posts nothing
+A charge set SHALL start as a draft. Staff MAY prepare a draft, and an agent MAY prepare one at most at `act_with_notice` (ruling 132, TH-13). A draft SHALL post no ledger entry, SHALL NOT appear on a claim or a statement, and MAY be changed freely until it is finalized.
+
+#### Scenario: An agent drafts charges from facts
+- **WHEN** an agent opted up to `act_with_notice` drafts a charge set from newly final facts
+- **THEN** the draft exists, the biller is notified, and nothing posts until a person finalizes it
+
+### Requirement: CG-04 A named human biller confirms the codes before a charge set is final
+A charge set SHALL become final only when a named human who holds the biller role confirms its codes (ruling 116). The confirmation SHALL be a sign-off under BAB-17 that records the role used (`define-practice-readiness` SR-02), and SHALL NOT be opted in for agent signing: an agent stays at `propose` for `charge.finalize` (ruling 132). Where the biller's own party holds a role on the patient's record, the confirmation SHALL follow PR-15's rule for a staff member acting on their own record and its one-person alternative (design call F-7 as PR #8 records it). Finalization SHALL move the thread from `seen` to `charged` (TH-04).
+
+#### Scenario: An agent tries to finalize
+- **WHEN** an agent tries to finalize a charge set it drafted
+- **THEN** the finalization is refused, and the draft waits for a named human biller
+
+#### Scenario: The biller confirms
+- **WHEN** a biller reviews the draft against the final facts and confirms it
+- **THEN** the charge set is final, the sign-off records the biller role, and the thread moves to `charged`
+
+### Requirement: CG-05 Finalization is refused while any of its checks fails
+Before a charge set becomes final, openPractice SHALL check, and SHALL refuse finalization while any check fails:
+- the offering route and the patient's membership entitlement (BAB-16, SC-06). An unresolved route SHALL hold the thread with reason `offering_route_unresolved`, released at tier 3 as medical billing at the payer's filing threshold under BAB-16;
+- the date of service is on or before any deactivation date of the patient's record (PR-11);
+- every fact the charge set uses is final (EB-14), and none has been retracted (EB-15 as PR #7 amends it). A retraction SHALL hold the thread with reason `clinical_fact_retracted`;
+- for a manual entry under identity review, the attestation EB-17 requires is recorded.
+
+#### Scenario: A retracted diagnosis
+- **WHEN** the EHR retracts a diagnosis that an unfinalized charge set points to
+- **THEN** finalization is refused, the thread is held with reason `clinical_fact_retracted`, and the biller is given the work
+
+#### Scenario: A member's included service
+- **WHEN** a member's visit is a service that the membership's approved terms include
+- **THEN** no medical charge is finalized for it (BAB-16)
+
+### Requirement: CG-06 A second identical line needs a reason
+openPractice SHALL refuse a second charge line on the same thread with the same catalog item, date of service, rendering provider and modifiers, unless a person records a coded reason that the service was given more than once (design call CR-27, PROPOSED). Extra units of one service SHALL be recorded as units on one line, not as a second line.
+
+#### Scenario: The same service entered twice
+- **WHEN** staff enter the same office visit twice for one patient, provider and date
+- **THEN** the second line is refused unless a coded reason is recorded
+
+### Requirement: CG-07 A visit waiting on documentation is held, visible and on the filing clock
+A visit that happened but whose documentation is not final SHALL stay at `seen` with the condition `held` and the reason `waiting_on_clinical_documentation` (EB-14, TH-06). Its clock SHALL be the date of service plus the payer's filing window, and it SHALL appear as owned work (TH-12). Where a manual entry is allowed under EB-17, the hold SHALL release when the manual entry is finalized.
+
+#### Scenario: A note is unsigned for a week
+- **WHEN** a visit's documentation is still not final seven days after the visit
+- **THEN** the visit is shown as held, waiting on documentation, with the days left to the filing deadline, and its owner is named
+
+### Requirement: CG-08 A final charge is corrected only by reversal and replacement
+A final charge line SHALL never be edited (BAB-04). A correction SHALL reverse the line, which reverses every entry it posted (SL-05), and SHALL add a replacement line where one is needed, both referencing the original. When a fact behind a final line is corrected or retracted by the EHR (EB-15), openPractice SHALL record the dated event and raise work for the biller to reverse or replace the line (design call CR-28, PROPOSED). When the line is already on a submitted claim, the correction SHALL be made through a replacement or void claim (CL-08), and the claim as submitted SHALL stay unchanged (EB-16).
+
+#### Scenario: A wrong code on an unclaimed charge
+- **WHEN** a biller finds a wrong procedure code on a final charge line that has not been claimed
+- **THEN** the line and its entries are reversed, a replacement line is finalized, and both reference the original
+
+#### Scenario: A corrected diagnosis after the claim was sent
+- **WHEN** the EHR corrects a diagnosis on a visit whose claim was already submitted
+- **THEN** the event is recorded, the submitted claim is unchanged, and a replacement claim is offered to the biller
+
+### Requirement: CG-09 A final charge posts its service entries on the right dates
+When a charge set becomes final, openPractice SHALL post, for each line:
+- the service entry at the gross price, as `service_insured` when the visit is billed to a payer or `service_self_pay` when it is not (RT-02);
+- the `self_pay_discount` entry where the self-pay discount applies (SC-04);
+- the deduction from its estimate (RE-01).
+
+Each entry SHALL carry the date of service. Its accounting date SHALL be the date of service when the destination's period is open, and otherwise the first open date with a late-charge flag (ruling 4, AI-11, BAB-15). The finalization date SHALL be recorded as the date an invoice would carry (AI-11).
+
+#### Scenario: A charge finalized after the destination closed the month
+- **WHEN** a charge for an October 28 visit is finalized after the destination closed October
+- **THEN** its entries keep October 28 as the date of service, take the first open date as their accounting date, and carry the late-charge flag

@@ -83,6 +83,7 @@ A thread's station SHALL be one of ten. Six are used by every thread type and fo
 | `remitted` | `closed` | The balance reached zero with no money moving |
 | `banked` | `remitted` | A later answer on the same visit, such as the patient's share |
 | `banked` | `closed` | Nothing is left |
+| `remitted`, `banked` | `charged` | Coverage was found late, so a claim will be built (GF-11) |
 | `closed` | any earlier station | Reopened by a later fact, such as a chargeback, a recoupment or late coverage |
 | `intent` | `claimed`, `remitted`, `banked`, `closed` | Non-visit cases, per their type (TH-08) |
 
@@ -120,8 +121,9 @@ A hold SHALL use one reason from a closed list that the product ships and the pr
 - `offering_route_unresolved` (BAB-16);
 - `waiting_on_authorization` (EV-02);
 - `open_dispute_or_appeal`;
-- `gfe_parameters_unverified` (GF-03);
 - `tier3_window_running`.
+
+No hold SHALL stop a patient from being booked, arriving or being seen: a hold stops money work, never care (EV-04).
 
 Each hold SHALL record a release condition as structured data that a query can evaluate, never as free text. When a release condition is met, every thread it holds SHALL be released in one action, with a notification (tier 2). A new hold reason SHALL need a governed change.
 
