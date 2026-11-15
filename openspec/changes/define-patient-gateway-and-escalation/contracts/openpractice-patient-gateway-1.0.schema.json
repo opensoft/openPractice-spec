@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:openpractice:contract:openpractice-patient-gateway:1.0",
   "title": "openpractice-patient-gateway 1.0",
-  "description": "Canonical message schema for the patient gateway contract between HealthLinc (the owner's working name for the ecosystem patient app) and openPractice. Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required HealthLinc companion change. Every object is closed (additionalProperties false). Reasons are codes. References are opaque or (issuer, namespace, value) triples. message_id is a random UUID and is the idempotency key; no key carries PHI. The only free-text fields are the administrative inquiry body, the administrative reply body, and the patient-proposed demographic and coverage values; a clinical inquiry carries no body. The entitlement result always grants urgent_escalation, billing_contact and own_records_access. 1.0 carries no appointment or payment operations; they come as later MINOR versions. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
+  "description": "Canonical message schema for the patient gateway contract between HealthLinc (the owner's working name for the ecosystem patient app) and openPractice. Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required HealthLinc companion change. Every object is closed (additionalProperties false). Reasons are codes. References are opaque or (issuer, namespace, value) triples. message_id is a random UUID and is the idempotency key; no key carries PHI. The only free-text fields are the administrative inquiry body, the administrative reply body, and the patient-proposed demographic and coverage values; a clinical inquiry carries no body. The entitlement result always grants urgent_escalation, billing_contact and own_records_access; a payment hold may withhold only clinical_messaging_nonurgent, scheduling_new_nonurgent and medical_ai_consult, and is never revealed to a representative without billing scope. An inquiry names where its conversation lives: healthlinc (HealthLinc's coach) or medxfactory (medXfactory's medical AI). 1.0 carries no appointment or payment operations; they come as later MINOR versions. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
   "oneOf": [
     {
       "$ref": "#/$defs/entitlementRequest"
@@ -98,13 +98,14 @@
       ]
     },
     "capability": {
-      "description": "Coded gateway capability. urgent_escalation, billing_contact and own_records_access are always granted to a linked patient (PG-03).",
+      "description": "Coded gateway capability. urgent_escalation, billing_contact and own_records_access are always granted to a linked patient (PG-03). Non-urgent means applied urgency routine only (ruling 41). medical_ai_consult covers non-urgent consults with medXfactory's medical AI (ruling 52). HealthLinc's coach is HealthLinc's own, has no capability, and is never gated by the practice.",
       "enum": [
         "urgent_escalation",
         "billing_contact",
         "own_records_access",
         "clinical_messaging_nonurgent",
         "scheduling_new_nonurgent",
+        "medical_ai_consult",
         "administrative_questions",
         "demographic_change_proposal",
         "coverage_change_proposal"
@@ -115,6 +116,7 @@
       "enum": [
         "clinical_messaging_nonurgent",
         "scheduling_new_nonurgent",
+        "medical_ai_consult",
         "administrative_questions",
         "demographic_change_proposal",
         "coverage_change_proposal"
@@ -128,7 +130,8 @@
         "membership_entitlement_unresolved",
         "payment_hold",
         "representative_scope",
-        "evaluation_unavailable"
+        "evaluation_unavailable",
+        "clinical_routing_unavailable"
       ]
     },
     "lane": {
@@ -161,7 +164,9 @@
         "unauthorized",
         "routing_unknown",
         "proposal_unknown",
-        "capability_withheld"
+        "capability_withheld",
+        "link_pending_review",
+        "clinical_routing_unavailable"
       ]
     },
     "healthlincRef": {
@@ -207,6 +212,58 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 128
+        }
+      }
+    },
+    "conversationSource": {
+      "description": "Where the patient's conversation lives (ruling 51): healthlinc for a conversation with HealthLinc's coach, medxfactory for a conversation with medXfactory's medical AI. openPractice stores no clinical content from either.",
+      "enum": [
+        "healthlinc",
+        "medxfactory"
+      ]
+    },
+    "conversationRef": {
+      "description": "Reference to the conversation in the system that holds it: (issuer, healthlinc or medxfactory, value). Its namespace matches conversation_source. The namespace token medxfactory is a design call (design.md DC-37).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issuer",
+        "namespace",
+        "value"
+      ],
+      "properties": {
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "namespace": {
+          "enum": [
+            "healthlinc",
+            "medxfactory"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "answerTypeRef": {
+      "description": "A practice-approved read-only answer type and its version (change define-actors-agents-and-work-inbox AH-05 exception 1).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer_type_id",
+        "version"
+      ],
+      "properties": {
+        "answer_type_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
         }
       }
     },
@@ -465,7 +522,7 @@
       }
     },
     "entitlementResult": {
-      "description": "openPractice answers with coded capabilities and coded reasons only (PG-03, PG-04).",
+      "description": "openPractice answers with coded capabilities and coded reasons only (PG-03, PG-04, PG-06).",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -513,12 +570,24 @@
             "request_message_id",
             "evaluated_at",
             "valid_until",
+            "link_kind",
             "capabilities",
             "withheld"
           ],
           "properties": {
             "request_message_id": {
               "$ref": "#/$defs/uuid"
+            },
+            "link_kind": {
+              "description": "Whether the link is the patient's own or a representative's (PG-05, PG-06).",
+              "enum": [
+                "self",
+                "representative"
+              ]
+            },
+            "representative_billing_scope": {
+              "description": "For a representative link: whether the proxy policy lets this representative see the patient's billing. When false, a payment hold is never revealed: withheld capabilities carry representative_scope, and no hold-policy reference is sent (PG-06).",
+              "type": "boolean"
             },
             "evaluated_at": {
               "$ref": "#/$defs/timestamp"
@@ -573,13 +642,117 @@
                       "$ref": "#/$defs/withholdReason"
                     }
                   }
-                }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "reasons": {
+                          "contains": {
+                            "const": "payment_hold"
+                          }
+                        }
+                      },
+                      "required": [
+                        "reasons"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "capability": {
+                          "description": "A payment hold may withhold only these three capabilities (PH-01).",
+                          "enum": [
+                            "clinical_messaging_nonurgent",
+                            "scheduling_new_nonurgent",
+                            "medical_ai_consult"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
               }
             },
             "hold_policy": {
               "$ref": "#/$defs/hold_policy_ref"
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "link_kind": {
+                    "const": "representative"
+                  }
+                },
+                "required": [
+                  "link_kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "representative_billing_scope"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "link_kind": {
+                    "const": "self"
+                  }
+                },
+                "required": [
+                  "link_kind"
+                ]
+              },
+              "then": {
+                "not": {
+                  "required": [
+                    "representative_billing_scope"
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "link_kind": {
+                    "const": "representative"
+                  },
+                  "representative_billing_scope": {
+                    "const": false
+                  }
+                },
+                "required": [
+                  "link_kind",
+                  "representative_billing_scope"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "withheld": {
+                    "items": {
+                      "properties": {
+                        "reasons": {
+                          "not": {
+                            "contains": {
+                              "const": "payment_hold"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "not": {
+                  "required": [
+                    "hold_policy"
+                  ]
+                }
+              }
+            }
+          ]
         }
       }
     },
@@ -1539,7 +1712,7 @@
       }
     },
     "inquirySubmitted": {
-      "description": "HealthLinc submits a patient question. A clinical question carries no body: no clinical content enters openPractice (ER-01, ER-05).",
+      "description": "HealthLinc submits a patient question or an escalation to the patient's human doctor, from a coach conversation or a medXfactory medical-AI conversation (ruling 51). A clinical question carries no body: no clinical content enters openPractice (ER-01, ER-05).",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -1585,6 +1758,8 @@
           "additionalProperties": false,
           "required": [
             "inquiry_ref",
+            "conversation_source",
+            "conversation_ref",
             "reply_path_ref",
             "submitted_at",
             "submitted_by",
@@ -1594,8 +1769,14 @@
           ],
           "properties": {
             "inquiry_ref": {
-              "description": "HealthLinc's message reference. HealthLinc stays the store of the message.",
+              "description": "HealthLinc's reference for the patient's request. HealthLinc stays the store of the request.",
               "$ref": "#/$defs/healthlincRef"
+            },
+            "conversation_source": {
+              "$ref": "#/$defs/conversationSource"
+            },
+            "conversation_ref": {
+              "$ref": "#/$defs/conversationRef"
             },
             "reply_path_ref": {
               "description": "Opaque reference to the HealthLinc conversation a reply goes into.",
@@ -1611,18 +1792,23 @@
               ]
             },
             "proposed_category": {
-              "description": "HealthLinc's AI proposal (ruling 44).",
+              "description": "Proposed by HealthLinc's coach or medXfactory's medical AI, according to conversation_source (rulings 44 and 51). An uncertain category is proposed as clinical.",
               "enum": [
                 "clinical",
                 "administrative"
               ]
             },
             "proposed_urgency": {
+              "description": "Proposed with the conservative default: an uncertain urgency is proposed as urgent (ruling 51). openPractice never lowers it (ER-03).",
               "$ref": "#/$defs/urgency"
             },
             "triage_ref": {
-              "description": "Opaque reference to HealthLinc's triage output and model version; HealthLinc keeps the detail.",
+              "description": "Opaque reference to the proposing AI's triage output and model version; the system that holds the conversation keeps the detail.",
               "$ref": "#/$defs/opaqueRef"
+            },
+            "human_requested": {
+              "description": "True when the patient asked for a person, or said an answer did not answer the question. openPractice routes the item to staff and never to a read-only answer (ER-10).",
+              "type": "boolean"
             },
             "topic_hint": {
               "$ref": "#/$defs/adminTopic"
@@ -1711,6 +1897,52 @@
                   "body",
                   "topic_hint"
                 ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "conversation_source": {
+                    "const": "healthlinc"
+                  }
+                },
+                "required": [
+                  "conversation_source"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "conversation_ref": {
+                    "properties": {
+                      "namespace": {
+                        "const": "healthlinc"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "conversation_source": {
+                    "const": "medxfactory"
+                  }
+                },
+                "required": [
+                  "conversation_source"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "conversation_ref": {
+                    "properties": {
+                      "namespace": {
+                        "const": "medxfactory"
+                      }
+                    }
+                  }
+                }
               }
             }
           ]
@@ -2155,6 +2387,10 @@
               "description": "The named human who approved an agent draft at propose.",
               "$ref": "#/$defs/actorRef"
             },
+            "answer_type": {
+              "description": "For a read-only answer: the answer-type id and version that openPractice assembled the reply from (change A AH-05 exception 1). Required at act_after_delay, which only a read-only answer may reach.",
+              "$ref": "#/$defs/answerTypeRef"
+            },
             "lane": {
               "$ref": "#/$defs/lane"
             },
@@ -2203,6 +2439,11 @@
                       "required": [
                         "approved_by"
                       ]
+                    },
+                    {
+                      "required": [
+                        "answer_type"
+                      ]
                     }
                   ]
                 }
@@ -2222,6 +2463,23 @@
               "then": {
                 "required": [
                   "approved_by"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "autonomy_rung": {
+                    "const": "act_after_delay"
+                  }
+                },
+                "required": [
+                  "autonomy_rung"
+                ]
+              },
+              "then": {
+                "required": [
+                  "answer_type"
                 ]
               }
             }
@@ -2315,7 +2573,7 @@
       }
     },
     "guidanceInstruct": {
-      "description": "openPractice instructs HealthLinc to show its emergency guidance for an urgent item whose handoff failed (ER-09).",
+      "description": "openPractice instructs HealthLinc to show its emergency guidance for an urgent item whose handoff failed or is overdue, or for an urgent or clinical inquiry it refused (ER-09, PG-10).",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -2360,12 +2618,16 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "routing_id",
             "instruction",
             "cause"
           ],
           "properties": {
             "routing_id": {
+              "description": "The routed item whose handoff failed or is overdue.",
+              "$ref": "#/$defs/uuid"
+            },
+            "inquiry_message_id": {
+              "description": "The message_id of an inquiry that openPractice refused, so it has no routing id (PG-10, ER-09).",
               "$ref": "#/$defs/uuid"
             },
             "instruction": {
@@ -2373,16 +2635,81 @@
               "const": "show_emergency_guidance"
             },
             "cause": {
+              "description": "clinical_response_overdue: openChart reported clock_expired, or nothing arrived by respond_by. clinical_routing_unavailable: clinical routing is missing or disabled. urgent_inquiry_rejected: an urgent inquiry was refused for a link or authorization reason.",
               "enum": [
                 "clinical_handoff_unreachable",
                 "clinical_ack_overdue",
                 "clinical_handoff_rejected",
                 "no_active_ehr_link",
                 "ehr_link_in_review",
-                "content_unavailable"
+                "content_unavailable",
+                "clinical_response_overdue",
+                "clinical_routing_unavailable",
+                "urgent_inquiry_rejected"
               ]
             }
-          }
+          },
+          "allOf": [
+            {
+              "oneOf": [
+                {
+                  "required": [
+                    "routing_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "inquiry_message_id"
+                  ]
+                }
+              ]
+            },
+            {
+              "if": {
+                "properties": {
+                  "cause": {
+                    "enum": [
+                      "clinical_handoff_unreachable",
+                      "clinical_ack_overdue",
+                      "clinical_handoff_rejected",
+                      "no_active_ehr_link",
+                      "ehr_link_in_review",
+                      "content_unavailable",
+                      "clinical_response_overdue"
+                    ]
+                  }
+                },
+                "required": [
+                  "cause"
+                ]
+              },
+              "then": {
+                "required": [
+                  "routing_id"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "cause": {
+                    "enum": [
+                      "clinical_routing_unavailable",
+                      "urgent_inquiry_rejected"
+                    ]
+                  }
+                },
+                "required": [
+                  "cause"
+                ]
+              },
+              "then": {
+                "required": [
+                  "inquiry_message_id"
+                ]
+              }
+            }
+          ]
         }
       }
     },
@@ -2432,11 +2759,13 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "routing_id",
             "result"
           ],
           "properties": {
             "routing_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "inquiry_message_id": {
               "$ref": "#/$defs/uuid"
             },
             "result": {
@@ -2450,6 +2779,20 @@
             }
           },
           "allOf": [
+            {
+              "oneOf": [
+                {
+                  "required": [
+                    "routing_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "inquiry_message_id"
+                  ]
+                }
+              ]
+            },
             {
               "if": {
                 "properties": {

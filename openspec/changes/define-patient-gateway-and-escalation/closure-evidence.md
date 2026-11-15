@@ -28,12 +28,21 @@ This record collects acceptance evidence for OpenSpec change `define-patient-gat
 - Clinical inquiries carrying text refused; no clinical content in any routing record or handoff: _pending_
 - Urgency never lowered by rule, staff, agent or later proposal: _pending_
 - Acknowledgment, shadow response deadline and every alert trigger, with the office manager alerted: _pending_
-- Urgent fallback (office manager, on-call clinician, HealthLinc guidance instruction, retries), and the no-on-call fallback to the medical director: _pending_
-- Hermes answers at `propose` only, with human approval, and no gateway action type before the agent-operations MINOR: _pending_
+- Urgent fallback (office manager, on-call clinician, HealthLinc guidance instruction, retries), including on `clock_expired` and silence past `respond_by` with cause `clinical_response_overdue`, and the no-on-call fallback to the medical director: _pending_
+- Tracked alerts: delivery, acknowledgment, re-sending and escalation to the medical director; the priority alert: _pending_
+- Rejected urgent inquiries (link, authorization or `pending_review` reasons) raise a PHI-free exception and a guidance instruction: _pending_
+- Clinical and urgent intake refused with `clinical_routing_unavailable` while clinical routing is missing or disabled: _pending_
+- Ruling 50's safeguards for routine clinical messaging and medical-AI consults: _pending_
+- `medical_ai_consult` gated like non-urgent clinical messaging, and HealthLinc's coach never gated: _pending_
+- Conversation source and reference for coach and medical-AI conversations, with no conversation content in openPractice: _pending_
+- The clinical-need marker: attribution, `valid_until`, the urgent-origin check, and no openPractice-created marker: _pending_
+- `representative_scope` in place of a hold for a representative without billing scope: _pending_
+- Deletion of misrouted text from the agent layer and model provider under the AH-02 agreements: _pending_
+- Hermes drafts at `propose` only, decided by a human in the lane and never by Hermes; read-only answers only under change A's AH-05 exception 1; no drafted-reply or hold action type before the agent-operations MINOR: _pending_
 - Staff answers only in their lane; no openPractice answer to a clinical item: _pending_
 - Re-routing and splitting with stored-text removal and a PHI-free removal event: _pending_
 - Pause switch and Hermes unavailability send administrative items to staff with no loss: _pending_
-- Payment hold: only two capabilities withheld; policy gate; tiers and agent ceilings; patient notice before effect; disputed amounts and GFE windows excluded; no claim stalled; automatic lift: _pending_
+- Payment hold: only three capabilities withheld; scheduling clause only with a ratified scheduling change; clinician marker and verified urgent origin honored; policy gate; tiers and agent ceilings; patient notice before effect; disputed amounts and GFE windows excluded; no claim stalled; automatic lift: _pending_
 - Mobile approver: versioned API only; no PHI in notifications or on the device; re-authentication for deep links and sign-offs; lost-device revocation; tier 4 human-only and D8 accountant-only: _pending_
 - No PHI in logs, errors, alerts, push text, idempotency keys or diagnostics: _pending_
 

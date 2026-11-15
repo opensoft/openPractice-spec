@@ -16,7 +16,7 @@ The mobile approver SHALL cover exactly these functions:
 - approving, changing or rejecting work-inbox items (change A WI-03);
 - working administrative escalations in the user's lane (ER-11);
 - the controller's day-close signature of the daily agent digest (AO-10);
-- alerts, including the urgent fallback, overdue acknowledgments, expired clocks and hold countdowns.
+- alerts, including the urgent fallback, overdue acknowledgments, expired clocks and hold countdowns, with an acknowledge action for each tracked alert (ER-09).
 
 Its screens SHALL be built for exceptions and approvals (ruling 38). Every other function SHALL stay on the workstation. This scope is a current-phase decision and may be revisited (ruling 35).
 
@@ -29,11 +29,11 @@ Its screens SHALL be built for exceptions and approvals (ruling 38). Every other
 - **THEN** the app does not offer it and directs the user to the workstation
 
 ### Requirement: MA-03 The physician's clinical work stays in openChart
-The physician's clinical work SHALL stay in openChart, on mobile or workstation (ruling 35). The mobile approver MUST NOT show or accept clinical content. A clinical alert SHALL show only the routing id, the urgency, a coded cause and the instruction to open openChart.
+The physician's clinical work SHALL stay in openChart, on mobile or workstation (ruling 35). The mobile approver MUST NOT show or accept clinical content. A clinical alert SHALL show only the routing id, the urgency, a coded cause, the instruction to open openChart, and an action to acknowledge a tracked alert (ER-09).
 
 #### Scenario: A clinician receives an urgent fallback alert
 - **WHEN** the on-call clinician receives an urgent fallback alert on the mobile approver
-- **THEN** the alert shows the routing id, the urgency, the cause and "open openChart", and no message content
+- **THEN** the alert shows the routing id, the urgency, the cause, "open openChart" and an acknowledge action, and no message content, and the acknowledgment is recorded
 
 #### Scenario: A clinician tries to reply from the approver
 - **WHEN** a clinician tries to answer a clinical item from the mobile approver

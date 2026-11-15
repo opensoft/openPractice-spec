@@ -9,7 +9,8 @@ This record collects acceptance evidence for OpenSpec change `define-actors-agen
 - Owner ratification reference: `owner-ratification.md` — _pending completion_
 - Approved grant sets for the remote VA, nurse, medical director, controller or office manager, and agent recipes: _pending_
 - Per-feature Constitution Check and security review records: _pending_
-- Verified VA-company BAAs and per-provider agreements, with risk-analysis entries: _pending_
+- Verified VA-company BAAs, and verified BAAs with each agent operator and model provider, with risk-analysis entries: _pending_
+- Approved read-only answer types and template versions, with medical-director sign-off where health-adjacent: _pending_
 
 ## Product Acceptance Evidence
 
@@ -20,7 +21,12 @@ This record collects acceptance evidence for OpenSpec change `define-actors-agen
 - Agent caps proven: no tier-3 action at `act_with_notice`, and no tier-4, D8 or untrusted-content action above `propose`: _pending_
 - Work inbox: nothing unowned; approve, change and reject with signer identity; absence cover; existing gates carried with their own escapes: _pending_
 - Remote VA safeguards: own queue only, no export, masking, device and session refusal, expiry, and per-VA reports: _pending_
-- Prompt-injection fixtures (synthetic) showing the `propose` cap: _pending_
+- Prompt-injection fixtures (synthetic) showing the `propose` cap and the server-side untrusted determination, including a false flag: _pending_
+- AH-01 gate before any grant at any rung, and suspension of all agent PHI access on a lapse: _pending_
+- Named-human-only grants, rungs, limits and pause lifting; no agent deciding its own proposal; an agent holding only the agent recipe: _pending_
+- Per-patient read scope and the `patient_scope` refusal: _pending_
+- Read-only answers: every condition of AH-05 exception 1, including server assembly, `act_after_delay` only, attribution, the sampled audit and the return to `propose`: _pending_
+- Held delayed actions restart their windows after the pause or a suspension lifts: _pending_
 
 ## Final Validation and Archive Evidence
 

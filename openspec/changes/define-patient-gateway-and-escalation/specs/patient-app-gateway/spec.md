@@ -31,12 +31,14 @@ HealthLinc SHALL reach openPractice only through the gateway contract, carried o
 - **THEN** registration, scheduling, billing and staff work all operate normally
 
 ### Requirement: PG-03 The entitlement check returns coded capabilities, and three are always granted
-openPractice SHALL answer each `entitlement.request` with an `entitlement.result` that lists the linked patient's granted capabilities as codes and lists each withheld capability with coded reasons only (rulings 34, 41 and 42). The capabilities are:
+openPractice SHALL answer each `entitlement.request` with an `entitlement.result` that lists the linked patient's granted capabilities as codes and lists each withheld capability with coded reasons only (rulings 34, 41, 42 and 52). The capabilities are:
 - `urgent_escalation`, `billing_contact` and `own_records_access`;
-- `clinical_messaging_nonurgent` and `scheduling_new_nonurgent`;
+- `clinical_messaging_nonurgent`, `scheduling_new_nonurgent` and `medical_ai_consult`;
 - `administrative_questions`, `demographic_change_proposal` and `coverage_change_proposal`.
 
-For every linked patient, the result SHALL always grant `urgent_escalation`, `billing_contact` and `own_records_access`, whatever the registry status, membership or payment hold. The schema SHALL make those three impossible to withhold. A patient who is active (PG-04) and not on a payment hold SHALL be granted every capability the link's scope allows. A payment hold SHALL withhold only `clinical_messaging_nonurgent` and `scheduling_new_nonurgent` (PH-01).
+In this change, "non-urgent" means applied urgency `routine` only (ruling 41; design call DC-30). Anything above `routine` goes through `urgent_escalation`. `medical_ai_consult` covers non-urgent consults with medXfactory's medical AI, which HealthLinc connects the patient to (rulings 51 and 52; design call DC-38). HealthLinc's coach is HealthLinc's own: it has no capability, the result never gates it, and HealthLinc SHALL NOT derive any restriction on it from the result.
+
+For every linked patient, the result SHALL always grant `urgent_escalation`, `billing_contact` and `own_records_access`, whatever the registry status, membership or payment hold. The schema SHALL make those three impossible to withhold. A patient who is active (PG-04) and not on a payment hold SHALL be granted every capability the link's scope allows. A payment hold SHALL withhold only `clinical_messaging_nonurgent`, `scheduling_new_nonurgent` and `medical_ai_consult` (PH-01; rulings 41 and 52), and the schema SHALL refuse the reason `payment_hold` on any other capability. The result SHALL state the link kind.
 
 `own_records_access` covers the patient's records in openPractice. The result MUST NOT carry an amount, a balance or any detail beyond the codes. HealthLinc SHALL apply the result as given and SHALL NOT derive any other restriction from it, including on records another backend holds; this is a HealthLinc companion-change item.
 
@@ -46,7 +48,11 @@ For every linked patient, the result SHALL always grant `urgent_escalation`, `bi
 
 #### Scenario: A patient on a payment hold
 - **WHEN** HealthLinc asks for the capabilities of an active patient on a payment hold
-- **THEN** only `clinical_messaging_nonurgent` and `scheduling_new_nonurgent` are withheld, each with reason `payment_hold`, and the three always-granted capabilities are present
+- **THEN** only `clinical_messaging_nonurgent`, `scheduling_new_nonurgent` and `medical_ai_consult` are withheld, each with reason `payment_hold`, and the three always-granted capabilities are present
+
+#### Scenario: A hold reason on another capability
+- **WHEN** an `entitlement.result` withholds `administrative_questions` with reason `payment_hold`
+- **THEN** the message fails the canonical schema and is rejected
 
 #### Scenario: An implementation tries to withhold urgent escalation
 - **WHEN** an `entitlement.result` lists `urgent_escalation` as withheld or omits it from the granted list
@@ -57,21 +63,41 @@ openPractice SHALL treat a linked patient as active only when two conditions hol
 - the patient's registry record is active under change `define-mvp-practice-foundation` (PR-01, PR-11);
 - where the practice sells memberships, the patient's membership is current under the entitlement rules of change `define-customer-financial-data-boundaries` (PR #3, not yet on main).
 
-A linked patient who is not active SHALL keep the three always-granted capabilities. Every other capability SHALL be withheld, with reason `registry_inactive`, `membership_not_current` or `membership_entitlement_unresolved`. This extends ruling 34 for patient safety (design call DC-4). How the membership condition applies to a patient with no membership, in a practice that also serves non-members, is design call DC-10.
+A linked patient who is not active SHALL keep the three always-granted capabilities. Every other capability SHALL be withheld, with reason `registry_inactive`, `membership_not_current` or `membership_entitlement_unresolved`, subject to ruling 50's safeguards below. This extends ruling 34 for patient safety (design call DC-4). How the membership condition applies to a patient with no membership, in a practice that also serves non-members, is design call DC-10.
 
-When openPractice cannot evaluate the status, because a dependency is unavailable or a membership entitlement cannot be resolved, the result SHALL still grant the three. It SHALL withhold every other capability with reason `evaluation_unavailable` or `membership_entitlement_unresolved` (fail closed for everything except safety).
+When openPractice cannot evaluate the status, because a dependency is unavailable or a membership entitlement cannot be resolved, the result SHALL still grant the three. It SHALL withhold every other capability with reason `evaluation_unavailable` or `membership_entitlement_unresolved` (fail closed for everything except safety), subject to ruling 50's safeguards below.
 
-#### Scenario: A deactivated patient opens the app
-- **WHEN** a linked patient whose registry record is deactivated asks for capabilities
+Cut-offs other than a payment hold get safeguards too (ruling 50). They apply to `clinical_messaging_nonurgent` and, because ruling 52 gates medical-AI consults like non-urgent clinical messaging, to `medical_ai_consult` (design call DC-31):
+- When the status cannot be evaluated, neither SHALL be withheld for `evaluation_unavailable`. Routine clinical messages still route to openChart, wherever clinical routing is enabled (PG-10).
+- A deactivation or a lapsed membership SHALL withhold them only after the patient has been told and a grace period set by an approved, versioned messaging-continuity policy has passed. The medical director approves that policy, and the approval is never opted in for agent signing (DC-28). Until a version is approved, a deactivation or a lapse SHALL NOT withhold them.
+- A clinician MAY keep them open for continuity of care with a `messaging_continuity` marker recorded in openChart (ER-18). While the marker is valid, neither SHALL be withheld for a deactivation or a lapse.
+- The notice SHALL go through HealthLinc and the channels that the patient's confidential-communication instructions allow (PR-05), with no PHI, amount or reason in push or text content (as PH-05).
+
+In a practice that sells memberships, a patient who holds no membership SHALL be treated as active on the registry condition alone until the entitlement rules of `define-customer-financial-data-boundaries` are ratified. `membership_entitlement_unresolved` then withholds nothing from that patient. This is design call DC-10, not part of ruling 50.
+
+#### Scenario: A deactivated patient after notice and grace
+- **WHEN** a linked patient whose registry record is deactivated asks for capabilities, after the patient was told and the approved grace period has passed, with no valid continuity marker
 - **THEN** only `urgent_escalation`, `billing_contact` and `own_records_access` are granted, and the rest are withheld with `registry_inactive`
 
-#### Scenario: A membership has lapsed
-- **WHEN** a linked patient of a practice that sells memberships has a membership that is not current under that change's entitlement rules
-- **THEN** the three always-granted capabilities remain, and the rest are withheld with `membership_not_current`
+#### Scenario: A deactivation before any messaging-continuity policy is approved
+- **WHEN** a linked patient is deactivated and no messaging-continuity policy version is approved
+- **THEN** `clinical_messaging_nonurgent` and `medical_ai_consult` stay granted, and the other non-safety capabilities are withheld with `registry_inactive`
+
+#### Scenario: A membership has lapsed, inside the grace period
+- **WHEN** a linked patient of a practice that sells memberships has a membership that is not current, and the grace period has not passed
+- **THEN** the three always-granted capabilities, `clinical_messaging_nonurgent` and `medical_ai_consult` remain, and the rest are withheld with `membership_not_current`
+
+#### Scenario: A clinician keeps messaging open
+- **WHEN** a valid `messaging_continuity` marker exists for a patient whose grace period has passed
+- **THEN** `clinical_messaging_nonurgent` and `medical_ai_consult` stay granted
 
 #### Scenario: The status cannot be evaluated
-- **WHEN** the membership entitlement cannot be resolved during an entitlement check
-- **THEN** the three always-granted capabilities are granted, and the rest are withheld with `membership_entitlement_unresolved`
+- **WHEN** a dependency is unavailable during an entitlement check
+- **THEN** the three always-granted capabilities, `clinical_messaging_nonurgent` and `medical_ai_consult` are granted, and the rest are withheld with `evaluation_unavailable`
+
+#### Scenario: A non-member in a membership practice
+- **WHEN** a practice that sells memberships serves a patient with no membership, and the entitlement rules are not yet ratified
+- **THEN** the patient is treated as active on the registry condition alone, and nothing is withheld with `membership_entitlement_unresolved`
 
 ### Requirement: PG-05 Each account link is one link to openPractice, made only after verified identity, with no master identity
 openPractice SHALL link a HealthLinc account to an openPractice patient only through `link.request` and `link.result`, and only after verified identity (ruling 39). There SHALL be no master patient identity across HealthLinc, openPractice and openChart. HealthLinc links to each backend through that backend's own link contract. openPractice MUST NOT link, merge or match its patient to an openChart or HealthLinc identity through the gateway.
@@ -105,7 +131,9 @@ openPractice SHALL support representative links, where a HealthLinc account acts
 
 A representative link SHALL be created only under an approved, versioned proxy policy (design call DC-12). The practice's medical director approves the policy, and counsel's review is recorded on it. The link also needs the representative's verified identity and a named human's tier-2 confirmation of the authority. Before an approved proxy policy exists, openPractice SHALL refuse every representative link with reason `proxy_policy_missing` (fail closed).
 
-The granted scope SHALL always include `urgent_escalation`. For a representative, `billing_contact` and `own_records_access` reach only what the proxy policy and the patient's confidential-communication instructions (PR-05) allow for that relationship. Each representative link SHALL carry the expiry or review date the policy sets, and SHALL be revoked when the authority ends. This change asserts no legal rule about who may act for a patient; the proxy policy states those rules after counsel's review.
+The granted scope SHALL always include `urgent_escalation`. For a representative, `billing_contact` and `own_records_access` reach only what the proxy policy and the patient's confidential-communication instructions (PR-05) allow for that relationship.
+
+A representative whose proxy policy gives no access to the patient's billing SHALL NOT learn of a payment hold (design call DC-34). For that representative, a capability that a hold withholds SHALL carry reason `representative_scope` instead of `payment_hold`, and no hold-policy reference SHALL be sent. The entitlement result states the link kind and whether billing is in the representative's scope, and the schema enforces this. The same rule SHALL apply to the withheld reasons of an `inquiry.ack`. Each representative link SHALL carry the expiry or review date the policy sets, and SHALL be revoked when the authority ends. This change asserts no legal rule about who may act for a patient; the proxy policy states those rules after counsel's review.
 
 #### Scenario: A parent links for a young child
 - **WHEN** a verified parent with documented authority asks to link for a child, and an approved proxy policy covers that relationship
@@ -114,6 +142,10 @@ The granted scope SHALL always include `urgent_escalation`. For a representative
 #### Scenario: No proxy policy is approved
 - **WHEN** a representative link is requested before any proxy policy version is approved
 - **THEN** openPractice refuses it with `proxy_policy_missing`
+
+#### Scenario: A caregiver without billing scope while the patient is on hold
+- **WHEN** a caregiver proxy whose policy excludes billing asks for capabilities while the patient is on a payment hold
+- **THEN** the withheld capabilities carry `representative_scope`, no `payment_hold` reason or hold-policy reference is sent, and a result that reveals the hold fails the schema
 
 #### Scenario: The authority ends
 - **WHEN** a representative link reaches its policy expiry date without renewal
@@ -181,7 +213,14 @@ A pending coverage proposal SHALL hold no claim, because claims use the registry
 - **THEN** the claim proceeds on the registry's current coverage and is not held by the proposal
 
 ### Requirement: PG-10 Questions enter through inquiry intake, and a clinical question carries no text
-openPractice SHALL accept patient questions as `inquiry.submitted` messages (ruling 44). Each carries HealthLinc's message reference, a reply-path reference, a triage reference, and HealthLinc's AI proposals for category and urgency.
+openPractice SHALL accept patient questions, and escalations to the patient's human doctor, as `inquiry.submitted` messages (rulings 44 and 51). Each carries:
+- HealthLinc's reference for the request;
+- where the conversation lives, as `conversation_source`: `healthlinc` for a conversation with HealthLinc's coach, or `medxfactory` for one with medXfactory's medical AI;
+- a `conversation_ref` to the conversation in that system, whose namespace matches the source;
+- a reply-path reference and a triage reference;
+- the category and urgency proposed by HealthLinc's coach or medXfactory's medical AI.
+
+Both proposers use the conservative defaults (ruling 51): an uncertain category is proposed as clinical, and an uncertain urgency as urgent. An escalation may originate from either source; either way HealthLinc submits it through the gateway (design call DC-37). openPractice stores no clinical content from either conversation, and the medical AI's exchanges reach the chart through medXfactory's own governed path, never through openPractice (ruling 53).
 
 An administrative inquiry SHALL carry its question text and a topic hint. A clinical inquiry MUST NOT carry question text or a topic hint, and the schema SHALL refuse one that does. This keeps clinical content out of openPractice at intake (ruling 34).
 
@@ -189,9 +228,16 @@ openPractice SHALL answer each inquiry with `inquiry.ack`: either `accepted`, wi
 
 Administrative question text SHALL be stored as an administrative communication record under Principle I safeguards: encrypted, access-controlled, and with every read audited. Audit entries SHALL reference the text by id and never copy it (design call DC-15).
 
-Each inquiry needs one capability. An urgent inquiry needs `urgent_escalation`. A non-urgent clinical inquiry needs `clinical_messaging_nonurgent`. An administrative inquiry with topic `billing_statement`, `payment` or `coverage` needs `billing_contact`, and one with topic `records_request` needs `own_records_access`. Any other administrative inquiry needs `administrative_questions`.
+Each inquiry needs one capability, judged on its applied urgency (ruling 41; design call DC-30):
+- An inquiry whose applied urgency is above `routine`, `priority` or `urgent`, needs only `urgent_escalation`, which is never withheld.
+- A routine clinical inquiry needs `clinical_messaging_nonurgent`.
+- A routine administrative inquiry with topic `billing_statement`, `payment` or `coverage` needs `billing_contact`, and one with topic `records_request` needs `own_records_access`. Any other routine administrative inquiry needs `administrative_questions`.
 
-An inquiry that needs a withheld capability SHALL be rejected with `capability_withheld` and coded reasons, and HealthLinc SHALL show the patient the paths that are always available (companion item). An inquiry with applied urgency `urgent` SHALL never be rejected for a withheld capability (ER-09).
+An inquiry that needs a withheld capability SHALL be rejected with `capability_withheld` and coded reasons, and HealthLinc SHALL show the patient its emergency guidance and the paths that are always available (companion item). An inquiry with applied urgency above `routine` SHALL never be rejected for a withheld capability (ER-09).
+
+An inquiry with `human_requested` set, because the patient asked for a person or said an answer did not answer the question, SHALL route to the lane's staff and never to a read-only answer (ER-10; design call DC-36).
+
+Clinical inquiry intake, and intake of any inquiry whose applied urgency is `urgent`, SHALL NOT go live until clinical routing is enabled (ER-13). When clinical routing is missing or disabled, openPractice SHALL refuse every inquiry whose applied category is clinical or whose applied urgency is `urgent` with `clinical_routing_unavailable`. It SHALL send HealthLinc `guidance.instruct` for that inquiry's `message_id`, with cause `clinical_routing_unavailable`, and raise an exception owned by the office manager that holds no PHI. Meanwhile the entitlement result SHALL withhold `clinical_messaging_nonurgent` with `clinical_routing_unavailable` (design call DC-33).
 
 #### Scenario: A patient asks a billing question
 - **WHEN** HealthLinc submits an administrative inquiry with topic `billing_statement` and routine urgency
@@ -209,10 +255,22 @@ An inquiry that needs a withheld capability SHALL be rejected with `capability_w
 - **WHEN** a patient on a payment hold submits a clinical inquiry with urgent urgency
 - **THEN** openPractice accepts and routes it
 
+#### Scenario: A priority clinical message during a hold
+- **WHEN** a patient on a payment hold submits a clinical inquiry whose applied urgency is `priority`
+- **THEN** openPractice accepts and routes it, because it needs only `urgent_escalation`
+
+#### Scenario: An escalation from medXfactory's medical AI
+- **WHEN** HealthLinc submits a clinical escalation whose conversation lives in medXfactory, with `conversation_source` `medxfactory`
+- **THEN** openPractice routes it to openChart by reference, with no text, and openChart fetches the conversation from medXfactory
+
+#### Scenario: Clinical routing is disabled
+- **WHEN** an urgent clinical inquiry arrives at a deployment whose clinical routing is disabled
+- **THEN** it is refused with `clinical_routing_unavailable`, HealthLinc receives `guidance.instruct` with that cause for the inquiry, and the office manager owns an exception that holds no PHI
+
 ### Requirement: PG-11 Administrative replies are relayed to HealthLinc with attribution
 openPractice SHALL relay each administrative reply to HealthLinc as `reply.relay`, into the reply path the inquiry named. It SHALL track the reply until HealthLinc answers `reply.ack` with `delivered`.
 
-A reply SHALL be sent only by a staff member in the item's lane (ER-11) or by an agent under ER-10. Each reply SHALL record its attribution (change `define-actors-agents-and-work-inbox` AM-03): the author kind, the author reference, the approving human for an agent draft at `propose`, and the lane. A reply MUST NOT contain clinical advice. Retries SHALL reuse the original `message_id`. A staff member's explicit send is the tier-3 release decision, so a human-sent reply has no countdown (design call DC-25, tension T-8).
+A reply SHALL be sent only by a staff member in the item's lane (ER-11) or by an agent under ER-10. Each reply SHALL record its attribution (change `define-actors-agents-and-work-inbox` AM-03): the author kind, the author reference, the approving human for an agent draft at `propose`, the answer-type id and version for a read-only answer (change A AH-05 exception 1), and the lane. A reply MUST NOT contain clinical advice. Retries SHALL reuse the original `message_id`. A staff member's explicit send is the tier-3 release decision, so a human-sent reply has no countdown (design call DC-25, tension T-8).
 
 A reply that HealthLinc rejects, or does not acknowledge within the retry policy, SHALL become work owned by the item's lane owner (WI-02). Reply text SHALL be stored and audited like question text (PG-10). HealthLinc SHALL show the patient when an agent wrote a reply (design call DC-18).
 
@@ -260,7 +318,11 @@ Gateway logs, error messages, diagnostic bundles, push-notification text, idempo
 
 ### Requirement: PG-14 The gateway boundary is covered by contract tests
 The gateway boundary SHALL be covered by contract tests, written first (constitution Principle III), that validate every message type against the canonical schema at its recorded digest. They SHALL cover:
-- the always-granted capabilities and every withheld reason;
+- the always-granted capabilities and every withheld reason, including `payment_hold` only on the three capabilities a hold may withhold;
+- ruling 50's safeguards for routine clinical messaging and medical-AI consults;
+- `representative_scope` in place of a hold for a representative without billing scope;
+- the conversation source and reference;
+- refusal with `clinical_routing_unavailable` while clinical routing is missing or disabled;
 - link verification, human confirmation, and refusal without verification;
 - refusal of representative links without an approved proxy policy;
 - revocation;

@@ -2,7 +2,7 @@
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "$id": "urn:openpractice:contract:openpractice-agent-operations:1.0",
  "title": "openpractice-agent-operations 1.0",
- "description": "Canonical schema for the agent operations contract (define-actors-agents-and-work-inbox, AO-01). Requests, responses, autonomy settings and the daily agent digest. Every agent action follows its FD-5 tier and BAB-17 of define-mvp-practice-foundation; the autonomy ladder never gives less friction than the tier (AO-04). Payload content is validated against the registry operation's own schema (PR-09), defined in planning. No key, reason or digest line carries PHI. openWallet identity mechanics are decided in planning; the schema carries only an opaque reference.",
+ "description": "Canonical schema for the agent operations contract (define-actors-agents-and-work-inbox, AO-01). Requests, responses, autonomy settings, read-only answer types and the daily agent digest. Every agent action follows its FD-5 tier and BAB-17 of define-mvp-practice-foundation; the autonomy ladder never gives less friction than the tier (AO-04). Grants, rungs, limits and the pause are changed only by named humans, so granted_by and the digest signer are human actors (AO-03). openPractice derives untrusted contribution on the server; the agent's own flag may only raise it (AH-05). A read-only answer carries no payload: the agent selects a practice-approved answer type and openPractice assembles the reply (AH-05 exception 1). Payload content is validated against the registry operation's own schema (PR-09), defined in planning. No key, reason or digest line carries PHI. openWallet identity mechanics are decided in planning; the schema carries only an opaque reference.",
  "oneOf": [
   {
    "$ref": "#/$defs/request"
@@ -12,6 +12,9 @@
   },
   {
    "$ref": "#/$defs/autonomySetting"
+  },
+  {
+   "$ref": "#/$defs/answerType"
   },
   {
    "$ref": "#/$defs/digest"
@@ -54,7 +57,7 @@
    ]
   },
   "actionType": {
-   "description": "Contract 1.0 covers the patient-registry operations only (AO-11). Later features add theirs as MINOR versions.",
+   "description": "Contract 1.0 covers the patient-registry operations and the read-only answer types (AO-11). Later features add theirs as MINOR versions.",
    "enum": [
     "patient.search",
     "patient.read",
@@ -68,8 +71,40 @@
     "coverage.update",
     "patient.deactivate",
     "patient.reactivate",
-    "patient.hard_delete"
+    "patient.hard_delete",
+    "patient_answer.coverage_on_file",
+    "patient_answer.balance",
+    "patient_answer.appointment_time",
+    "patient_answer.practice_information"
    ]
+  },
+  "readOnlyAnswerType": {
+   "description": "Read-only answer action types (AH-05 exception 1; rulings 45 and 46). Each changes nothing and tells the signed-in patient only their own administrative information or practice-approved information. patient_answer.appointment_time stays unavailable until a ratified scheduling change supplies appointment data (AO-11).",
+   "enum": [
+    "patient_answer.coverage_on_file",
+    "patient_answer.balance",
+    "patient_answer.appointment_time",
+    "patient_answer.practice_information"
+   ]
+  },
+  "answerTypeRef": {
+   "description": "A practice-approved answer type and its version, recorded in the audit and in the reply's attribution (AH-05 exception 1).",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "answer_type_id",
+    "version"
+   ],
+   "properties": {
+    "answer_type_id": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "version": {
+     "type": "integer",
+     "minimum": 1
+    }
+   }
   },
   "actor": {
    "type": "object",
@@ -135,6 +170,30 @@
     ]
    }
   },
+  "humanActor": {
+   "description": "A named human roster entry. Never an AI agent or an integration identity (AO-03). The role check, for example the practice manager or the controller or office manager recipe, runs on the server.",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "roster_ref",
+    "actor_type"
+   ],
+   "properties": {
+    "roster_ref": {
+     "$ref": "#/$defs/ref"
+    },
+    "actor_type": {
+     "enum": [
+      "on_site_staff",
+      "remote_va",
+      "nurse",
+      "clinician",
+      "medical_director",
+      "controller"
+     ]
+    }
+   }
+  },
   "request": {
    "type": "object",
    "additionalProperties": false,
@@ -182,9 +241,17 @@
     "target_ref": {
      "$ref": "#/$defs/ref"
     },
+    "work_item_ref": {
+     "description": "The work item the agent is working. It binds the agent's reads to that item's target patient (AO-03).",
+     "$ref": "#/$defs/ref"
+    },
     "payload": {
      "description": "Validated against the registry operation's own schema (PR-09).",
      "type": "object"
+    },
+    "answer_type": {
+     "description": "The practice-approved answer type the agent selects for a read-only answer. The agent writes no free text (AH-05 exception 1).",
+     "$ref": "#/$defs/answerTypeRef"
     },
     "evidence_refs": {
      "type": "array",
@@ -197,34 +264,97 @@
      "$ref": "#/$defs/ref"
     },
     "untrusted_input": {
-     "description": "True when untrusted content contributed (AH-05); the action then cannot exceed propose without a human signer.",
+     "description": "The agent's own report that untrusted content contributed. It may only raise openPractice's determination, never lower it: openPractice derives untrusted contribution on the server from the provenance of each evidence reference and of the work item (AH-05).",
      "type": "boolean"
     }
    },
-   "if": {
-    "properties": {
-     "actor": {
+   "allOf": [
+    {
+     "if": {
       "properties": {
-       "actor_type": {
-        "const": "ai_agent"
+       "actor": {
+        "properties": {
+         "actor_type": {
+          "const": "ai_agent"
+         }
+        }
+       },
+       "mode": {
+        "const": "execute"
        }
-      }
+      },
+      "required": [
+       "actor",
+       "mode"
+      ]
      },
-     "mode": {
-      "const": "execute"
+     "then": {
+      "required": [
+       "evidence_refs",
+       "reasoning_ref"
+      ]
      }
     },
-    "required": [
-     "actor",
-     "mode"
-    ]
-   },
-   "then": {
-    "required": [
-     "evidence_refs",
-     "reasoning_ref"
-    ]
-   }
+    {
+     "if": {
+      "properties": {
+       "actor": {
+        "properties": {
+         "actor_type": {
+          "const": "ai_agent"
+         }
+        }
+       }
+      },
+      "required": [
+       "actor"
+      ]
+     },
+     "then": {
+      "required": [
+       "work_item_ref"
+      ]
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "action_type": {
+        "$ref": "#/$defs/readOnlyAnswerType"
+       }
+      },
+      "required": [
+       "action_type"
+      ]
+     },
+     "then": {
+      "required": [
+       "answer_type",
+       "target_ref",
+       "work_item_ref"
+      ],
+      "not": {
+       "required": [
+        "payload"
+       ]
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "answer_type"
+      ]
+     },
+     "then": {
+      "properties": {
+       "action_type": {
+        "$ref": "#/$defs/readOnlyAnswerType"
+       }
+      }
+     }
+    }
+   ]
   },
   "response": {
    "type": "object",
@@ -257,6 +387,16 @@
       "scheduled",
       "refused"
      ]
+    },
+    "action_type": {
+     "$ref": "#/$defs/actionType"
+    },
+    "untrusted_content": {
+     "description": "openPractice's own determination, from provenance, of whether untrusted content contributed (AH-05). Never taken from the agent's flag alone.",
+     "type": "boolean"
+    },
+    "answer_type": {
+     "$ref": "#/$defs/answerTypeRef"
     },
     "tier": {
      "$ref": "#/$defs/tier"
@@ -296,7 +436,10 @@
       "rate_limited",
       "blast_radius",
       "paused",
-      "signoff_required"
+      "signoff_required",
+      "patient_scope",
+      "answer_ineligible",
+      "phi_access_suspended"
      ]
     }
    },
@@ -376,11 +519,138 @@
       ]
      },
      "then": false
+    },
+    {
+     "if": {
+      "properties": {
+       "outcome": {
+        "enum": [
+         "proposed",
+         "executed",
+         "scheduled"
+        ]
+       }
+      },
+      "required": [
+       "outcome"
+      ]
+     },
+     "then": {
+      "required": [
+       "untrusted_content"
+      ]
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "untrusted_content": {
+        "const": true
+       }
+      },
+      "required": [
+       "untrusted_content"
+      ]
+     },
+     "then": {
+      "not": {
+       "properties": {
+        "outcome": {
+         "const": "executed"
+        }
+       },
+       "required": [
+        "outcome"
+       ]
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "untrusted_content": {
+        "const": true
+       },
+       "outcome": {
+        "const": "scheduled"
+       }
+      },
+      "required": [
+       "untrusted_content",
+       "outcome"
+      ]
+     },
+     "then": {
+      "required": [
+       "action_type",
+       "rung_applied",
+       "answer_type"
+      ],
+      "properties": {
+       "action_type": {
+        "$ref": "#/$defs/readOnlyAnswerType"
+       },
+       "rung_applied": {
+        "const": "act_after_delay"
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "action_type": {
+        "$ref": "#/$defs/readOnlyAnswerType"
+       }
+      },
+      "required": [
+       "action_type"
+      ]
+     },
+     "then": {
+      "not": {
+       "properties": {
+        "outcome": {
+         "const": "executed"
+        }
+       },
+       "required": [
+        "outcome"
+       ]
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "action_type": {
+        "$ref": "#/$defs/readOnlyAnswerType"
+       },
+       "outcome": {
+        "const": "scheduled"
+       }
+      },
+      "required": [
+       "action_type",
+       "outcome"
+      ]
+     },
+     "then": {
+      "required": [
+       "answer_type",
+       "rung_applied"
+      ],
+      "properties": {
+       "rung_applied": {
+        "const": "act_after_delay"
+       }
+      }
+     }
     }
    ]
   },
   "autonomySetting": {
-   "description": "One action type's rung for one agent. Raising a rung above propose is the BAB-17 agent-signing opt-in. Tier-4 operations never rise above propose.",
+   "description": "One action type's rung for one agent; for a read-only answer type, one answer type's rung. Only a named human sets it (AO-03). Raising a rung above propose is the BAB-17 agent-signing opt-in. Tier-4 operations never rise above propose; a read-only answer type rises only to act_after_delay.",
    "type": "object",
    "additionalProperties": false,
    "required": [
@@ -409,8 +679,16 @@
     "rung": {
      "$ref": "#/$defs/rung"
     },
+    "answer_type": {
+     "$ref": "#/$defs/answerTypeRef"
+    },
+    "cancel_window_minutes": {
+     "description": "The practice-set delay window that the item's lane can cancel, for a read-only answer at act_after_delay (AH-05 exception 1).",
+     "type": "integer",
+     "minimum": 1
+    },
     "granted_by": {
-     "$ref": "#/$defs/ref"
+     "$ref": "#/$defs/humanActor"
     },
     "effective_from": {
      "type": "string",
@@ -425,26 +703,207 @@
      "minimum": 1
     }
    },
-   "if": {
-    "properties": {
-     "action_type": {
-      "const": "patient.hard_delete"
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "action_type": {
+        "const": "patient.hard_delete"
+       }
+      },
+      "required": [
+       "action_type"
+      ]
+     },
+     "then": {
+      "properties": {
+       "rung": {
+        "enum": [
+         "observe",
+         "propose"
+        ]
+       }
+      }
      }
     },
-    "required": [
-     "action_type"
-    ]
-   },
-   "then": {
-    "properties": {
-     "rung": {
+    {
+     "if": {
+      "properties": {
+       "action_type": {
+        "$ref": "#/$defs/readOnlyAnswerType"
+       }
+      },
+      "required": [
+       "action_type"
+      ]
+     },
+     "then": {
+      "required": [
+       "answer_type"
+      ],
+      "properties": {
+       "rung": {
+        "enum": [
+         "observe",
+         "propose",
+         "act_after_delay"
+        ]
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "action_type": {
+        "$ref": "#/$defs/readOnlyAnswerType"
+       },
+       "rung": {
+        "const": "act_after_delay"
+       }
+      },
+      "required": [
+       "action_type",
+       "rung"
+      ]
+     },
+     "then": {
+      "required": [
+       "cancel_window_minutes"
+      ]
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "answer_type"
+      ]
+     },
+     "then": {
+      "properties": {
+       "action_type": {
+        "$ref": "#/$defs/readOnlyAnswerType"
+       }
+      }
+     }
+    }
+   ]
+  },
+  "answerType": {
+   "description": "A practice-approved, versioned read-only answer type (AH-05 exception 1). The template text is held in openPractice. A named human approves each answer type and template version, and anything health-adjacent also needs the medical director's sign-off; neither approval is ever opted in for agent signing.",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "document",
+    "answer_type_id",
+    "version",
+    "action_type",
+    "template_ref",
+    "template_version",
+    "allowlisted_fields",
+    "topics",
+    "health_adjacent",
+    "approved_by",
+    "approved_at"
+   ],
+   "properties": {
+    "document": {
+     "const": "answer_type"
+    },
+    "answer_type_id": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "version": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "action_type": {
+     "$ref": "#/$defs/readOnlyAnswerType"
+    },
+    "template_ref": {
+     "$ref": "#/$defs/ref"
+    },
+    "template_version": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "allowlisted_fields": {
+     "description": "Coded fields of the bound patient's own record that the template may fill. Empty for practice-approved information.",
+     "type": "array",
+     "uniqueItems": true,
+     "items": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+     }
+    },
+    "topics": {
+     "description": "The practice's allowlisted administrative topics for this answer type, drawn from the gateway's topic codes (define-patient-gateway-and-escalation). records_request and demographics are excluded, because records requests and identity-revealing answers never qualify.",
+     "type": "array",
+     "minItems": 1,
+     "uniqueItems": true,
+     "items": {
       "enum": [
-       "observe",
-       "propose"
+       "scheduling",
+       "billing_statement",
+       "payment",
+       "coverage",
+       "forms",
+       "general"
+      ]
+     }
+    },
+    "health_adjacent": {
+     "type": "boolean"
+    },
+    "approved_by": {
+     "$ref": "#/$defs/humanActor"
+    },
+    "approved_at": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "medical_director_signoff": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "roster_ref",
+      "actor_type",
+      "signed_at"
+     ],
+     "properties": {
+      "roster_ref": {
+       "$ref": "#/$defs/ref"
+      },
+      "actor_type": {
+       "const": "medical_director"
+      },
+      "signed_at": {
+       "type": "string",
+       "format": "date-time"
+      }
+     }
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "health_adjacent": {
+        "const": true
+       }
+      },
+      "required": [
+       "health_adjacent"
+      ]
+     },
+     "then": {
+      "required": [
+       "medical_director_signoff"
       ]
      }
     }
-   }
+   ]
   },
   "digest": {
    "description": "Daily agent digest (AO-10): counts only, no PHI. Signed in the day close by the controller or office manager.",
@@ -518,7 +977,7 @@
      }
     },
     "signed_by": {
-     "$ref": "#/$defs/ref"
+     "$ref": "#/$defs/humanActor"
     },
     "signed_at": {
      "type": "string",

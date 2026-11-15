@@ -8,7 +8,7 @@ openPractice SHALL keep a routing record for every accepted inquiry, and that re
 - the proposed and applied category;
 - the proposed and applied urgency, with every raise and its source;
 - the current owner and lane;
-- HealthLinc's message reference and reply-path reference;
+- HealthLinc's request reference, the conversation source and conversation reference (ruling 51), and the reply-path reference;
 - the handoff state and the clock policy version.
 
 For a clinical item, the routing record SHALL be all that openPractice keeps. No question text, reply text or other clinical content SHALL be stored in openPractice, in line with constitution Principle IV. Administrative question and reply text is kept only under PG-10 and PG-11.
@@ -21,13 +21,14 @@ For a clinical item, the routing record SHALL be all that openPractice keeps. No
 - **WHEN** a user or integration tries to attach a note or message text to a clinical routing record
 - **THEN** the attempt is refused and nothing is stored
 
-### Requirement: ER-02 HealthLinc's AI proposes category and urgency, and openPractice's fixed rules apply them
-openPractice SHALL take the category and urgency that HealthLinc's AI proposes and apply them through openPractice's routing rules (ruling 44). The rules SHALL be a fixed, versioned rule set that ships with openPractice. Practice configuration SHALL be limited to staff lanes, practice hours and the on-call roster (FD-1 as amended by ruling 38; design call DC-17).
+### Requirement: ER-02 HealthLinc's coach or medXfactory's medical AI proposes category and urgency, and openPractice's fixed rules apply them
+openPractice SHALL take the category and urgency that HealthLinc's coach or medXfactory's medical AI proposes, and apply them through openPractice's routing rules (rulings 44 and 51). Both proposers use the conservative defaults: an uncertain category is proposed as clinical, an uncertain urgency as urgent, and urgency is never lowered. The rules SHALL be a fixed, versioned rule set that ships with openPractice. Practice configuration SHALL be limited to staff lanes, practice hours and the on-call roster (FD-1 as amended by ruling 38; design call DC-17).
 
 The rules SHALL apply these defaults (design call DC-14):
 - an unknown category routes as clinical;
+- an unknown urgency applies as `urgent`;
 - when any proposal marks a part clinical, that part routes as clinical;
-- the applied urgency is the highest of every urgency proposal received, whether from HealthLinc, a staff member or an agent, and of any minimum the rules set.
+- the applied urgency is the highest of every urgency proposal received, whether from HealthLinc's coach, medXfactory's medical AI, a staff member or an agent, and of any minimum the rules set.
 
 Applying the rules is automatic. It makes no decision for the patient; it only delivers the item to an owner (tension T-6). Each routing decision SHALL record the rule-set version and the inputs it used.
 
@@ -61,7 +62,7 @@ openPractice MUST NOT lower an item's applied urgency, whether by rule, staff ac
 ### Requirement: ER-04 Clinical items are handed to openChart under one versioned handoff contract
 openPractice SHALL hand every clinical item to the patient's linked openChart, or other linked EHR, under one versioned contract, `openpractice-clinical-handoff/1.0` (rulings 34, 36 and 43). The canonical schema SHALL be `openpractice-clinical-handoff-1.0.schema.json` in this change's `contracts/` directory, identified by the SHA-256 digest of its bytes. Both sides SHALL validate every message against the schema with the recorded digest. Any schema change SHALL produce a new digest, recorded in this change and in the openChart companion change before either side implements it.
 
-The contract follows PG-01's versioning rules: a shared MAJOR version is compatible, additive changes increment MINOR, no sender sends a MINOR the receiver has not declared, and an unsupported MAJOR is refused with `unsupported_major_version`. The messages SHALL be `handoff.offer`, `handoff.ack`, `handoff.urgency_raised`, `handoff.status` and `message.ack`.
+The contract follows PG-01's versioning rules: a shared MAJOR version is compatible, additive changes increment MINOR, no sender sends a MINOR the receiver has not declared, and an unsupported MAJOR is refused with `unsupported_major_version`. The messages SHALL be `handoff.offer`, `handoff.ack`, `handoff.urgency_raised`, `handoff.status`, `clinical_need.marker` (ER-18) and `message.ack`.
 
 #### Scenario: A valid offer is accepted
 - **WHEN** openPractice sends a `handoff.offer` that validates against the schema with the recorded digest
@@ -75,17 +76,22 @@ The contract follows PG-01's versioning rules: a shared MAJOR version is compati
 A `handoff.offer` SHALL carry exactly these fields, and no others (design call DC-2):
 - the routing id, as `handoff_id`, and the EB-01 `link_id`;
 - the EHR patient triple from that link;
-- HealthLinc's message reference and reply-path reference;
+- HealthLinc's request reference and reply-path reference;
+- where the conversation lives, as `conversation_source` (`healthlinc` or `medxfactory`), and the `conversation_ref` in that system (ruling 51);
 - the category `clinical` and the urgency;
 - the submitted, routed, acknowledge-by and respond-by times;
 - the clock policy reference;
 - the origin, and an opaque split-group reference for a split question.
 
-It MUST NOT carry the message body, question text, reply text, attachments or any other clinical content, and the schema SHALL refuse any other field. openChart SHALL fetch the message body from HealthLinc over HealthLinc's own link (ruling 39). The clinician's reply SHALL go from openChart to HealthLinc over openChart's reply path, never through openPractice. Both are companion-change items.
+It MUST NOT carry the message body, question text, reply text, a medical-AI transcript, attachments or any other clinical content, and the schema SHALL refuse any other field. openChart SHALL fetch the conversation by reference from whichever system holds it: HealthLinc for a coach conversation, over HealthLinc's own link, or medXfactory for a medical-AI conversation (rulings 39 and 51). The clinician's reply SHALL go from openChart to HealthLinc over openChart's reply path, never through openPractice. Both are companion-change items.
 
 #### Scenario: An offer is built
 - **WHEN** openPractice builds a `handoff.offer`
 - **THEN** it contains only the listed references, codes and times, and no text
+
+#### Scenario: An offer for a medical-AI conversation
+- **WHEN** openPractice offers an item whose conversation lives in medXfactory
+- **THEN** the offer carries `conversation_source` `medxfactory` and a `medxfactory` conversation reference, and no text
 
 #### Scenario: openChart cannot fetch the message
 - **WHEN** openChart reports `content_unavailable` for a handoff
@@ -115,7 +121,7 @@ openPractice SHALL alert the office manager when any of these happens:
 - openChart reports `clock_expired` or `content_unavailable`;
 - neither `responded` nor `clock_expired` arrives by `respond_by`.
 
-Each alert SHALL become work owned by the office manager (WI-02), and SHALL also reach the office manager's mobile approver when one is registered (MA-02). openPractice SHALL retry an unacknowledged offer with the same `message_id`. An alert SHALL never cancel or withdraw the handoff. openChart's `returned_not_clinical` status SHALL re-route the item under ER-12.
+Each alert SHALL become work owned by the office manager (WI-02), and SHALL also reach the office manager's mobile approver when one is registered (MA-02). For an item whose applied urgency is `priority`, each of these events SHALL also send the tracked on-call alert of ER-09 to the on-call clinician, without the emergency-guidance instruction (design call DC-30). openPractice SHALL retry an unacknowledged offer with the same `message_id`. An alert SHALL never cancel or withdraw the handoff. openChart's `returned_not_clinical` status SHALL re-route the item under ER-12.
 
 #### Scenario: openChart acknowledges and responds in time
 - **WHEN** openChart accepts an offer before `ack_by` and reports `responded` before `respond_by`
@@ -128,6 +134,10 @@ Each alert SHALL become work owned by the office manager (WI-02), and SHALL also
 #### Scenario: The response deadline passes silently
 - **WHEN** `respond_by` passes and openChart has reported neither `responded` nor `clock_expired`
 - **THEN** openPractice treats the clock as expired and alerts the office manager
+
+#### Scenario: A priority item is not acknowledged
+- **WHEN** `ack_by` passes for a `priority` item with no accepted acknowledgment
+- **THEN** the office manager is alerted, the on-call clinician receives a tracked alert, and no emergency-guidance instruction is sent
 
 ### Requirement: ER-08 Acknowledgment and response windows come from the medical director's policy, with fail-closed defaults
 The acknowledgment window and the response clock for each urgency SHALL come from a versioned routing-clock policy. The practice's medical director, a named human, SHALL approve each version; the approval SHALL NOT be opted in for agent signing (design call DC-28).
@@ -152,14 +162,27 @@ Each handoff SHALL record the policy version and whether it was approved or a de
 - **THEN** the approval is refused whatever the opt-in settings
 
 ### Requirement: ER-09 An urgent escalation is never blocked, delayed or dropped, and it has a fallback
-An urgent escalation MUST NOT be blocked, delayed by a payment hold or any other status, or dropped (rulings 41 and 43). openPractice SHALL accept and route an urgent inquiry from every linked patient, active or not (PG-03, PG-04).
+An urgent escalation MUST NOT be blocked, delayed by a payment hold or any other status, or dropped (rulings 41 and 43). openPractice SHALL accept and route every inquiry whose applied urgency is above `routine` from every linked patient, active or not (PG-03, PG-04, PG-10). Where clinical routing is not enabled at all, PG-10's defensive refusal applies instead: the patient sees emergency guidance at once, and the office manager owns an exception.
 
-openPractice SHALL run the fallback at once when the item is urgent and any of these happens: openChart is unreachable; openChart rejects the handoff; openChart reports `content_unavailable`; no acknowledgment arrives within the urgent window; or ER-06 makes the item an exception. The fallback SHALL:
+openPractice SHALL run the fallback at once when the item is urgent and any of these happens:
+- openChart is unreachable;
+- openChart rejects the handoff;
+- openChart reports `content_unavailable`;
+- no acknowledgment arrives within the urgent window;
+- openChart reports `clock_expired`;
+- neither `responded` nor `clock_expired` arrives by `respond_by`;
+- ER-06 makes the item an exception.
+
+The fallback SHALL:
 - alert the office manager;
-- alert the on-call clinician for the hour (ER-13);
-- send HealthLinc `guidance.instruct` with `show_emergency_guidance`, so HealthLinc shows its own in-app emergency guidance.
+- send a tracked alert to the on-call clinician for the hour (ER-13);
+- send HealthLinc `guidance.instruct` with `show_emergency_guidance` and a coded cause, so HealthLinc shows its own in-app emergency guidance. A `clock_expired` report, or silence past `respond_by`, uses cause `clinical_response_overdue`.
 
-openPractice SHALL keep retrying the handoff while the fallback runs. openPractice MUST NOT give clinical advice: the instruction is a code, and the guidance is HealthLinc's. The pause switch (AO-09) and an unavailable Hermes SHALL NOT affect urgent routing, which never depends on an agent. An urgent inquiry that openPractice rejects as invalid SHALL raise an integration exception owned by the office manager. HealthLinc treats any rejected urgent inquiry under its own emergency guidance (companion item).
+A tracked alert SHALL go through the recipient's registered mobile approver (MA-02, MA-03) and through a second channel the practice sets in planning, with text that carries no PHI (ER-16). openPractice SHALL record each alert's delivery state and the recipient's acknowledgment. When the recipient does not acknowledge within the alert-acknowledgment window, openPractice SHALL re-send the alert and escalate it to the medical director, and SHALL keep re-sending to both until one of them acknowledges. The office manager SHALL be told of each escalation. The window and the re-send interval come from the routing-clock policy (ER-08); until it states them, both are 5 minutes (design call DC-29). Acknowledging an alert never closes the item.
+
+openPractice SHALL keep retrying the handoff while the fallback runs. openPractice MUST NOT give clinical advice: the instruction is a code, and the guidance is HealthLinc's. The pause switch (AO-09) and an unavailable Hermes SHALL NOT affect urgent routing, which never depends on an agent.
+
+An urgent inquiry that openPractice rejects SHALL raise an exception owned by the office manager that holds no PHI (design call DC-35). This covers a schema failure; `link_revoked`, `link_unknown` and `unauthorized`; and an inquiry on a link that is still `pending_review`, which is rejected with `link_pending_review`. When the inquiry can be parsed, openPractice SHALL also send HealthLinc `guidance.instruct` for its `message_id` with cause `urgent_inquiry_rejected`. HealthLinc shows its emergency guidance for any rejected urgent inquiry (companion item), so the patient still gets it.
 
 #### Scenario: A held patient sends an urgent message
 - **WHEN** a patient on a payment hold, or with a deactivated record, submits an urgent clinical inquiry
@@ -173,17 +196,41 @@ openPractice SHALL keep retrying the handoff while the fallback runs. openPracti
 - **WHEN** an inquiry proposed as urgent fails the gateway schema
 - **THEN** the office manager owns an integration exception that holds no PHI, and HealthLinc applies its emergency guidance
 
+#### Scenario: openChart reports an expired clock on an urgent item
+- **WHEN** openChart reports `clock_expired` for an urgent handoff
+- **THEN** the office manager is alerted, the on-call clinician receives a tracked alert, and HealthLinc receives `guidance.instruct` with cause `clinical_response_overdue`
+
+#### Scenario: An urgent item passes its response deadline in silence
+- **WHEN** `respond_by` passes for an urgent handoff with neither `responded` nor `clock_expired`
+- **THEN** the fallback runs, with cause `clinical_response_overdue`
+
+#### Scenario: The on-call clinician does not acknowledge
+- **WHEN** the on-call clinician does not acknowledge a tracked alert within the alert-acknowledgment window
+- **THEN** the alert is re-sent and escalated to the medical director, re-sending continues until one acknowledges, and the office manager is told
+
+#### Scenario: An urgent inquiry on a revoked or unconfirmed link
+- **WHEN** an urgent inquiry arrives on a revoked link, or on a link that is still `pending_review`
+- **THEN** it is rejected with `link_revoked` or `link_pending_review`, the office manager owns an exception that holds no PHI, and HealthLinc receives `guidance.instruct` with cause `urgent_inquiry_rejected`
+
 ### Requirement: ER-10 Hermes answers administrative items only under change A's ladder and scopes, starting at propose
-Answering an administrative item by agent SHALL be the action type `gateway.administrative_reply`, at FD-5 tier 3 because it is outbound (rulings 34 and 37). It SHALL be governed by the autonomy ladder and scopes of change `define-actors-agents-and-work-inbox` (AO-03, AO-04), and SHALL start at `propose`. At `propose`, Hermes drafts the reply with evidence and reasoning references (AO-07), and a named human in the item's lane approves, changes or rejects it in the work inbox (WI-03) before it is relayed.
+Hermes SHALL answer an administrative item only in one of two forms, each at FD-5 tier 3 because it is outbound, each governed by the autonomy ladder and scopes of change `define-actors-agents-and-work-inbox` (AO-03, AO-04), and each starting at `propose` (rulings 34, 37, 45 and 46):
+- **A read-only answer**, one of the `patient_answer.*` action types of `openpractice-agent-operations/1.0`. Change A's AH-05 exception 1 governs it, and this change does not restate its conditions. A practice may switch an answer type on only to `act_after_delay`, under every condition AH-05 exception 1 states. openPractice relays the server-assembled reply with the answer-type id and version (PG-11). In the MVP, this is how Hermes answers routine administrative questions.
+- **A drafted reply**, the action type `gateway.administrative_reply`. Hermes drafts the reply with evidence and reasoning references (AO-07), and a named human in the item's lane approves, changes or rejects it in the work inbox (WI-03) before it is relayed. Every draft is derived from the patient's message, which is untrusted content, so it never rises above `propose` (AH-05). It needs a governed MINOR version of `openpractice-agent-operations` first (design call DC-22).
 
-The action type MAY rise above `propose` only where AO-04 and AH-05 allow, only through its BAB-17 opt-in, and only to `act_after_delay`, because a tier-3 action never runs with less friction than its countdown (ruling 37). Every answer is derived from the patient's message, which is untrusted content, so this change asserts no rung above `propose` for it. Design call DC-13 proposes a narrow exception for owner review.
+An item that no read-only answer fits, or that is not eligible under AH-05 exception 1, routes to staff by lane (ER-11) until the drafted-reply MINOR exists. An item with `human_requested` set, and any follow-up on an item that already received a read-only answer, SHALL route to staff.
 
-Before Hermes processes any administrative question, the AI data-handling rules SHALL be met: a provider BAA (AH-02), minimum necessary under an AI-23 recipient profile (AH-03), and no PHI in agent logs (AH-04). Hermes MUST NOT answer a clinical item or the clinical part of a mixed one; it SHALL propose a re-route instead. Hermes acts only as a roster entry with an openWallet ID and a sponsoring human (AM-04).
+Before Hermes processes any administrative question, change A's AH-01 gate SHALL be met: verified BAAs with the agent operator and with each model provider (AH-02), minimum necessary under AI-23 recipient profiles (AH-03), and no PHI in agent logs (AH-04). Hermes reads only the linked patient's data (AO-03). Before it drafts or answers, Hermes SHALL screen the item for clinical content; any hit makes it propose a re-route, which the rules apply as clinical (ER-12, DC-14). Hermes MUST NOT answer a clinical item or the clinical part of a mixed one. Hermes acts only as a roster entry with an openWallet ID and a sponsoring human (AM-04).
 
-Change A's AO-11 limits the MVP agent contract to registry operations. Until a governed MINOR version of `openpractice-agent-operations` carries this action type, agents get no gateway action type, and every administrative item routes to staff (design call DC-22).
+#### Scenario: Hermes gives a read-only answer
+- **WHEN** a patient asks on their own link about office hours, the item is eligible under change A's AH-05 exception 1, and the practice has switched the hours answer type on at `act_after_delay`
+- **THEN** openPractice assembles the reply, holds it for the lane's cancel window, and relays it with author kind `agent`, rung `act_after_delay` and the answer-type id and version, and the item stays open
+
+#### Scenario: The patient asks for a person
+- **WHEN** a patient's follow-up arrives with `human_requested` set after a read-only answer
+- **THEN** the item routes to the lane's staff, and no further read-only answer is sent
 
 #### Scenario: Hermes drafts an answer that staff approve
-- **WHEN** Hermes drafts a reply about office hours at `propose` and a front-desk staff member approves it
+- **WHEN** Hermes drafts a reply at `propose` and a front-desk staff member approves it
 - **THEN** HealthLinc receives the reply with author kind `agent`, rung `propose` and the approver's reference
 
 #### Scenario: Hermes tries to send without approval
@@ -222,9 +269,9 @@ When staff or an agent find that an administrative item is clinical, the rules S
 - remove the stored question text from openPractice, with a removal event that holds no PHI;
 - tell HealthLinc with `inquiry.recategorized`.
 
-A mixed question SHALL be split so that no clinical part stays in openPractice. HealthLinc's AI splits a mixed question at intake into parts, each with its own reference. When staff find a mixed item later, openPractice SHALL route the item's HealthLinc reference to openChart as clinical, remove the stored text, and ask HealthLinc to resubmit only the administrative part.
+A mixed question SHALL be split so that no clinical part stays in openPractice. HealthLinc splits a mixed question at intake into parts, each with its own reference. When staff find a mixed item later, openPractice SHALL route the item's HealthLinc reference to openChart as clinical, remove the stored text, and ask HealthLinc to resubmit only the administrative part.
 
-openPractice staff cannot judge content they never see. A clinical item SHALL therefore move to administration only when openChart returns it as `returned_not_clinical`; HealthLinc then resubmits it as administrative. Backup copies of removed text age out under backup retention, and the removal is not described beyond that scope.
+openPractice staff cannot judge content they never see. A clinical item SHALL therefore move to administration only when openChart returns it as `returned_not_clinical`; HealthLinc then resubmits it as administrative. Backup copies of removed text age out under backup retention, and the removal is not described beyond that scope. Where the removed text had been sent to the agent layer or its model provider, openPractice SHALL require those copies to be deleted under the AH-02 agreements, and SHALL record the request and its confirmation with no PHI.
 
 #### Scenario: An administrative item turns out to be clinical
 - **WHEN** a front-desk staff member flags an administrative item as clinical
@@ -233,6 +280,10 @@ openPractice staff cannot judge content they never see. A clinical item SHALL th
 #### Scenario: A mixed question is found after intake
 - **WHEN** a biller finds that a billing item also asks about a symptom
 - **THEN** the item's reference goes to openChart as clinical, the stored text is removed, and HealthLinc is asked to resubmit only the billing part
+
+#### Scenario: Misrouted text had reached the agent layer
+- **WHEN** an item that Hermes had worked is found clinical and its stored text is removed
+- **THEN** the agent operator and model provider are asked to delete their copies under the AH-02 agreements, and the request and confirmation are recorded without PHI
 
 #### Scenario: A clinician returns an item as administrative
 - **WHEN** openChart reports `returned_not_clinical` for a handoff
@@ -245,7 +296,7 @@ openPractice staff cannot judge content they never see. A clinical item SHALL th
 ### Requirement: ER-13 Items route at every hour, with on-call cover
 openPractice SHALL route items at every hour. Clinical items SHALL hand off to openChart at any hour; openChart owns after-hours clinical cover in its queue. openPractice SHALL keep a practice-hours calendar and an on-call roster. For every hour, the roster names the on-call clinician and the administrative cover (change A WI-05).
 
-ER-09's fallback SHALL alert the on-call clinician for the hour. When no on-call clinician is rostered for the hour, the fallback SHALL alert the medical director and the office manager instead, and SHALL still instruct HealthLinc to show emergency guidance (fail closed). Routine administrative items received after hours SHALL wait for the lane's next opening, and their clocks SHALL show that. Urgent administrative items SHALL go to the administrative cover at once. A practice SHALL NOT enable clinical routing until the on-call roster covers every hour or names the fallback (design call DC-27).
+ER-09's fallback SHALL send its tracked alert to the on-call clinician for the hour. When no on-call clinician is rostered for the hour, the fallback SHALL send the tracked alert to the medical director and alert the office manager instead, and SHALL still instruct HealthLinc to show emergency guidance (fail closed). Routine administrative items received after hours SHALL wait for the lane's next opening, and their clocks SHALL show that. Urgent administrative items SHALL go to the administrative cover at once. A practice SHALL NOT enable clinical routing until the on-call roster covers every hour or names the fallback (design call DC-27). Clinical and urgent inquiry intake SHALL NOT go live until clinical routing is enabled, and while it is missing or disabled PG-10's defensive refusal applies (design call DC-33).
 
 #### Scenario: An urgent message at night
 - **WHEN** an urgent clinical item arrives at 02:00 and openChart does not acknowledge it in time
@@ -260,11 +311,15 @@ ER-09's fallback SHALL alert the on-call clinician for the hour. When no on-call
 - **THEN** it waits for the lane's next opening, and its clock shows that opening
 
 ### Requirement: ER-14 No escalation is ever unowned
-Every routed item SHALL have exactly one owner at all times, and the owner SHALL be a roster entry (change A WI-02, AM-06). Until openChart accepts a clinical handoff, the office manager SHALL own its routing record. After acceptance, openChart owns the clinical queue, and the office manager owns any alert. An administrative item SHALL be owned by its lane owner, or by Hermes as a roster entry while it drafts, with Hermes's sponsoring human accountable (AM-04). Reassignment and absence cover SHALL follow WI-05. When an owner is offboarded (AM-05), absent or unavailable, the item SHALL move to cover at once. No item SHALL close without a recorded outcome.
+Every routed item SHALL have exactly one owner at all times, and the owner SHALL be a roster entry (change A WI-02, AM-06). Until openChart accepts a clinical handoff, the office manager SHALL own its routing record. After acceptance, openChart owns the clinical queue, and the office manager owns any alert. An administrative item SHALL be owned by its lane owner, or by Hermes as a roster entry while it drafts or prepares a read-only answer, with Hermes's sponsoring human accountable (AM-04). Hermes SHALL NOT decide its own draft: when Hermes submits a draft at `propose`, the item passes to a named human in its lane, who decides it (change A WI-03, where the decider is never the proposer). A read-only answer under change A's AH-05 exception 1 needs no decision, but the lane can cancel it during its delay window, and the item then stays open under the lane's human owner. Reassignment and absence cover SHALL follow WI-05. When an owner is offboarded (AM-05), absent or unavailable, the item SHALL move to cover at once. No item SHALL close without a recorded outcome.
 
 #### Scenario: An owner is offboarded
 - **WHEN** the biller who owns an open item is offboarded the same day
 - **THEN** the item moves at once to the biller lane's cover, or to the office manager when no cover exists
+
+#### Scenario: Hermes tries to approve its own draft
+- **WHEN** Hermes, as the owner of an administrative item, tries to approve the reply it drafted
+- **THEN** the approval is refused, and the item passes to a named human in its lane
 
 #### Scenario: Someone closes an item with no outcome
 - **WHEN** a user tries to close an item without recording an outcome
@@ -282,11 +337,15 @@ When the practice-wide pause switch is on (change A AO-09), or Hermes is unavail
 - **THEN** the item routes to its lane's staff with its clock unchanged
 
 ### Requirement: ER-16 No PHI in routing records, alerts, logs, keys or diagnostics
-Routing records, logs, errors, diagnostics, alerts, push text, idempotency keys and coded reasons on both contracts MUST NOT contain names, dates of birth, contact details, question or reply text, or clinical content (EB-12; change A AO-12 and AH-04). Diagnostics SHALL reference items only by routing id, `message_id`, `gateway_link_id` and `link_id`. Alerts SHALL name only the routing id, the urgency and a coded cause.
+Routing records, logs, errors, diagnostics, alerts, push text, idempotency keys and coded reasons on both contracts MUST NOT contain names, dates of birth, contact details, question or reply text, or clinical content (EB-12; change A AO-12 and AH-04). Diagnostics SHALL reference items only by routing id, `message_id`, `gateway_link_id` and `link_id`. Alerts SHALL name only the routing id, the urgency and a coded cause. An exception for a refused inquiry, which has no routing id, SHALL name only the `message_id`, the coded reason and the time.
 
 #### Scenario: An acknowledgment is overdue
 - **WHEN** the office manager is alerted that an acknowledgment is overdue
 - **THEN** the alert names the routing id, the urgency and the cause `clinical_ack_overdue`, and nothing else
+
+#### Scenario: A response is overdue
+- **WHEN** the on-call clinician is alerted that an urgent response is overdue
+- **THEN** the alert names the routing id, the urgency and the cause `clinical_response_overdue`, and nothing else
 
 #### Scenario: A handoff fails
 - **WHEN** a handoff is rejected and a diagnostic bundle is made
@@ -296,7 +355,10 @@ Routing records, logs, errors, diagnostics, alerts, push text, idempotency keys 
 The handoff boundary SHALL be covered by contract tests, written first (constitution Principle III), that validate every message against the clinical-handoff canonical schema at its recorded digest. They SHALL cover:
 - the reference-only payload, and refusal of any content field;
 - acknowledgment, rejection and retry;
-- every alert trigger, and the urgent fallback with its guidance instruction;
+- every alert trigger, including `clock_expired` and silence past `respond_by`, and the urgent fallback with its guidance instruction;
+- tracked alerts: delivery, acknowledgment, re-sending and escalation to the medical director, and the priority alert;
+- the conversation source and reference;
+- the clinical-need marker, its attribution and the urgent-origin check;
 - urgency raises, and the absence of any lowering;
 - the link precondition;
 - re-routing and splitting, with text removal;
@@ -312,3 +374,28 @@ The tests SHALL run against openChart and HealthLinc contract doubles, with synt
 #### Scenario: A test adds a content field
 - **WHEN** a test builds a `handoff.offer` that carries message text
 - **THEN** schema validation fails, and the test expects that failure
+
+### Requirement: ER-18 A clinician's clinical-need marker reaches openPractice through the handoff contract
+A clinician MAY record in openChart that a patient clinically needs an appointment (`appointment_needed`) or continued clinical messaging and medical-AI consults (`messaging_continuity`) (ruling 50; design call DC-32). openChart SHALL send each marker to openPractice as `clinical_need.marker` under `openpractice-clinical-handoff/1.0`, on the patient's EB-01 link. The marker SHALL carry:
+- its id, a coded kind, and the action, `mark` or `withdraw`;
+- openChart's opaque reference to the clinician who recorded it, so it is attributed;
+- when it was recorded and, for `mark`, a `valid_until` time;
+- for `mark`, its origin: `clinician_judgment`, or `urgent_escalation` with the routing id (`related_handoff_id`) of the urgent handoff it arose from.
+
+The marker SHALL carry no reason, note or other clinical content (constitution Principle IV), and the schema refuses any other field. openPractice SHALL record each marker with its attribution, acknowledge it with `message.ack`, and honor it until `valid_until` or its withdrawal. openPractice SHALL honor an `urgent_escalation` origin only when its own routing record shows that routing id with applied urgency `urgent` on that link; otherwise it SHALL reject the marker with `origin_not_verified`, and the marker allows nothing. openPractice MUST NOT create, change or infer a marker itself, and no openPractice user or agent can record one.
+
+#### Scenario: A clinician marks an appointment as needed
+- **WHEN** a clinician in openChart marks that a held patient needs an appointment
+- **THEN** openPractice receives `clinical_need.marker` with kind `appointment_needed`, the clinician reference and `valid_until`, records it and acknowledges it
+
+#### Scenario: A marker claims an urgent origin openPractice cannot find
+- **WHEN** a marker with origin `urgent_escalation` names a routing id that openPractice's routing record does not show as urgent on that link
+- **THEN** openPractice rejects it with `origin_not_verified`, and the marker allows nothing
+
+#### Scenario: A marker carries a note
+- **WHEN** openChart sends a marker that includes free text
+- **THEN** it fails the schema, and nothing is stored
+
+#### Scenario: Staff try to mark a need in openPractice
+- **WHEN** a staff member tries to mark an appointment as clinically needed in openPractice
+- **THEN** no marker is created, because only a clinician in openChart can record one

@@ -51,10 +51,10 @@ Each AI agent SHALL be a roster entry with:
 - a name;
 - an openWallet ID (opensoft/openWallet);
 - a sponsoring human who is an active roster entry and accountable for it;
-- the agent recipe;
+- the agent recipe, and no other recipe;
 - start and end dates.
 
-How an openWallet ID is verified SHALL be decided in planning. An agent SHALL own work like any roster entry. When its sponsor is offboarded or inactive, the agent SHALL stop acting, drop to `observe`, and hand its open work to a named human until a new sponsor is recorded. An agent SHALL NOT sponsor another agent.
+An agent SHALL hold only the agent recipe. No other recipe SHALL be assigned to an agent, and an agent's authority SHALL come only from the agent recipe and the grants a named human makes under AO-03. How an openWallet ID is verified SHALL be decided in planning. An agent SHALL own work like any roster entry, but SHALL NOT decide its own proposals (WI-03). When its sponsor is offboarded or inactive, the agent SHALL stop acting, drop to `observe`, and hand its open work to a named human until a new sponsor is recorded. An agent SHALL NOT sponsor another agent.
 
 #### Scenario: An agent is added
 - **WHEN** the practice manager adds an agent with a name, an openWallet ID and a sponsoring human
@@ -63,6 +63,10 @@ How an openWallet ID is verified SHALL be decided in planning. An agent SHALL ow
 #### Scenario: The sponsor leaves
 - **WHEN** an agent's sponsoring human is offboarded
 - **THEN** the agent drops to `observe`, and its open work is reassigned to a named human
+
+#### Scenario: A second recipe for an agent
+- **WHEN** someone assigns the practice manager recipe to an agent
+- **THEN** the assignment is refused, and the agent keeps only the agent recipe
 
 ### Requirement: AM-05 The same-day offboarding switch applies to people, VAs and agents
 One offboarding action SHALL apply identically to an on-site person, a remote VA, a VA company and an AI agent. It SHALL:

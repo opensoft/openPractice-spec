@@ -1,17 +1,35 @@
 ## ADDED Requirements
 
-### Requirement: PH-01 A payment hold blocks only non-urgent clinical messaging and new non-urgent scheduling
-A payment hold SHALL block only two things: non-urgent clinical messaging and new non-urgent scheduling (ruling 41). In the gateway, it SHALL withhold only `clinical_messaging_nonurgent` and `scheduling_new_nonurgent`. In openPractice's own scheduling, it SHALL refuse only a new non-urgent appointment for the held patient.
+### Requirement: PH-01 A payment hold blocks only non-urgent clinical messaging, new non-urgent scheduling and non-urgent medical-AI consults
+A payment hold SHALL block only three things: non-urgent clinical messaging and new non-urgent scheduling (ruling 41), and non-urgent consults with medXfactory's medical AI (ruling 52). Non-urgent means applied urgency `routine` only; a `priority` or `urgent` item is never blocked (PG-10, design call DC-30). In the gateway, a hold SHALL withhold only `clinical_messaging_nonurgent`, `scheduling_new_nonurgent` and `medical_ai_consult`. HealthLinc's coach is never gated by the practice, so no hold reaches it.
 
-A hold SHALL NOT cancel or change an appointment already booked (design call DC-26). An appointment that a clinician marks as clinically needed, or that arises from an urgent escalation, SHALL NOT be blocked. Every other capability and function SHALL stay available, including administrative questions and demographic and coverage proposals.
+In openPractice's own scheduling, a hold SHALL refuse only a new non-urgent appointment for the held patient. This scheduling clause SHALL take effect only when a ratified scheduling change gives openPractice a booking function, and that change SHALL apply it with the exceptions below. Until then, a hold affects scheduling only through the gateway capability `scheduling_new_nonurgent`.
+
+A hold SHALL NOT cancel or change an appointment already booked (design call DC-26). An appointment SHALL NOT be blocked when either of these holds:
+- a clinician has marked it clinically needed: a valid `appointment_needed` marker, recorded and attributed in openChart and received through the clinical handoff contract (ER-18);
+- it arises from an urgent escalation: the booking carries that escalation's routing id, and openPractice's own routing record shows that id with applied urgency `urgent` for the same patient.
+
+No one in openPractice can mark an appointment clinically needed. Every other capability and function SHALL stay available, including administrative questions and demographic and coverage proposals.
 
 #### Scenario: A held patient sends a routine clinical message
 - **WHEN** a patient on a hold submits a clinical inquiry with routine urgency
 - **THEN** it is rejected with `capability_withheld` and reason `payment_hold`, and HealthLinc shows the paths that stay available
 
+#### Scenario: A held patient sends a priority clinical message
+- **WHEN** a patient on a hold submits a clinical inquiry whose applied urgency is `priority`
+- **THEN** it is accepted and routed, because a hold blocks only routine items
+
 #### Scenario: Staff book a non-urgent appointment for a held patient
-- **WHEN** a front-desk staff member tries to book a new non-urgent appointment for a held patient
+- **WHEN** a ratified scheduling change provides booking, and a front-desk staff member tries to book a new non-urgent appointment for a held patient
 - **THEN** the booking is refused and the hold is shown, with the option to lift it under PH-04
+
+#### Scenario: A clinician marks the appointment as needed
+- **WHEN** a valid `appointment_needed` marker from openChart exists for a held patient, and staff book the appointment
+- **THEN** the booking is allowed, and it records the marker's id
+
+#### Scenario: Staff claim a clinical need without a marker
+- **WHEN** staff try to book a non-urgent appointment for a held patient by stating that it is clinically needed, with no valid marker and no urgent routing id
+- **THEN** the booking is refused, because only a clinician's marker or a verified urgent escalation lifts the block
 
 #### Scenario: A hold is placed on a patient with a booked visit
 - **WHEN** a hold takes effect for a patient who already has a booked appointment
@@ -132,7 +150,7 @@ A hold SHALL count only balances that openPractice medical billing owns, includi
 - **THEN** unpaid membership dues never count toward a hold
 
 ### Requirement: PH-08 A payment hold stalls no claim
-A payment hold SHALL stall no claim (FD-5). It SHALL NOT hold charge finalization, claim creation or submission, remittance posting, statements, refunds or accounting postings. Because nothing deadline-bearing waits on it, it needs no FD-5 deadline escape, and no exception is recorded. A hold SHALL affect only the two capabilities in PH-01.
+A payment hold SHALL stall no claim (FD-5). It SHALL NOT hold charge finalization, claim creation or submission, remittance posting, statements, refunds or accounting postings. Because nothing deadline-bearing waits on it, it needs no FD-5 deadline escape, and no exception is recorded. A hold SHALL affect only the three capabilities in PH-01.
 
 #### Scenario: A held patient's visit is billed
 - **WHEN** a held patient's earlier visit is ready to claim
