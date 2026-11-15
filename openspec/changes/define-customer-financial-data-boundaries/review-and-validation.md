@@ -145,3 +145,9 @@ Brett Heap ruled 32 and 33 on 2026-11-14. A verification pass also found one rem
 | 21 | Same file, "Cross-system identity links are controlled", and `specs/financial-domain-routing/spec.md`, "Mixed payments and corrections preserve reconciliation controls" | Sign-offs follow FD-5 tiers under the companion's BAB-17. An opted-in named AI agent with an openWallet ID may sign; tier 4 is human-only. | ruling 33, 2026-11-14 |
 | 22 | `specs/financial-domain-routing/spec.md`, "Membership and retail obligations use connected business ledgers" | A configuration-time gate refuses to activate a PHI-bearing offering against an ungated destination. Writes made outside openPractice are recorded as a deployment control. Adds a scenario. | verification N7 remainder, 2026-11-14 |
 | 23 | `design.md` | Adds an owner-rulings table (rulings 25, 26, 28, 32 and 33), the ruling-32 statement in §1, the ruling-33 statement in §5, and a risk entry for ledger-side writes. | rulings 32 and 33, N7 remainder |
+
+## Wording edit (fix round 5, 2026-11-14)
+
+| # | Place | Edit | Reason |
+|---|---|---|---|
+| 24 | `specs/financial-domain-routing/spec.md`, "Membership and retail obligations use connected business ledgers" | The sentence that named routing as the only enforcement point now names both points: the configuration-time gate and routing. | verification round 5, item 5, 2026-11-14 |
