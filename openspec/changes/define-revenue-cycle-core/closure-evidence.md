@@ -37,12 +37,12 @@ This record collects acceptance evidence for OpenSpec change `define-revenue-cyc
 - Summary-journal batches with this change's revenue refused until the service-category field existed, then carrying it with its mapping version, and payer-share transfers carrying both payer classes (RT-04, PA-1): _pending_
 - Estimator versions and the policy record approved only by the practice's accountant, never self-approved, before any destination went live (RE-02, RE-09): _pending_
 - Codes from EHR facts or marked manual, confirmed by a named biller, never inferred (CG-02, CG-04): _pending_
-- No Good Faith Estimate issued without a counsel-verified parameter set; delivery proved; disputes marking money disputed (GF-03, GF-07, GF-10): _pending_
+- No Good Faith Estimate issued without a counsel-verified parameter set, the practice issuing estimates outside the system until then (ruling 172); delivery proved; disputes marking money disputed (GF-03, GF-07, GF-10): _pending_
 - Claim batches released only by a named signer, with the escape refusing retracted facts and denied or unknown participation (CL-05, CL-06, EG-06): _pending_
-- Exactly matched remittances posted with notice and undo; everything else proposed to a human; denials never written off automatically (RM-04, RM-05, RM-07): _pending_
-- Refunds and material write-offs signed by a named human; agent ceilings of ruling 132 enforced (PY-07, PS-11, TH-13): _pending_
+- Exactly matched remittances posted with notice and undo, only under the conditions ruling 169 accepts, and undone plainly only until matched to a bank deposit (ruling 170); everything else proposed to a human; a patient's share waiting for the second insurance and denials never written off automatically (ruling 171) (RM-04, RM-05, RM-07): _pending_
+- Refunds and material write-offs signed by a named human, every write-off by a named human until the material amount is set (ruling 173), and transfers between guarantor accounts by a named human with a notification (ruling 174); the twelve recording actions of ruling 182 done by a named human with a notification, snoozing without one, until the owner rules on each; agent ceilings of ruling 132 enforced (PY-07, PS-11, PS-12, TH-13): _pending_
 - No card or bank number stored; no PHI in logs, keys or diagnostics; synthetic fixtures only (PY-01, RM-01, TH-15, TH-16): _pending_
-- The old-system balance import built before the first practice that needed it went live (SL-11, ruling 131): _pending_
+- The old-system balance import built in feature 4, or earlier where the first practice had old balances, before that practice went live (SL-11, rulings 131 and 176): _pending_
 - FD-8 beta acceptance: one live electronic remittance posted end to end, and one live merchant settlement reconciled to a bank line: _pending_
 
 ## Boundary and Merge Evidence

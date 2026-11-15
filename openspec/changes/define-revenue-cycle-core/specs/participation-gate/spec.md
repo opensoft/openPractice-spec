@@ -36,7 +36,7 @@ A held claim whose date of service falls before the effective date, or whose ans
 - **THEN** those two stay held as work, and a named person decides what happens to each
 
 ### Requirement: EG-06 The deadline escape releases only a pending case's claims
-Every hold this capability places SHALL name its FD-5 deadline escape, and the escape SHALL be CL-06's. When a held claim reaches the filing threshold while its answer is `not_yet`, it SHALL count as ready for CL-06's escape, which releases it at tier 3 with notification, a cancel window and provenance; the scrub then records the participation failure without holding the claim again (CL-04). When the answer is `ended`, `never` or `unknown`, the escape SHALL NOT submit the claim; it SHALL escalate the work instead (design call CR-45, PROPOSED, narrowing FD-5's escape as the enrollment-gated-billing brainstorm proposes).
+Every hold this capability places SHALL name its FD-5 deadline escape, and the escape SHALL be CL-06's. When a held claim reaches the filing threshold while its answer is `not_yet`, it SHALL count as ready for CL-06's escape, which releases it at tier 3 with notification, a cancel window and provenance; the scrub then records the participation failure without holding the claim again (CL-04). When the answer is `ended`, `never` or `unknown`, the escape SHALL NOT submit the claim; it SHALL escalate the work instead, because the escape applies only while an application is pending (ruling 168).
 
 #### Scenario: A denied application at the deadline
 - **WHEN** a claim held because the provider's application was denied reaches the filing threshold

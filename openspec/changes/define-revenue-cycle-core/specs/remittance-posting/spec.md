@@ -26,10 +26,10 @@ Each claim payment SHALL attach to a submitted claim version only when it matche
 - **THEN** the money posts as `legacy_collection`, and no openPractice receivable is created
 
 ### Requirement: RM-04 Exactly matched lines post by themselves, with notice and undo
-A claim payment whose every part matches exactly SHALL post without a person, at FD-5 tier 2, done with a notification and undoable (ruling 120). Exactly matched SHALL mean all ten of these (design call CR-52, PROPOSED):
+A claim payment whose every part matches exactly SHALL post without a person, at FD-5 tier 2, done with a notification and undoable (ruling 120). Exactly matched SHALL mean all ten of these, the conditions ruling 169 accepts (ruling 169; what counts as an open same-person review is design call CR-52, PROPOSED):
 - it attached to exactly one claim version under RM-03;
 - that claim version is the current one: not voided, not replaced and not held for a retracted fact;
-- no same-person reconciliation is open for the claim's service date (CG-05);
+- no same-person review is open for the patient (ruling 169): no same-person reconciliation open on any record of the patient's same-person group (CG-05), and no end-of-link review still open for a link that included the patient's party (PR-15);
 - no answer from this payer has already posted for that claim version, judged by the payer's claim control number and by the payment's trace number, so a resent or stale file never posts twice;
 - every service line matches exactly one claim line by its line identity, procedure code, units and billed amount;
 - no two service lines match the same claim line;
@@ -38,7 +38,7 @@ A claim payment whose every part matches exactly SHALL post without a person, at
 - the claim payment equals the sum of its line payments, with no claim-level adjustment;
 - no line reverses or takes back an earlier posting.
 
-A claim payment that fails any of them is a proposal for a human under RM-05 (ruling 120). Undo SHALL be a reversal of everything the posting made (SL-05), made by a person at FD-5 tier 2 with a notification, and available until the payment has been explained in a deposit; after that, a correction SHALL need a person's reason (design calls CR-53 and CR-66, PROPOSED). This automatic posting is a shipped rule, not an agent action.
+A claim payment that fails any of them is a proposal for a human under RM-05 (ruling 120). Undo SHALL be a reversal of everything the posting made (SL-05), made by a person at FD-5 tier 2 with a notification, and available until the payment has been matched to a bank deposit; after that, a person SHALL correct it with a reason, which still reverses everything the posting did (ruling 170; the tier is design call CR-66, PROPOSED). This automatic posting is a shipped rule, not an agent action.
 
 #### Scenario: A clean remittance
 - **WHEN** a remittance pays a two-line claim with standard contractual adjustments whose codes are all in the table and whose amounts add up
@@ -71,9 +71,9 @@ Posting a claim payment SHALL make these entries (AI-12, AI-15):
 - `contractual_adjustment` for the billed amount less the allowed amount;
 - a true-up for any difference between the estimate and what the answer shows (RE-05);
 - `payer_payment` for what the payer paid;
-- `patient_share_transfer` for the patient's responsibility, unless the patient has a later coverage position for that date, in which case the share SHALL wait as work for a person to decide whether a later payer is billed first (design call CR-54, PROPOSED). When the person decides to bill the later payer, the amount SHALL move to that coverage's payer receivable as `payer_share_transfer`, posted with the decision and under its governance; when they decide not to, it moves to the patient as `patient_share_transfer` (design call CR-91, PROPOSED). If the later coverage's claim is rejected and then dropped (CL-09), or that payer's answer or a recorded eligibility check (EV-01) shows that its plan does not cover the service, only the part of the `payer_share_transfer` still in the later coverage's payer receivable, after any answer from that payer has posted, SHALL be reversed under SL-05, returning that part to the earlier coverage's payer receivable, and the decision SHALL be made again for that part (design call CR-91, PROPOSED). A share that the later payer's answer has already moved to the patient SHALL NOT move again.
+- `patient_share_transfer` for the patient's responsibility, unless the patient has a later coverage position for that date, in which case the share SHALL wait for the second insurance (ruling 171), as work for a person to decide whether a later payer is billed first (design call CR-54, PROPOSED). When the person decides to bill the later payer, the amount SHALL move to that coverage's payer receivable as `payer_share_transfer`, posted with the decision and under its governance; when they decide not to, it moves to the patient as `patient_share_transfer` (design call CR-91, PROPOSED). If the later coverage's claim is rejected and then dropped (CL-09), or that payer's answer or a recorded eligibility check (EV-01) shows that its plan does not cover the service, only the part of the `payer_share_transfer` still in the later coverage's payer receivable, after any answer from that payer has posted, SHALL be reversed under SL-05, returning that part to the earlier coverage's payer receivable, and the decision SHALL be made again for that part (design call CR-91, PROPOSED). A share that the later payer's answer has already moved to the patient SHALL NOT move again.
 
-A denied amount SHALL never be written off automatically: it SHALL become work for a person to appeal, which marks it disputed (SL-10), or to write off under PS-11 (design call CR-55, PROPOSED). The thread SHALL move from `claimed` to `remitted` (TH-04).
+A denied amount SHALL never be written off automatically (ruling 171): it SHALL become work for a person to appeal, which marks it disputed (SL-10), or to write off under PS-11 (design call CR-55, PROPOSED). The thread SHALL move from `claimed` to `remitted` (TH-04).
 
 #### Scenario: Paid with a patient share
 - **WHEN** a 200.00 claim is allowed 120.00, paid 96.00, with 24.00 coinsurance, and the estimate expected 114.00
