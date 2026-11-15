@@ -333,7 +333,7 @@ When staff or an agent find that an administrative item is clinical, the rules S
 - remove the stored question text from openPractice, with a removal event that holds no PHI;
 - tell HealthLinc with `inquiry.recategorized`.
 
-When clinical routing is missing or disabled, an item found clinical cannot be handed to openChart. openPractice SHALL still cancel every pending agent answer on it and remove its stored text, and in place of the handoff and `inquiry.recategorized` SHALL apply PG-10's defensive handling: send HealthLinc `guidance.instruct` for the item's `message_id` with cause `clinical_routing_unavailable`, and raise an exception owned by the office manager that holds no PHI. This applies to every administrative item found clinical, a continuation included (design call DC-63, PROPOSED).
+When clinical routing is missing or disabled, an item found clinical cannot be handed to openChart. openPractice SHALL still cancel every pending agent answer on it and remove its stored text, and in place of the handoff and `inquiry.recategorized` SHALL apply PG-10's defensive handling: send HealthLinc `guidance.instruct` for the item's `message_id` with cause `clinical_routing_unavailable`, and raise an exception owned by the office manager that holds no PHI. This applies to every administrative item found clinical, a continuation included. For a mixed item, openPractice SHALL still keep the lane reminder of ruling 106 below, so that the administrative part is not lost: no resubmission is asked of HealthLinc, and the lane's owner contacts the patient for the administrative part, which the patient may send as a new question (design call DC-63, PROPOSED).
 
 A mixed question SHALL be split so that no clinical part stays in openPractice. HealthLinc splits a mixed question at intake into parts, each with its own reference. When staff or an agent find a mixed item later, openPractice SHALL route the item's HealthLinc reference to openChart as clinical, cancel every pending agent answer on the item, remove the stored text, and ask HealthLinc, in one `inquiry.recategorized`, to resubmit only the administrative part. Its text is deleted from openPractice (ruling 106).
 
@@ -388,6 +388,10 @@ openPractice staff cannot judge content they never see. A clinical item SHALL th
 #### Scenario: An item is found clinical while clinical routing is off
 - **WHEN** clinical routing is disabled, and a biller finds that an urgent billing continuation describes chest pain
 - **THEN** it is not handed to openChart; its pending agent answers are cancelled and its stored text removed, HealthLinc receives `guidance.instruct` with cause `clinical_routing_unavailable`, and the office manager owns an exception that holds no PHI
+
+#### Scenario: A mixed item is found while clinical routing is off
+- **WHEN** clinical routing is disabled, and a biller finds that a billing item also asks about a symptom
+- **THEN** HealthLinc receives `guidance.instruct` and the office manager owns an exception, and a reminder with no text stays on the biller lane until the lane's owner has contacted the patient for the billing part
 
 #### Scenario: A continuation of a long-closed handoff
 - **WHEN** a continuation names an item that was handed to openChart as clinical and whose handoff closed 30 days ago, and no request for the item is open
