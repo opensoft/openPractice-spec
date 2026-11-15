@@ -1,0 +1,48 @@
+# Owner Ratification Record
+
+Status: **PENDING — SPECKIT FEATURE CREATION IS NOT AUTHORIZED**
+
+This record is the mandatory, durable owner gate for OpenSpec change `define-actors-agents-and-work-inbox`. Creating any Speckit feature before this record is completed exactly as required is prohibited.
+
+Brett Heap made rulings 34 to 44 on 2026-11-14, and they are recorded in `design.md`. Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
+
+## Required Validation Evidence
+
+- OpenSpec version: _pending_
+- Validation command: `openspec validate define-actors-agents-and-work-inbox --strict --no-interactive`
+- Validation timestamp: _pending_
+- Exact ratified artifact revision or checksums: _pending_
+- Validation exit code: _pending_
+- Validation output or durable evidence reference: _pending_
+
+## Required Companion-Change Consistency Evidence
+
+- Base change: `define-mvp-practice-foundation`. Its revision compared: _pending_
+- Cited requirement IDs exist at that revision (PR, EB, AI, BAB, including BAB-17 and AI-23): _pending_
+- Sibling change `define-patient-gateway-and-escalation` cites this change's IDs correctly: _pending_
+- Canonical schema digest matches `contracts/SHA256SUMS`: _pending_
+- Required companion changes (MedxFactory/Hermes, openChart-spec, HealthLinc) are recorded with their status: _pending_
+
+## Required Owner Decision
+
+- Owner identity: _pending_
+- Ratification timestamp: _pending_
+- Handoff shape: _pending owner confirmation. `tasks.md` §2 proposes folding the actor model and inbox into the registry feature or the feature right after it, followed by the agent contract, VA safeguards and AI data handling._
+- Design calls D-1 to D-13 accepted or amended: _pending_
+- Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
+
+Required owner statement:
+
+> I reviewed the exact OpenSpec artifact revision identified above and ratify `define-actors-agents-and-work-inbox` unconditionally, with the handoff shape and design-call dispositions recorded above. I understand that:
+> - every agent action type starts at `propose`;
+> - no agent acts with less friction than the action's FD-5 tier;
+> - tier-4 actions stay human-only, and D8 approvals stay accountant-only;
+> - no PHI reaches an agent layer, and no remote VA reaches PHI, without the verified agreements this change requires;
+> - this change cannot be archived until the implementing work and the assembly pin bump are merged and accepted.
+
+## Gate Semantics
+
+- None of the following satisfies this gate: an agent, a delegate, an inferred preference, a conditional approval, a blank field, failed strict validation, a base-change mismatch, a missing handoff-shape choice, or ratification of a different artifact revision.
+- Editing this template does not itself constitute ratification; the identified owner must provide the completed, durable record.
+- Until every required field is complete and the decision is exactly `APPROVED UNCONDITIONALLY`, no Speckit feature may be created for this change.
+- The proposal's `Status` must remain `draft` until the owner completes this record. Only the owner may change it to `ratified`, in the same durable revision as this completed record.

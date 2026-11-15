@@ -1,0 +1,530 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:openpractice:contract:openpractice-agent-operations:1.0",
+ "title": "openpractice-agent-operations 1.0",
+ "description": "Canonical schema for the agent operations contract (define-actors-agents-and-work-inbox, AO-01). Requests, responses, autonomy settings and the daily agent digest. Every agent action follows its FD-5 tier and BAB-17 of define-mvp-practice-foundation; the autonomy ladder never gives less friction than the tier (AO-04). Payload content is validated against the registry operation's own schema (PR-09), defined in planning. No key, reason or digest line carries PHI. openWallet identity mechanics are decided in planning; the schema carries only an opaque reference.",
+ "oneOf": [
+  {
+   "$ref": "#/$defs/request"
+  },
+  {
+   "$ref": "#/$defs/response"
+  },
+  {
+   "$ref": "#/$defs/autonomySetting"
+  },
+  {
+   "$ref": "#/$defs/digest"
+  }
+ ],
+ "$defs": {
+  "ref": {
+   "type": "string",
+   "pattern": "^[A-Za-z0-9:_-]{1,128}$"
+  },
+  "uuid": {
+   "type": "string",
+   "format": "uuid"
+  },
+  "version": {
+   "type": "string",
+   "pattern": "^1\\.[0-9]+$"
+  },
+  "openWalletRef": {
+   "description": "Opaque reference to the agent's openWallet ID. Verification mechanics are decided in planning.",
+   "type": "string",
+   "pattern": "^[A-Za-z0-9:._-]{1,256}$"
+  },
+  "rung": {
+   "enum": [
+    "observe",
+    "propose",
+    "act_with_notice",
+    "act_after_delay"
+   ]
+  },
+  "tier": {
+   "enum": [
+    "tier_1",
+    "tier_2",
+    "tier_3",
+    "tier_4",
+    "signoff_gate",
+    "d8_approval"
+   ]
+  },
+  "actionType": {
+   "description": "Contract 1.0 covers the patient-registry operations only (AO-11). Later features add theirs as MINOR versions.",
+   "enum": [
+    "patient.search",
+    "patient.read",
+    "patient.create",
+    "patient.update_identity",
+    "patient.update_preferences",
+    "patient.update_contacts",
+    "patient.update_confidential_instructions",
+    "guarantor.set",
+    "coverage.add",
+    "coverage.update",
+    "patient.deactivate",
+    "patient.reactivate",
+    "patient.hard_delete"
+   ]
+  },
+  "actor": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "roster_ref",
+    "actor_type",
+    "on_behalf_of"
+   ],
+   "properties": {
+    "roster_ref": {
+     "$ref": "#/$defs/ref"
+    },
+    "actor_type": {
+     "enum": [
+      "on_site_staff",
+      "remote_va",
+      "nurse",
+      "clinician",
+      "medical_director",
+      "controller",
+      "ai_agent",
+      "system_integration"
+     ]
+    },
+    "openwallet_ref": {
+     "$ref": "#/$defs/openWalletRef"
+    },
+    "on_behalf_of": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "kind",
+      "ref"
+     ],
+     "properties": {
+      "kind": {
+       "enum": [
+        "practice",
+        "sponsor",
+        "staff_member"
+       ]
+      },
+      "ref": {
+       "$ref": "#/$defs/ref"
+      }
+     }
+    }
+   },
+   "if": {
+    "properties": {
+     "actor_type": {
+      "const": "ai_agent"
+     }
+    },
+    "required": [
+     "actor_type"
+    ]
+   },
+   "then": {
+    "required": [
+     "openwallet_ref"
+    ]
+   }
+  },
+  "request": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "contract",
+    "contract_version",
+    "message",
+    "request_id",
+    "idempotency_key",
+    "actor",
+    "action_type",
+    "mode",
+    "untrusted_input"
+   ],
+   "properties": {
+    "contract": {
+     "const": "openpractice-agent-operations"
+    },
+    "contract_version": {
+     "$ref": "#/$defs/version"
+    },
+    "message": {
+     "const": "operation.request"
+    },
+    "request_id": {
+     "$ref": "#/$defs/uuid"
+    },
+    "idempotency_key": {
+     "description": "Opaque; never contains per-person data (AO-06).",
+     "type": "string",
+     "pattern": "^[A-Za-z0-9_-]{8,128}$"
+    },
+    "actor": {
+     "$ref": "#/$defs/actor"
+    },
+    "action_type": {
+     "$ref": "#/$defs/actionType"
+    },
+    "mode": {
+     "enum": [
+      "dry_run",
+      "execute"
+     ]
+    },
+    "target_ref": {
+     "$ref": "#/$defs/ref"
+    },
+    "payload": {
+     "description": "Validated against the registry operation's own schema (PR-09).",
+     "type": "object"
+    },
+    "evidence_refs": {
+     "type": "array",
+     "minItems": 1,
+     "items": {
+      "$ref": "#/$defs/ref"
+     }
+    },
+    "reasoning_ref": {
+     "$ref": "#/$defs/ref"
+    },
+    "untrusted_input": {
+     "description": "True when untrusted content contributed (AH-05); the action then cannot exceed propose without a human signer.",
+     "type": "boolean"
+    }
+   },
+   "if": {
+    "properties": {
+     "actor": {
+      "properties": {
+       "actor_type": {
+        "const": "ai_agent"
+       }
+      }
+     },
+     "mode": {
+      "const": "execute"
+     }
+    },
+    "required": [
+     "actor",
+     "mode"
+    ]
+   },
+   "then": {
+    "required": [
+     "evidence_refs",
+     "reasoning_ref"
+    ]
+   }
+  },
+  "response": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "contract",
+    "contract_version",
+    "message",
+    "request_id",
+    "outcome"
+   ],
+   "properties": {
+    "contract": {
+     "const": "openpractice-agent-operations"
+    },
+    "contract_version": {
+     "$ref": "#/$defs/version"
+    },
+    "message": {
+     "const": "operation.result"
+    },
+    "request_id": {
+     "$ref": "#/$defs/uuid"
+    },
+    "outcome": {
+     "enum": [
+      "dry_run_result",
+      "proposed",
+      "executed",
+      "scheduled",
+      "refused"
+     ]
+    },
+    "tier": {
+     "$ref": "#/$defs/tier"
+    },
+    "rung_applied": {
+     "$ref": "#/$defs/rung"
+    },
+    "signoff_required": {
+     "enum": [
+      "none",
+      "authorized_signer",
+      "named_human",
+      "accountant"
+     ]
+    },
+    "work_item_ref": {
+     "$ref": "#/$defs/ref"
+    },
+    "executes_at": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "refusal_reason": {
+     "enum": [
+      "schema_invalid",
+      "unsupported_major_version",
+      "actor_unknown",
+      "principal_missing",
+      "sponsor_inactive",
+      "no_grant",
+      "rung_cap",
+      "untrusted_content_cap",
+      "gate_not_met",
+      "evidence_missing",
+      "idempotency_conflict",
+      "operation_not_supported",
+      "rate_limited",
+      "blast_radius",
+      "paused",
+      "signoff_required"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "outcome": {
+        "const": "refused"
+       }
+      },
+      "required": [
+       "outcome"
+      ]
+     },
+     "then": {
+      "required": [
+       "refusal_reason"
+      ]
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "outcome": {
+        "const": "proposed"
+       }
+      },
+      "required": [
+       "outcome"
+      ]
+     },
+     "then": {
+      "required": [
+       "work_item_ref",
+       "signoff_required"
+      ]
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "outcome": {
+        "const": "scheduled"
+       }
+      },
+      "required": [
+       "outcome"
+      ]
+     },
+     "then": {
+      "required": [
+       "executes_at",
+       "work_item_ref"
+      ]
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "tier": {
+        "enum": [
+         "tier_4",
+         "d8_approval"
+        ]
+       },
+       "outcome": {
+        "enum": [
+         "executed",
+         "scheduled"
+        ]
+       }
+      },
+      "required": [
+       "tier",
+       "outcome"
+      ]
+     },
+     "then": false
+    }
+   ]
+  },
+  "autonomySetting": {
+   "description": "One action type's rung for one agent. Raising a rung above propose is the BAB-17 agent-signing opt-in. Tier-4 operations never rise above propose.",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "document",
+    "agent_roster_ref",
+    "openwallet_ref",
+    "action_type",
+    "rung",
+    "granted_by",
+    "effective_from",
+    "version"
+   ],
+   "properties": {
+    "document": {
+     "const": "autonomy_setting"
+    },
+    "agent_roster_ref": {
+     "$ref": "#/$defs/ref"
+    },
+    "openwallet_ref": {
+     "$ref": "#/$defs/openWalletRef"
+    },
+    "action_type": {
+     "$ref": "#/$defs/actionType"
+    },
+    "rung": {
+     "$ref": "#/$defs/rung"
+    },
+    "granted_by": {
+     "$ref": "#/$defs/ref"
+    },
+    "effective_from": {
+     "type": "string",
+     "format": "date"
+    },
+    "effective_to": {
+     "type": "string",
+     "format": "date"
+    },
+    "version": {
+     "type": "integer",
+     "minimum": 1
+    }
+   },
+   "if": {
+    "properties": {
+     "action_type": {
+      "const": "patient.hard_delete"
+     }
+    },
+    "required": [
+     "action_type"
+    ]
+   },
+   "then": {
+    "properties": {
+     "rung": {
+      "enum": [
+       "observe",
+       "propose"
+      ]
+     }
+    }
+   }
+  },
+  "digest": {
+   "description": "Daily agent digest (AO-10): counts only, no PHI. Signed in the day close by the controller or office manager.",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "document",
+    "day",
+    "entries"
+   ],
+   "properties": {
+    "document": {
+     "const": "agent_digest"
+    },
+    "day": {
+     "type": "string",
+     "format": "date"
+    },
+    "entries": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+       "agent_roster_ref",
+       "action_type",
+       "counts"
+      ],
+      "properties": {
+       "agent_roster_ref": {
+        "$ref": "#/$defs/ref"
+       },
+       "action_type": {
+        "$ref": "#/$defs/actionType"
+       },
+       "counts": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+         "proposed": {
+          "type": "integer",
+          "minimum": 0
+         },
+         "executed": {
+          "type": "integer",
+          "minimum": 0
+         },
+         "scheduled": {
+          "type": "integer",
+          "minimum": 0
+         },
+         "cancelled": {
+          "type": "integer",
+          "minimum": 0
+         },
+         "refused": {
+          "type": "integer",
+          "minimum": 0
+         },
+         "approved": {
+          "type": "integer",
+          "minimum": 0
+         },
+         "rejected": {
+          "type": "integer",
+          "minimum": 0
+         }
+        }
+       }
+      }
+     }
+    },
+    "signed_by": {
+     "$ref": "#/$defs/ref"
+    },
+    "signed_at": {
+     "type": "string",
+     "format": "date-time"
+    }
+   }
+  }
+ }
+}
