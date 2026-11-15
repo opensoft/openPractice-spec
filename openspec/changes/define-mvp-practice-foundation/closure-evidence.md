@@ -16,7 +16,7 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 ## Product Acceptance Evidence
 
 - Requirement and scenario traceability for `patient-registry`: _pending_
-- One party per person (PR-15): roles and links, never a second person record; agents and integrations not parties; no automatic merge; matching evidence before an existing party gains the patient role; confidential-communication instructions for every role; review work after a death; own-record money, coverage and sign-off actions decided by another human roster entry or an agent the actor does not sponsor, or under the recorded one-person alternative with its notice to the accountant: _pending_
+- One party per person (PR-15): roles and links, never a second person record; agents and integrations not parties; no automatic merge; matching evidence before an existing party gains the patient role; confidential-communication instructions for every role; review work after a death; own-record money, coverage and sign-off actions decided by another human roster entry or an agent the actor does not sponsor, or under the recorded one-person alternative with its notice to the accountant, which waits while no one but the actor holds the accountant capacity; a merge that closes the other party and moves its roles and references: _pending_
 - Requirement and scenario traceability for `ehr-boundary`: _pending_
 - Requirement and scenario traceability for `billing-accounting-boundary`: _pending_
 - Requirement and scenario traceability for `accounting-integration`: _pending_
@@ -37,7 +37,7 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 - Manual entry under identity review only with a recorded attestation, and refusal without it (EB-17): _pending_
 - Retractions with `entered_in_error` or `withdrawn` handled alike, no cause inferred or shown, undefined codes applied and recorded as `withdrawn`, their values kept nowhere and reported only as a per-period count to the integration operator, retractions applied only to facts from the same link and subject, and retractions accepted after a link ends (EB-15; rulings 87 to 89): _pending_
 - Sign-offs per FD-5 tiers: agent signing opt-in only, refused at tier 4, recorded with the openWallet ID (BAB-17, ruling 33): _pending_
-- Money per BAB-18 (ruling 103): decimal text with a currency code on the wire, never a JSON number, whole cents in storage, USD only in 1.0, enforced by the accounting schema, one currency per batch and per bank-lines result, and BAB-18's one rounding rule, including splits: _pending_
+- Money per BAB-18 (ruling 103): decimal text with a currency code on the wire, never a JSON number, whole cents in storage, USD only in 1.0, enforced by the accounting schema, one currency per batch and per bank-lines result, and BAB-18's one rounding rule, including splits by cumulative rounding (parts equal the whole, each within a cent of its share, none negative for non-negative shares): _pending_
 - Summary-journal minimum group size and roll-up, and automatic close re-estimates (AI-15, AI-12): _pending_
 - Bank register, deposit links, expected-account check, re-enrollment worklist, and encrypted, role-restricted, audited bank numbers: _pending_
 - Date-of-birth hold suspension, correction requests and single-resolver identity review: _pending_

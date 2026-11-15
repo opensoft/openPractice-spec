@@ -186,7 +186,7 @@ Every `openpractice-*` contract SHALL carry an amount as decimal text plus a cur
 
 These rules are design calls under ruling 103 (F-8 to F-10, PROPOSED):
 - an amount carries exactly its currency's minor-unit digits, and is stored as a whole number of that currency's minor units. Version 1.0 of every contract supports USD only, so two decimal places and whole cents, and a 1.0 message in any other currency is refused. Supporting another currency needs a governed version change under AI-01, which states its minor-unit digits from ISO 4217; a currency with no minor unit carries no decimal point (F-8);
-- openPractice has one rounding rule, and each contract states that it uses it. An amount is rounded only when openPractice computes it, such as an estimate or an allocation, and only once, at computation, to the minor unit, half away from zero. When a fixed amount, such as a deposit, a payment or a bank line, is split into parts, each part is rounded that way and the last part in the split's stated order takes the difference, so the parts always equal the whole. A fixed amount is never recomputed from rounded parts, and every other total is the sum of amounts already rounded (F-9);
+- openPractice has one rounding rule, and each contract states that it uses it. An amount is rounded only when openPractice computes it, such as an estimate or an allocation, and only once, at computation, to the minor unit, half away from zero. When a fixed amount, such as a deposit, a payment, a fee or a bank line, is split into parts, the split SHALL use cumulative rounding: taking the parts in the split's stated order, each part is the rounded running total of the exact shares through that part, minus the rounded running total through the part before it. The parts then always equal the whole, each part is within one minor unit of its exact share, and no part has the opposite sign to the whole when every share has the whole's sign or is zero, so no part is negative when every share is non-negative. A fixed amount is never recomputed from rounded parts, and every other total is the sum of amounts already rounded (F-9);
 - a batch, and every message that holds several amounts, carries one currency, and a batch with a second currency is refused at release (F-10).
 
 A future contract that carries money, such as a claim, remittance or payment contract, SHALL meet this requirement and state that it uses the rounding rule of F-9.
@@ -205,7 +205,11 @@ A future contract that carries money, such as a claim, remittance or payment con
 
 #### Scenario: A fixed amount is split three ways
 - **WHEN** a deposit of 100.00 USD is split into three equal parts
-- **THEN** the parts are 33.33, 33.33 and 33.34, they add to 100.00, and the deposit is still 100.00 against its bank line
+- **THEN** the running totals round to 33.33, 66.67 and 100.00, so the parts are 33.33, 33.34 and 33.33, they add to 100.00, each is within a cent of its exact share, and the deposit is still 100.00 against its bank line
+
+#### Scenario: A small fee is split many ways
+- **WHEN** a processor fee of 1.10 USD is allocated equally across the 31 receipts of a settlement
+- **THEN** 17 parts are 0.04 and 14 are 0.03, they add to 1.10, and no receipt gets a negative share
 
 #### Scenario: A batch in another currency
 - **WHEN** a 1.0 batch or bank-lines result carries a currency other than USD
