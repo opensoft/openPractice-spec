@@ -7,7 +7,8 @@ This record collects acceptance evidence for OpenSpec change `define-actors-agen
 ## Governance Evidence
 
 - Owner ratification reference: `owner-ratification.md` — _pending completion_
-- Approved grant sets for the remote VA, nurse, medical director, controller or office manager, and agent recipes: _pending_
+- Approved grant sets for the remote VA, nurse, medical director, controller or office manager, agent and outside-accountant recipes: _pending_
+- Ruling 98's check recorded for each assignment of the medical director recipe (ruling 146; D-38): _pending_
 - Contact points on human roster entries used only for security notices and one-time codes, with no PHI, and every change audited and notified to the contact points recorded before it (D-33): _pending_
 - Per-feature Constitution Check and security review records: _pending_
 - Verified VA-company BAAs, and verified BAAs with each agent operator and model provider, with risk-analysis entries: _pending_
@@ -18,6 +19,7 @@ This record collects acceptance evidence for OpenSpec change `define-actors-agen
 
 - Requirement and scenario traceability for `actor-model`, `agent-operations`, `work-inbox`, `remote-va-safeguards` and `ai-data-handling`: _pending_
 - Actor, actor type and principal recorded on every action, with no PHI in logs: _pending_
+- Two steps at sign-in for every human, and a fresh check, bound to the item and the decision, for each sign-off at the workstation (AM-07, ruling 136; D-36): _pending_
 - Same-day offboarding of a person, a VA, a VA company and an agent, including cancellation of delayed actions: _pending_
 - Contract tests for `openpractice-agent-operations/1.0` at its recorded digest. They cover every operation, rung and cap, dry run, idempotency, limits, the pause and the digest: _pending_
 - Agent caps proven: no tier-3 action at `act_with_notice`, and no tier-4, D8 or untrusted-content action above `propose`: _pending_

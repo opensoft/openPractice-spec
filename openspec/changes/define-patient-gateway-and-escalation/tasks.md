@@ -96,7 +96,7 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - Open Question 22, the on-call alert for a missing clinician acknowledgment: blocks nothing; ER-20 alerts the office manager only.
   - Open Question 23, a split that openChart asks for: blocks nothing in openPractice; the lane reminder covers the splits openPractice asks for, and a split openChart asks for has none until a later handoff version reports it.
   - Open Questions 24 and 25, synced passkeys and the phone's unlock code: closed by rulings 134 and 135; MA-04 carries them.
-  - Open Question 26, how strong workstation sign-in is: blocks nothing in this change; DC-60's enrolment rules are only as strong as that sign-in.
+  - Open Question 26, how strong workstation sign-in is: closed by ruling 136; change A's AM-07 carries it.
 
 ## 4. Acceptance and Closure
 

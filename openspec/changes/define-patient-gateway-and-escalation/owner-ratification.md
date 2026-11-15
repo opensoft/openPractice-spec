@@ -59,8 +59,8 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending; must be exactly `A — ordered multi-feature handoff` or `B — split into per-capability changes` (design call DC-21 proposes `A`; no ruling states a shape)_
-- Design-call dispositions (DC-1 to DC-63, each accepted, changed or rejected; DC-39 is marked for the owner, DC-46 to DC-53 are PROPOSED by the 2026-11-15 follow-up and its review, DC-54 to DC-62 are PROPOSED under rulings 101, 104 to 107, 134 and 135, and DC-63 is PROPOSED by the review of the corrections): _pending_
-- Open Questions 22 (the on-call alert for a missing clinician acknowledgment), 23 (a split that openChart asks for) and 26 (how strong workstation sign-in is) dispositioned; Open Questions 24 and 25 are closed by rulings 134 and 135: _pending_
+- Design-call dispositions (DC-1 to DC-64, each accepted, changed or rejected; DC-39 is marked for the owner, DC-46 to DC-53 are PROPOSED by the 2026-11-15 follow-up and its review, DC-54 to DC-59, DC-61 and DC-62 are PROPOSED under rulings 101, 104 to 107, 134 and 135, DC-60 under ruling 137, DC-63 by the review of the corrections, and DC-64 under ruling 143): _pending_
+- Open Questions 22 (the on-call alert for a missing clinician acknowledgment) and 23 (a split that openChart asks for) dispositioned; Open Questions 24, 25 and 26 are closed by rulings 134, 135 and 136: _pending_
 - Tension dispositions (T-1 to T-12; T-9, T-10 and T-12 are recorded as resolved by rulings 50, 52 and 71, and T-11 proposes a follow-up): _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 

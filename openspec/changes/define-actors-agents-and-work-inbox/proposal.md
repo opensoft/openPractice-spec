@@ -17,13 +17,14 @@ Paths are relative to the root of `opensoft/openPractice-spec`. This change and 
 
 ## What Changes
 
-- **`actor-model`** (AM-01 to AM-06):
+- **`actor-model`** (AM-01 to AM-07):
   - declared actor types;
-  - five new role recipes on top of the roster brainstorm's seven, granting nothing until the owner approves their grant sets;
+  - six new role recipes on top of the roster brainstorm's seven, among them the outside accountant's (ruling 141), granting nothing until the owner approves their grant sets;
   - attribution of actor, actor type and principal on every action;
   - AI agents as named roster entries with an openWallet ID and a sponsoring human;
   - one same-day offboarding switch for people, VAs and agents;
-  - every owner a roster entry.
+  - every owner a roster entry;
+  - two steps at sign-in for every human, and a fresh check for each sign-off at the workstation (ruling 136).
 - **`agent-operations`** (AO-01 to AO-13): contract `openpractice-agent-operations/1.0` with a canonical schema and digest. It provides:
   - parity between screen and API;
   - explicit, revocable scopes per action type;
@@ -78,7 +79,7 @@ Ruling 40 required three companion changes. Rulings 47 to 49 asked for them to b
 ## Capabilities
 
 ### New Capabilities
-- `actor-model` (AM-01 to AM-06)
+- `actor-model` (AM-01 to AM-07)
 - `agent-operations` (AO-01 to AO-13)
 - `work-inbox` (WI-01 to WI-07)
 - `remote-va-safeguards` (VA-01 to VA-05)

@@ -8,13 +8,16 @@ openPractice SHALL recognize exactly these actor types:
 - clinician;
 - medical director;
 - controller or office manager;
+- outside accountant (ruling 141);
 - AI agent;
 - patient or representative, acting only through the HealthLinc gateway (change `define-patient-gateway-and-escalation`);
 - system integration.
 
-Staff, VAs, nurses, clinicians, the medical director, the controller or office manager, and AI agents SHALL each be a roster entry. A system integration SHALL be a named integration identity, as PR-10 already allows. A patient or representative SHALL NOT be a roster entry. Each human roster entry SHALL reference exactly one party in the party register of `define-mvp-practice-foundation` PR-15, and an AI agent or a system integration SHALL reference none; a person who is both staff and a patient, guarantor or representative holds one roster entry, for the staff role only, never acts as patient, guarantor or representative through that roster entry, and both reference the same party (spec-critique correction SC-2, PROPOSED). Where the person's parties form a same-person group (`define-mvp-practice-foundation` PR-15), this rule, and every rule that asks whether a roster entry's own party holds a role on a record, treats the whole group as one party. The system SHALL refuse any action from an actor whose type it cannot determine.
+Staff, VAs, nurses, clinicians, the medical director, the controller or office manager, the outside accountant, and AI agents SHALL each be a roster entry. A system integration SHALL be a named integration identity, as PR-10 already allows. A patient or representative SHALL NOT be a roster entry. Each human roster entry SHALL reference exactly one party in the party register of `define-mvp-practice-foundation` PR-15, and an AI agent or a system integration SHALL reference none; a person who is both staff and a patient, guarantor or representative holds one roster entry, for the staff role only, never acts as patient, guarantor or representative through that roster entry, and both reference the same party (spec-critique correction SC-2, PROPOSED). Where the person's parties form a same-person group (`define-mvp-practice-foundation` PR-15), this rule, and every rule that asks whether a roster entry's own party holds a role on a record, treats the whole group as one party. The system SHALL refuse any action from an actor whose type it cannot determine.
 
-**Contact points (design call D-33, PROPOSED, made for change `define-patient-gateway-and-escalation` DC-60).** A human roster entry MAY record contact points. Each is an email address or a telephone number, recorded for security notices and one-time codes only, never used for any other message, and no PHI is ever sent to it. Each contact point SHALL record when it was added. Every addition, change or removal of a contact point SHALL be audited (PR-10) and SHALL be notified, with no PHI, to every contact point recorded before the change, including the one replaced or removed, and to the person's enrolled mobile approver devices (`define-patient-gateway-and-escalation` MA-04). A contact point removed or replaced is kept for 30 days for one purpose only: to receive MA-04's security notices. A contact point removed with the marking `stolen` or `compromised` receives no further notice from the moment of the marking, and the marking is notified to every other contact point and every enrolled mobile approver device of the person. When any roster entry gains the practice manager recipe or the controller or office manager recipe, openPractice SHALL notify every existing holder of either recipe, with no PHI, on their enrolled mobile approver devices and contact points (design call D-33, PROPOSED).
+**The outside accountant and counsel (ruling 141).** The practice's accountant, wherever these changes give it an approval or a notice (`define-mvp-practice-foundation` BAB-17, AI-12, AI-20 and PR-15; WI-03; change `define-patient-gateway-and-escalation` MA-07), SHALL be a roster entry of the outside-accountant type. It SHALL hold the outside-accountant recipe of AM-02 and no other, because ruling 141 lets it do nothing else. Who may hold such an entry is set by change `define-practice-readiness` SR-04. Counsel needs no sign-in and SHALL NOT be a roster entry (ruling 141): where a requirement records counsel's review or confirmation, the person that requirement names records it and names counsel.
+
+**Contact points (design call D-33, PROPOSED, made for change `define-patient-gateway-and-escalation` DC-60 under its ruling 137).** A human roster entry MAY record contact points. Each is an email address or a telephone number, recorded for security notices and one-time codes only, never used for any other message, and no PHI is ever sent to it. Each contact point SHALL record when it was added. Every addition, change or removal of a contact point SHALL be audited (PR-10) and SHALL be notified, with no PHI, to every contact point recorded before the change, including the one replaced or removed, and to the person's enrolled mobile approver devices (`define-patient-gateway-and-escalation` MA-04). A contact point removed or replaced is kept for 30 days for one purpose only: to receive MA-04's security notices. A contact point removed with the marking `stolen` or `compromised` receives no further notice from the moment of the marking, and the marking is notified to every other contact point and every enrolled mobile approver device of the person. When any roster entry gains the practice manager recipe or the controller or office manager recipe, openPractice SHALL notify every existing holder of either recipe, with no PHI, on their enrolled mobile approver devices and contact points (design call D-33, PROPOSED).
 
 #### Scenario: A remote VA signs in
 - **WHEN** a remote VA signs in
@@ -32,14 +35,26 @@ Staff, VAs, nurses, clinicians, the medical director, the controller or office m
 - **WHEN** a roster entry is given the practice manager recipe
 - **THEN** every existing holder of the practice manager or the controller or office manager recipe is notified on their enrolled devices and contact points, with no PHI
 
+#### Scenario: An outside accountant is added
+- **WHEN** the practice manager adds a roster entry for the practice's outside accountant
+- **THEN** it carries actor type outside accountant and the outside-accountant recipe only, and giving it any other recipe is refused
+
+#### Scenario: Counsel's review is recorded
+- **WHEN** a requirement records counsel's review of a policy version
+- **THEN** the person the requirement names records it and names counsel, and counsel needs no roster entry and no sign-in
+
 #### Scenario: An unidentified caller
 - **WHEN** a request arrives whose actor type cannot be determined
 - **THEN** it is refused with a coded reason and nothing changes
 
 ### Requirement: AM-02 Role recipes extend the roster's seven
-openPractice SHALL ship role recipes that compose but never edit. These are the seven recipes of the roster brainstorm: front desk, clinician, practice manager, biller, external biller, bookkeeper and time-boxed support. To them it adds five: remote VA, nurse, medical director, controller or office manager, and agent. Each recipe SHALL be named and versioned, with a plain-language card stating what it can and cannot do.
+openPractice SHALL ship role recipes that compose but never edit. These are the seven recipes of the roster brainstorm: front desk, clinician, practice manager, biller, external biller, bookkeeper and time-boxed support. To them it adds six: remote VA, nurse, medical director, controller or office manager, agent, and outside accountant. Each recipe SHALL be named and versioned, with a plain-language card stating what it can and cannot do.
 
 The grant set of each new recipe SHALL be fixed in planning and approved by the owner before the recipe ships. Until then, the new recipe SHALL grant nothing. No recipe SHALL grant clinical write authority, and the agent recipe SHALL NOT include any tier-4 sign-off or the D8 approval (BAB-17).
+
+**The outside-accountant recipe (ruling 141).** Its card SHALL state that its holder can read the books and approve accounting policy, estimator versions and the write-off threshold, and nothing else (ruling 141). Accounting policy here is the D8 policy of `define-mvp-practice-foundation` AI-20. What reading the books covers, within `define-customer-financial-data-boundaries` ("Accountant and biller access are independently bounded"), and which write-off threshold it approves, since none of these five changes defines one yet, are fixed with its grant set in planning (design call D-37, PROPOSED); like every new recipe, it grants nothing until then. It SHALL NOT be assigned to an AI agent.
+
+**Assigning the medical director recipe (ruling 146).** Assigning the medical director recipe SHALL carry ruling 98's check. Ruling 98's accepted words are: "A second named person confirms; a one-administrator practice records licence verification against the board's public record." The role sets the escalation policy (change `define-patient-gateway-and-escalation` ER-08) and signs health-adjacent answer types (AH-05 exception 1). How the check is made is design call D-38 (PROPOSED): the second named person is a human roster entry other than the person assigned, who confirms with a fresh check under AM-07; where the roster holds no other named human, the assignment records the person's licence number, the issuing state board, and the date and result of a check against that board's public record, with the recording person and the role used, and a licence that the public record does not show as active refuses the assignment. Until the check is recorded, the assignment is pending and the recipe grants nothing (fail closed), so the routing-clock policy keeps its fail-closed defaults (ER-08) and no health-adjacent answer type is approved.
 
 #### Scenario: A nurse recipe is assigned
 - **WHEN** a nurse is added with the nurse recipe after its grant set is approved
@@ -48,6 +63,18 @@ The grant set of each new recipe SHALL be fixed in planning and approved by the 
 #### Scenario: A recipe without an approved grant set
 - **WHEN** a person is given the remote VA recipe before its grant set is approved
 - **THEN** the recipe grants no access, and the assignment is shown as pending
+
+#### Scenario: The outside-accountant recipe before its grant set is approved
+- **WHEN** an outside accountant's roster entry holds the outside-accountant recipe before its grant set is approved
+- **THEN** the recipe grants nothing, no D8 approval can be given, and `define-mvp-practice-foundation` AI-20's go-live gate stays closed
+
+#### Scenario: A medical director confirmed by a second person
+- **WHEN** the practice manager gives a clinician the medical director recipe, and another named human on the roster confirms it with a fresh check
+- **THEN** the assignment takes effect and records both people and the roles used
+
+#### Scenario: A medical director in a one-administrator practice
+- **WHEN** the only named human on the roster gives themselves the medical director recipe
+- **THEN** the assignment waits until a licence check against the state board's public record is recorded, and is refused if the record does not show the licence as active
 
 ### Requirement: AM-03 Every action records the actor, the actor type and on whose behalf
 Every action, read and proposal SHALL record its actor's roster entry or integration identity, the actor type, and the principal on whose behalf it acted. A principal is, for example, the practice for an agent, a sponsoring human for an agent's proposal, or a patient for a representative. These records extend the PR-10 audit fields and SHALL follow EB-12: no PHI in logs, errors or diagnostics. An action whose principal cannot be determined SHALL be refused.
@@ -110,3 +137,33 @@ Every work item, escalation and gate SHALL have an owner that is a person or age
 #### Scenario: An item would be owned by a role
 - **WHEN** a configuration tries to assign items to "billing" as a role, with no roster entry
 - **THEN** the configuration is refused
+
+### Requirement: AM-07 Every human signs in with two steps, and each sign-off needs its own fresh check
+Every human roster entry SHALL sign in to openPractice with two steps: a passkey, or a password plus a second step (ruling 136). A password alone SHALL NOT sign anyone in. Each sign-off at the workstation SHALL need its own fresh check, as on the phone (ruling 136; change `define-patient-gateway-and-escalation` MA-07, ruling 105): neither the sign-in nor a check made for another sign-off SHALL stand in for it, however recent. A sign-off is any approval, release decision, attestation or signature that `define-mvp-practice-foundation` BAB-17, WI-03 or another requirement records with its signer.
+
+These details are design calls under ruling 136 (D-36, PROPOSED):
+- **The second step** is a verification on a mobile approver device the person has enrolled (`define-patient-gateway-and-escalation` MA-04), or a security key registered to the person's roster entry. A one-time code sent by text message or email is not a second step, because a contact point carries security notices and enrolment codes only (AM-01).
+- **The fresh check for a sign-off** is a passkey or security-key verification at the workstation, or a verification on the person's enrolled mobile approver device. It answers a single-use challenge that the server issues for that item and decision, valid for 2 minutes, and produces an assertion bound to the item, the decision and the time, which the server verifies and records with the sign-off, as MA-07 requires on the phone. A typed password never counts as a fresh check.
+- **Registering a passkey or a security key** takes a sign-in with two steps, and a typed password alone never registers one. Where the person has no passkey, security key or enrolled device left, registering one follows the enrolment paths, waits, notices and cancellation that MA-04 sets for a mobile approver device (its design call DC-60). The first passkey or security key of a new roster entry is registered through a single-use invitation that the practice manager issues, which expires after 24 hours and is audited and notified like a new device; the first roster entry of a new practice registers its first passkey or security key at installation, audited.
+- **Session lifetime.** A workstation session SHALL end after 15 minutes without activity (constitution Principle I), and in any case 12 hours after sign-in; the person then signs in again with two steps. Offboarding ends every session at once (AM-05).
+- The mobile approver signs in under MA-04, where the enrolled device and its verification are the two steps.
+
+#### Scenario: A stolen password
+- **WHEN** someone who has only a person's password tries to sign in at the workstation
+- **THEN** the sign-in is refused, because a password alone never signs anyone in
+
+#### Scenario: A passkey
+- **WHEN** a person signs in at the workstation with a passkey
+- **THEN** the sign-in succeeds with no further step
+
+#### Scenario: A sign-off right after signing in
+- **WHEN** a person signs in with a password and a verification on their enrolled phone, and approves a refund a minute later
+- **THEN** the approval asks for its own fresh check, bound to that refund and that decision, and the sign-in does not stand in for it
+
+#### Scenario: A code by text message
+- **WHEN** a person offers a code sent to their phone by text message as the second step
+- **THEN** it is not accepted as a second step
+
+#### Scenario: An idle workstation
+- **WHEN** a signed-in workstation has no activity for 15 minutes
+- **THEN** the session ends, and the next action needs a new sign-in with two steps

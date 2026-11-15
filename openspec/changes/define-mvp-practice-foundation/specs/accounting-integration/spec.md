@@ -137,13 +137,17 @@ The customers created by this contract derive from openPractice medical billing.
 - **Guarantor accounts**, for patient balances. These include self-pay and direct-pay healthcare charges (FD-4), which are medical billing. Each SHALL be keyed by its opaque guarantor account number.
 - **Payers**, for insurance balances. Each SHALL be identified by payer name and payer identifier.
 
-This contract SHALL create customer records only in `customer-detail` mode, which requires a satisfied BAA gate (AI-14). There, a guarantor-account customer MAY carry the guarantor's name, billing address and billing contact, the minimum necessary for billing. Each customer-detail destination SHALL have a versioned recipient profile, in the single shape AI-23 defines, that lists its permitted customer fields with their purpose, recipient and authority, and every customer-detail batch SHALL record the identifier and version of the profile it used. A field beyond name, billing address and billing contact SHALL be sent only after a new profile version documents that field's purpose, recipient and authority. No profile SHALL permit content that AI-16 excludes.
+This contract SHALL create customer records only in `customer-detail` mode, which requires a satisfied BAA gate (AI-14). There, a guarantor-account customer MAY carry the guarantor's name, billing address and billing contact, the minimum necessary for billing. Where any confidential-communication restriction (PR-05) applies to the guarantor's party, including one that crosses a same-person link or is kept after a link ends (PR-15), the customer SHALL carry no billing address, no billing contact and no profile field that holds an address, a telephone number or an email address; its account number and name may still be carried. When such a restriction starts to apply after the destination has received an address or contact for that customer, openPractice SHALL raise work, owned by a roster entry, to remove them from the destination (design call F-11, PROPOSED). Each customer-detail destination SHALL have a versioned recipient profile, in the single shape AI-23 defines, that lists its permitted customer fields with their purpose, recipient and authority, and every customer-detail batch SHALL record the identifier and version of the profile it used. A field beyond name, billing address and billing contact SHALL be sent only after a new profile version documents that field's purpose, recipient and authority. No profile SHALL permit content that AI-16 excludes.
 
 No guarantor or patient name, address or contact SHALL reach a destination whose BAA gate is not satisfied, and `summary-journal` mode SHALL create no customer record (AI-15). This requirement governs only the customers this contract creates. Customer and party roles, and the customer records that other routes create in the same destination, are governed by change `define-customer-financial-data-boundaries` (AI-22).
 
 #### Scenario: Self-guarantor patient after the BAA gate
 - **WHEN** a self-pay patient who is their own guarantor is invoiced on a destination in customer-detail mode with a satisfied BAA gate
 - **THEN** the destination customer carries the guarantor account number, name, billing address and billing contact, and nothing else about the person
+
+#### Scenario: A guarantor with a mail restriction
+- **WHEN** a guarantor whose party carries `no_home_mail` is invoiced on a destination in customer-detail mode
+- **THEN** the customer carries the guarantor account number and name, and no billing address or contact, so the destination holds no channel the restriction bars
 
 #### Scenario: Destination in summary-journal mode
 - **WHEN** the same patient's charge is posted to a destination in summary-journal mode
@@ -181,7 +185,7 @@ In both posting modes, the system SHALL recognize net revenue as the constrained
 
 Billing, adjudication, remittance, cash and disputes SHALL be evidence events that update the estimate, never revenue triggers. Each re-estimate or true-up, whether from evidence or from the estimate run at each close, SHALL be a new dated entry referencing the estimate version or close snapshot it applies, and MUST NOT edit an earlier entry (FD-3). A disputed amount SHALL stay out of the recognized amount until including it meets the constraint. Price concessions SHALL reduce revenue, while the later non-payment of an amount that was expected to be collected SHALL post as a credit loss, separately from revenue.
 
-Every estimate SHALL record its estimator version, input window, cohort and evidence references in openPractice. Close re-estimates SHALL post automatically from the approved estimator version, with no approval step at close (FD-3: month-end is printing, not a procedure), and each close SHALL store a reproducible snapshot automatically. Only estimator versions and the D8 policy items SHALL need approval. The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, and neither SHALL be opted in for agent signing (BAB-17).
+Every estimate SHALL record its estimator version, input window, cohort and evidence references in openPractice. Close re-estimates SHALL post automatically from the approved estimator version, with no approval step at close (FD-3: month-end is printing, not a procedure), and each close SHALL store a reproducible snapshot automatically. Only estimator versions and the D8 policy items SHALL need approval. The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, the outside-accountant roster entry of BAB-17 (ruling 141), and neither SHALL be opted in for agent signing (BAB-17).
 
 #### Scenario: Payer with history
 - **WHEN** a 200.00 charge is captured for a payer whose fee schedule allows 120.00 and whose history supports a constrained expected entitlement of 114.00
@@ -230,7 +234,7 @@ In customer-detail mode, the contract SHALL define the following postings. Each 
 - **THEN** the payment is reversed, the receivable reopens, and the 15.00 fee posts to its mapped account, with each debit equal to its explained bank line
 
 ### Requirement: AI-14 Customer-detail mode requires a verified BAA or an operator attestation
-Customer-detail mode SHALL NOT be enabled for a destination until an authorized person records, and verifies, one of the following:
+Customer-detail mode SHALL NOT be enabled for a destination until an authorized person, who is the practice manager (ruling 142), records, and verifies, one of the following:
 - an executed HIPAA Business Associate Agreement (BAA) with the destination's vendor;
 - for a destination the practice operates itself, such as self-hosted ERPNext, an attestation naming the operator. The operator is either the practice itself or an existing business associate whose BAA covers the accounting site.
 
@@ -240,14 +244,14 @@ The record SHALL capture:
 - effective and renewal or expiry dates;
 - a scope statement covering the accounting service;
 - an owner-local document reference;
-- the verifying person and the verification time.
+- the verifying person, the role in which they verified it (ruling 142), and the verification time.
 
 The record SHALL be kept in openPractice's accounting destination register. It is the single BAA-gate record for that destination, and every route that writes PHI-bearing customer records into the destination SHALL consult it, including routes that change `define-customer-financial-data-boundaries` defines.
 
-Enabling customer-detail mode SHALL be a governance tier-4 hard stop. When the BAA expires or is revoked, or the attestation is withdrawn, customer-detail delivery SHALL halt, pending work SHALL be held unconverted, and an authorized person SHALL be given the work. The system MUST NOT assume that any vendor offers or has signed a BAA.
+Enabling customer-detail mode SHALL be a governance tier-4 hard stop. When the BAA expires or is revoked, or the attestation is withdrawn, customer-detail delivery SHALL halt, pending work SHALL be held unconverted, and the practice manager SHALL be given the work (ruling 142). The system MUST NOT assume that any vendor offers or has signed a BAA.
 
 #### Scenario: Self-hosted ERPNext
-- **WHEN** a practice running its own ERPNext records an attestation naming itself as the operator, and an authorized person verifies it
+- **WHEN** a practice running its own ERPNext records an attestation naming itself as the operator, and the practice manager verifies it
 - **THEN** the BAA gate is satisfied for that destination
 
 #### Scenario: Nothing recorded
@@ -290,7 +294,7 @@ Each destination SHALL have a minimum group size, which defaults to 11 underlyin
 
 ### Requirement: AI-16 Customer-detail postings carry the minimum necessary, with neutral labels
 Customer-detail postings created by this contract SHALL contain only:
-- the opaque guarantor account number and, for guarantor-account customers, the name, billing address and billing contact (AI-10);
+- the opaque guarantor account number and, for guarantor-account customers, the name, billing address and billing contact, except where AI-10 withholds the address and contact (AI-10);
 - fields that the batch's recipient profile adds under AI-10;
 - payer name and identifier;
 - opaque `posting_id` and source references;
@@ -366,7 +370,7 @@ Before any destination goes live, its adapter SHALL verify and record whether th
 
 A destination that cannot carry line service dates SHALL NOT go live in customer-detail mode until the owner decides how to proceed.
 
-No destination SHALL go live until the practice's accountant has approved, and openPractice has recorded, the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (ruling 30). The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, and neither SHALL be opted in for agent signing (BAB-17).
+No destination SHALL go live until the practice's accountant has approved, and openPractice has recorded, the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (ruling 30). The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, the outside-accountant roster entry of BAB-17 (ruling 141), and neither SHALL be opted in for agent signing (BAB-17).
 
 #### Scenario: ERPNext verification
 - **WHEN** the ERPNext adapter is prepared for go-live

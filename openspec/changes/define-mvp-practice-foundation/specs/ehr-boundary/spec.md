@@ -76,7 +76,7 @@ openPractice SHALL be the source of administrative demographic changes for linke
 - provenance made of an opaque actor reference, a source, and a reason from the schema's coded list. Free-text reasons MUST NOT be sent;
 - a full snapshot: legal and preferred name, date of birth, administrative sex, gender identity, pronouns, preferred language, telecom, addresses, confidential-communication instructions, and administrative status.
 
-The snapshot's confidential-communication instructions SHALL stay in the snapshot, and the receiving EHR SHALL honor them for every patient communication it originates, including communications from any system it drives (ruling 27; openChart PL-16). Where the record's party belongs to a same-person group (PR-15), the snapshot's restrictions SHALL include every restriction that crosses to that party, as restriction flags only and never another party's channels, and openPractice SHALL publish the next version when a link of the group is recorded or ended (design call F-6, PROPOSED). The message MUST NOT include guarantor, coverage, financial, deactivation-reason or internal-note content. Coverage is excluded from contract version 1.0 and may be added only as a later MINOR version.
+The snapshot's confidential-communication instructions SHALL stay in the snapshot, and the receiving EHR SHALL honor them for every patient communication it originates, including communications from any system it drives (ruling 27; openChart PL-16). Where the record's party belongs to a same-person group (PR-15), the snapshot's restrictions SHALL include every restriction that crosses to that party, as restriction flags only and never another party's channels. After a link of the group ends, they SHALL keep including each restriction that crossed to the party until the end-of-link review decides the party's own, and openPractice SHALL publish the next version when a link of the group is recorded and when an end-of-link review changes them (ruling 150; design call F-6, PROPOSED). A restriction that leaves the EHR no permitted channel for a communication means that the EHR sends nothing by that route. This is a companion expectation for `opensoft/openChart-spec` change `define-openpractice-boundary` (its PL-16), and it binds the EHR only when that change's owner adopts it (design call F-6, PROPOSED). The message MUST NOT include guarantor, coverage, financial, deactivation-reason or internal-note content. Coverage is excluded from contract version 1.0 and may be added only as a later MINOR version.
 
 #### Scenario: A patient's address changes
 - **WHEN** staff change a linked patient's home address
@@ -85,6 +85,14 @@ The snapshot's confidential-communication instructions SHALL stay in the snapsho
 #### Scenario: A restriction crosses a same-person link
 - **WHEN** a record carrying `no_home_mail` is retired as a duplicate of a record linked to the EHR, and their parties stay linked
 - **THEN** the linked record's snapshot carries `no_home_mail` but not the other party's alternate address, so the EHR mails nothing to the home address
+
+#### Scenario: A link ends before its review
+- **WHEN** a same-person link is ended while a linked record's snapshot carries a crossing `no_home_mail`
+- **THEN** the snapshot keeps the flag until the end-of-link review decides the party's own restrictions, and the next version is published when the review changes them
+
+#### Scenario: A crossing restriction leaves the EHR no channel
+- **WHEN** the snapshot carries a crossing `no_home_mail` and the record has no alternate address of its own
+- **THEN** the snapshot carries no other party's address, and under the companion expectation the EHR sends nothing by mail
 
 #### Scenario: A patient is deactivated
 - **WHEN** a linked patient is deactivated in openPractice

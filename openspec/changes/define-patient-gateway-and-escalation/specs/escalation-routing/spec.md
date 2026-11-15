@@ -203,7 +203,7 @@ Each alert SHALL become work owned by the office manager (WI-02), and SHALL also
 - **THEN** the office manager is alerted, the on-call clinician receives a tracked alert, and no emergency-guidance instruction is sent
 
 ### Requirement: ER-08 Acknowledgment and response windows come from the medical director's policy, with fail-closed defaults
-The acknowledgment window and the response clock for each urgency SHALL come from a versioned routing-clock policy. The practice's medical director, a named human, SHALL approve each version; the approval SHALL NOT be opted in for agent signing (design call DC-28).
+The acknowledgment window and the response clock for each urgency SHALL come from a versioned routing-clock policy. The practice's medical director, a named human, SHALL approve each version; the approval SHALL NOT be opted in for agent signing (design call DC-28). The policy MAY name a covering clinician for ER-09's escalation (ruling 143).
 
 Until a version is approved, openPractice SHALL use these fail-closed defaults, in calendar time (design call DC-3):
 - `urgent`: acknowledge within 5 minutes; respond within 60 minutes;
@@ -241,7 +241,7 @@ The fallback SHALL:
 - send a tracked alert to the on-call clinician for the hour (ER-13);
 - send HealthLinc `guidance.instruct` with `show_emergency_guidance` and a coded cause, so HealthLinc shows its own in-app emergency guidance. A `clock_expired` report, or silence past `respond_by`, uses cause `clinical_response_overdue`.
 
-A tracked alert SHALL go through the recipient's registered mobile approver (MA-02, MA-03) and through a second channel the practice sets in planning, with text that carries no PHI (ER-16). openPractice SHALL record each alert's delivery state and the recipient's acknowledgment. When the recipient does not acknowledge within the alert-acknowledgment window, openPractice SHALL re-send the alert and escalate it to the medical director, and SHALL keep re-sending to both until one of them acknowledges. The office manager SHALL be told of each escalation. The window and the re-send interval come from the routing-clock policy (ER-08); until it states them, both are 5 minutes (design call DC-29). Acknowledging an alert never closes the item.
+A tracked alert SHALL go through the recipient's registered mobile approver (MA-02, MA-03) and through a second channel the practice sets in planning, with text that carries no PHI (ER-16). openPractice SHALL record each alert's delivery state and the recipient's acknowledgment. When the recipient does not acknowledge within the alert-acknowledgment window, openPractice SHALL re-send the alert and escalate it to the medical director, and SHALL keep re-sending to both until one of them acknowledges. The office manager SHALL be told of each escalation. When an alert's escalation would reach the same person as its recipient, as when the medical director is that recipient, openPractice SHALL record, with that alert's delivery state, that the escalation reached no second person (ruling 143; design call DC-64, PROPOSED). No alert, recipient, message or clock changes because of that record. The medical director MAY name a covering clinician in the routing-clock policy (ER-08), and the escalation then goes to that clinician (ruling 143). The window and the re-send interval come from the routing-clock policy (ER-08); until it states them, both are 5 minutes (design call DC-29). Acknowledging an alert never closes the item.
 
 openPractice SHALL keep retrying the handoff while the fallback runs. openPractice MUST NOT give clinical advice: the instruction is a code, and the guidance is HealthLinc's. The pause switch (AO-09) and an unavailable Hermes SHALL NOT affect urgent routing, which never depends on an agent.
 
@@ -270,6 +270,14 @@ An urgent inquiry that openPractice rejects SHALL raise an exception owned by th
 #### Scenario: The on-call clinician does not acknowledge
 - **WHEN** the on-call clinician does not acknowledge a tracked alert within the alert-acknowledgment window
 - **THEN** the alert is re-sent and escalated to the medical director, re-sending continues until one acknowledges, and the office manager is told
+
+#### Scenario: The on-call clinician is the medical director
+- **WHEN** in a one-clinician practice the medical director, on call, does not acknowledge a tracked alert within the window
+- **THEN** the alert is re-sent as before, nothing else changes, and the escalation is recorded, with that alert's delivery state, as having reached no second person
+
+#### Scenario: The policy names a covering clinician
+- **WHEN** the approved routing-clock policy names a covering clinician, and the on-call clinician does not acknowledge a tracked alert within the window
+- **THEN** the alert is re-sent and the escalation goes to the covering clinician
 
 #### Scenario: An urgent inquiry on a revoked or unconfirmed link
 - **WHEN** an urgent inquiry arrives on a revoked link, or on a link that is still `pending_review`
@@ -355,7 +363,7 @@ The same applies to a resubmission after openChart returns an item as `returned_
 
 openPractice staff cannot judge content they never see. A clinical item SHALL therefore move to administration only when openChart returns it as `returned_not_clinical`; HealthLinc then resubmits it as administrative. Backup copies of removed text age out under backup retention, and the removal is not described beyond that scope.
 
-**Copies outside openPractice (ruling 104).** Where the removed text had reached the agent layer, the agent operator SHALL delete its copies, in the agent's memory and in the caches and logs under its control, and return a confirmation, which openPractice SHALL record with no PHI. A model provider keeps nothing but the short-lived in-memory cache that change A AH-02 allows (ruling 133), which expires within the limit recorded for its zero-data-retention arrangement, so openPractice SHALL record, in place of a deletion confirmation, the agent's declared model path (change A AH-02, D-32) and the reference to the verified zero-data-retention arrangement under which the text was processed, which states any such cache and its limit. The deadline, and what follows a missing confirmation, are design calls under ruling 104 (DC-57, PROPOSED): the operator's confirmation is due within 24 hours of the request. When it has not arrived by then, openPractice raises an exception owned by the office manager and alerts the agent's sponsor (AM-04), with no PHI. When it has not arrived within 72 hours, openPractice treats it as a lapse of the operator's controls under change A AH-01, suspending PHI access for every agent on that operator's path until the confirmation is recorded. Until a later MINOR version of `openpractice-agent-operations` carries the request and the confirmation (change A Open Question 11), they travel through the channel the operator's agreement names: openPractice gives an authorized person the work of sending the request, and that person records the operator's receipt on the AH-02 pattern, with the item reference, the kinds of copy deleted, the time of deletion and who recorded it, and no PHI.
+**Copies outside openPractice (ruling 104).** Where the removed text had reached the agent layer, the agent operator SHALL delete its copies, in the agent's memory and in the caches and logs under its control, and return a confirmation, which openPractice SHALL record with no PHI. A model provider keeps nothing but the short-lived in-memory cache that change A AH-02 allows (ruling 133), which expires within the limit recorded for its zero-data-retention arrangement, so openPractice SHALL record, in place of a deletion confirmation, the agent's declared model path (change A AH-02, D-32) and the reference to the verified zero-data-retention arrangement under which the text was processed, which states any such cache and its limit. The deadline, and what follows a missing confirmation, are design calls under ruling 104 (DC-57, PROPOSED): the operator's confirmation is due within 24 hours of the request. When it has not arrived by then, openPractice raises an exception owned by the office manager and alerts the agent's sponsor (AM-04), with no PHI. When it has not arrived within 72 hours, openPractice treats it as a lapse of the operator's controls under change A AH-01, suspending PHI access for every agent on that operator's path until the confirmation is recorded. Until a later MINOR version of `openpractice-agent-operations` carries the request and the confirmation (change A Open Question 11), they travel through the channel the operator's agreement names: openPractice gives an authorized person, who is the practice manager (ruling 142), the work of sending the request, and that person records the operator's receipt on the AH-02 pattern, with the item reference, the kinds of copy deleted, the time of deletion, who recorded it and the role used, and no PHI.
 
 #### Scenario: An administrative item turns out to be clinical
 - **WHEN** a front-desk staff member flags an administrative item as clinical
@@ -465,7 +473,7 @@ Every routed item SHALL have exactly one owner at all times, and the owner SHALL
 When the practice-wide pause switch is on (change A AO-09), or Hermes is unavailable, every administrative item SHALL route to staff by lane (ER-11). Drafts awaiting approval SHALL stay as proposals that a human may approve, change or reject. Nothing Hermes drafted SHALL be sent automatically while paused. Clocks SHALL keep running, and no item SHALL be lost. Clinical routing and the urgent fallback SHALL be unaffected, because they never depend on an agent.
 
 #### Scenario: The pause switch is turned on
-- **WHEN** an authorized person turns on the practice-wide pause switch
+- **WHEN** the practice manager turns on the practice-wide pause switch
 - **THEN** new administrative items go straight to staff lanes, and existing drafts wait for human action
 
 #### Scenario: Hermes cannot be reached

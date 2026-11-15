@@ -25,7 +25,7 @@ Every operation a screen offers SHALL be available through the versioned API (co
 ### Requirement: AO-03 Agents act only within explicit, revocable scopes per action type, set by named humans, and read only their item's patient
 An agent SHALL act only on action types for which it holds an explicit grant. Each grant names the action type, the agent's roster entry, the granting person, the start date and an optional end date. No grant, at any rung, SHALL be made until the AH-01 gate is met.
 
-Only a named human SHALL make, widen or change a grant, change a rung (AO-04), change a limit (AO-08) or lift the pause (AO-09). That human SHALL be a roster entry holding the practice manager recipe or the controller or office manager recipe, and SHALL be recorded as a human actor; the schema refuses an agent or an integration identity as `granted_by`. No agent SHALL make any of these changes, for itself or for another agent, whatever its own grants. None of them SHALL be made because untrusted content asks for it (AH-05). Granting or widening a scope SHALL be a tier-2 action with notification to the sponsoring human. A grant SHALL be revocable at once by the granting person, the practice manager, or the controller or office manager. A grant SHALL NOT include any tier-4 action or the D8 or estimator approvals.
+Only a named human SHALL make, widen or change a grant, change a rung (AO-04), change a limit (AO-08) or lift the pause (AO-09). That human SHALL be a roster entry holding the practice manager recipe or the controller or office manager recipe, and SHALL be recorded as a human actor; the schema refuses an agent or an integration identity as `granted_by`. No agent SHALL make any of these changes, for itself or for another agent, whatever its own grants. None of them SHALL be made because untrusted content asks for it (AH-05). Granting or widening a scope SHALL be a tier-2 action with notification to the sponsoring human; when the granting person is that sponsor, the notification SHALL also go to every other named human who holds the practice manager or the controller or office manager recipe, and where there is none, the grant SHALL record that the agent's own sponsor made it (`define-practice-readiness` SR-03), which the readiness checklist lists under its RC-06. This tightening is ruling 148, and its details are design call D-40 (PROPOSED). A grant SHALL be revocable at once by the granting person, the practice manager, or the controller or office manager. A grant SHALL NOT include any tier-4 action or the D8 or estimator approvals.
 
 An agent's reads SHALL be limited to the target patient of the work item it is working, named by `work_item_ref` on every agent request. For an item that came through the patient gateway (change `define-patient-gateway-and-escalation`), the target patient is the patient bound to that gateway link. An agent SHALL NOT read any other patient's record under that item, whatever the item's text asks. An agent's patient search SHALL return only the exact identity match for the item's target patient (PR-08), and never a candidate list (design call D-17). A request outside this scope SHALL be refused with reason `patient_scope`, and the item SHALL go to a human owner.
 
@@ -44,6 +44,10 @@ An agent's reads SHALL be limited to the target patient of the work item it is w
 #### Scenario: A message asks about another person's balance
 - **WHEN** a patient's message leads an agent to read another patient's balance
 - **THEN** the read is refused with `patient_scope`, no data about the other patient is returned, and the item goes to a human owner
+
+#### Scenario: A sponsor widens their own agent's scope
+- **WHEN** the practice manager, who sponsors an agent, widens that agent's scope, and the practice also has a controller
+- **THEN** the sponsor is notified as before, and the controller is notified too
 
 ### Requirement: AO-04 The autonomy ladder never gives less friction than the FD-5 tier
 Each granted action type SHALL sit on one rung of the autonomy ladder (ruling 37):
@@ -156,7 +160,7 @@ The pause SHALL NOT block, delay or drop any urgent patient escalation, which ro
 - **THEN** each held action restarts its full delay window and can be cancelled within it; none executes at once
 
 ### Requirement: AO-10 A daily digest of agent actions enters the day close for the controller's signature
-Each day, openPractice SHALL produce a digest of every agent action and proposal outcome, by agent and action type, with references and no PHI in its summary lines. The digest SHALL enter the day close, and the controller or office manager, a named human, SHALL sign it. An unsigned digest SHALL NOT block practice operations or claims. It SHALL carry into the next day's close and raise work owned by the controller or office manager.
+Each day, openPractice SHALL produce a digest of every agent action and proposal outcome, by agent and action type, with references and no PHI in its summary lines. The digest SHALL enter the day close, and the controller or office manager, a named human, SHALL sign it. The lines for an agent whom that signer sponsors SHALL be signed by another named human who holds the practice manager or the controller or office manager recipe and does not sponsor that agent; where the practice has no such person, the signer SHALL sign those lines in both roles, each recorded, and the digest SHALL mark them as reviewed by the agent's own sponsor (`define-practice-readiness` SR-03). This tightening is ruling 148, and its details are design call D-40 (PROPOSED). An unsigned digest SHALL NOT block practice operations or claims. It SHALL carry into the next day's close and raise work owned by the controller or office manager.
 
 #### Scenario: The controller signs the digest
 - **WHEN** the controller signs the day close
@@ -165,6 +169,10 @@ Each day, openPractice SHALL produce a digest of every agent action and proposal
 #### Scenario: The digest is not signed
 - **WHEN** a day closes without the controller signing the digest
 - **THEN** operations continue, and the digest carries into the next close as owned work
+
+#### Scenario: The digest lists an agent its signer sponsors
+- **WHEN** the controller signs the daily digest, which lists actions of an agent the controller sponsors, and the practice manager does not sponsor that agent
+- **THEN** the practice manager signs that agent's lines, and the controller signs the rest
 
 ### Requirement: AO-11 The MVP builds the patient-registry operations and the read-only answer types; later features add theirs
 The MVP SHALL build the contract only for these operations:

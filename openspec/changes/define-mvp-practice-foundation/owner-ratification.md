@@ -32,7 +32,7 @@ The ⚑ design calls were ruled by Brett Heap on 2026-11-14 and are recorded in 
 - Ratification timestamp: _pending_
 - Handoff shape: _pending owner confirmation; must be exactly `A — ordered multi-feature handoff` or `B — split into per-capability changes` (the owner ruled `A` on 2026-11-14 as `design.md` ruling 1 records, and this field still requires his confirmation)_
 - Proposed follow-up calls F-1 to F-4 (retraction reason code) accepted, changed or rejected; F-5 noted: _pending_
-- Proposed calls F-6 to F-10 from the 2026-11-15 spec-critique corrections (PR-15's one-party wording and the own-record rule under ruling 107; the USD-only limit, rounding and one-currency rules under ruling 103) accepted, changed or rejected: _pending_
+- Proposed calls F-6 to F-12 from the 2026-11-15 spec-critique corrections (PR-15's one-party wording and the same-person link under ruling 150; the own-record rule under rulings 107 and 144; the USD-only limit, rounding and one-currency rules under ruling 103; the customer-detail address rule F-11; the owner links under ruling 145) accepted, changed or rejected: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
 Required owner statement:

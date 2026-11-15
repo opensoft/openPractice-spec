@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: VA-01 A verified BAA with the VA company comes first
-No remote VA SHALL access PHI until an authorized person records and verifies a HIPAA Business Associate Agreement (BAA) with the VA company. The record follows the pattern of AI-14: counterparty, execution date, effective and renewal or expiry dates, scope statement, owner-local document reference, verifying person and time. When the BAA expires or is revoked, every VA from that company SHALL lose PHI access at once. The system MUST NOT assume that any VA company offers or has signed a BAA.
+No remote VA SHALL access PHI until an authorized person, who is the practice manager (ruling 142), records and verifies a HIPAA Business Associate Agreement (BAA) with the VA company. The record follows the pattern of AI-14: counterparty, execution date, effective and renewal or expiry dates, scope statement, owner-local document reference, verifying person, the role used (ruling 142) and time. When the BAA expires or is revoked, every VA from that company SHALL lose PHI access at once. The system MUST NOT assume that any VA company offers or has signed a BAA.
 
 #### Scenario: A VA company with a verified BAA
 - **WHEN** a VA company's BAA is recorded and verified, and one of its VAs is added
