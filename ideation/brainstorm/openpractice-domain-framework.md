@@ -390,7 +390,7 @@ Governance of the estimator:
 - Each estimate record carries estimator version, input data window, cohort ID, evidence references and approver; stored in openPractice.
 - Estimator changes (new version) need approval and take effect prospectively from a stated effective date; the effect on the open period is shown.
 - Back-testing: compare estimate to final entitlement by cohort every close; unexplained variance above a threshold the accountant sets raises a work item.
-- Automation may calculate and propose. The accountant or owner approves estimator versions and overlays (D8). Period-end re-estimates post automatically from the approved version, with no approval at close (ruling 30, FD-3).
+- Automation may calculate and propose. The practice's accountant approves estimator versions and overlays (D8); this approval is never delegated to an agent. Period-end re-estimates post automatically from the approved version, with no approval at close (ruling 30, FD-3).
 
 #### 5A.2.6 Classification, allowances and what is not an asset
 
@@ -635,7 +635,7 @@ Synthetic patient "Pat Example" (not a real person). Steps marked **[conditional
 - **No chart copying:** references plus the minimum structured fields needed; the EHR remains the place to read the chart on demand.
 - **Corrections** are new events with `supersedes`; originals stay.
 - **Capability declaration:** each adapter and EHR connection advertises what it supports (e.g. eligibility, authorization, attachments); openPractice offers only what is declared.
-- **Human authority** (amended by ruling 33; see D7, where FD-5 tiers govern and an opted-in named agent with an openWallet ID may sign below tier 4): by default no autonomous patient-impacting or financial action. Claim submission, write-off, refund, adjustment approvals and patient statements require a named human approval or an explicit, revocable, narrowly scoped grant. Automation may *prepare*, *propose* and *flag*.
+- **Human authority** (amended by ruling 33; see D7): by default there is no autonomous patient-impacting or financial action. For claim submission, write-offs, refunds, adjustments and patient statements, each action's FD-5 tier decides whether it needs an approval, a notification or a delay-and-cancel release. Where a sign-off is needed below tier 4, the signer is a named human, or a named AI agent identified by an openWallet ID where that action type is opted in. Tier 4, which includes refunds leaving the practice and material adjustments, is human-only. Automation may *prepare*, *propose* and *flag*.
 - **Audit:** every state change records actor, time, before/after reference, and the source message.
 
 ---
