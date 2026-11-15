@@ -51,7 +51,7 @@ A payment hold MUST NEVER block an urgent escalation, billing contact, or access
 - **THEN** the version is refused and cannot be approved
 
 ### Requirement: PH-03 No hold is placed without an approved, counsel-reviewed, versioned policy
-openPractice SHALL refuse every attempt to place a payment hold until the practice has an approved, versioned hold policy (ruling 41). The practice's medical director, a named human, SHALL approve each policy version. The approval SHALL NOT be opted in for agent signing (design call DC-28). Counsel's review SHALL be recorded on each version, by reference, before approval.
+openPractice SHALL refuse every attempt to place a payment hold until the practice has an approved, versioned hold policy (ruling 41). The practice's medical director, a named human, SHALL approve each policy version. The approval SHALL NOT be opted in for agent signing (design call DC-28). Counsel's review SHALL be recorded on each version, by reference, naming the counsel who gave it, with counsel's state bar, admission number, and the date and result of a check against that bar's public record, before approval, and SHALL NOT be self-approved (`define-practice-readiness` SR-04; ruling 149). The fields recorded are design call DC-65 (PROPOSED).
 
 Each version SHALL state:
 - the coded criteria for placing a hold;
@@ -84,7 +84,7 @@ Placing and lifting a hold SHALL each be a logged, tiered action, with the actio
 
 Both action types SHALL start at `propose` for agents (ruling 37; change A AO-04). An agent can never act with less friction than the tier requires. Above `propose`, an agent may place a hold only at `act_after_delay`, so the countdown and cancel window always run, and may lift a hold at `act_with_notice` or `act_after_delay`. Each rung above `propose` is reached only through that action type's BAB-17 opt-in. Agent placement SHALL obey AO-08's rate and blast-radius limits.
 
-Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the signer where one signs (BAB-17), the time and the provenance. It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
+Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the named human who placed or lifted it where a human did, the signer where one signs (BAB-17), the time and the provenance. A named human SHALL NOT place or lift a hold on a balance that their own party, or a party in its same-person group, owes or guarantees, while another named human who may do so is on the roster; `define-mvp-practice-foundation` PR-15's own-record rule and its one-person alternative govern, and the record then keeps both roles and that fact (its design call F-7, PROPOSED). It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
 
 #### Scenario: A staff member places a hold
 - **WHEN** a biller places a hold under an approved policy
@@ -102,12 +102,16 @@ Every placement and lift SHALL record the policy version, the coded criteria met
 - **WHEN** the balance a pending hold relies on is paid before the countdown ends
 - **THEN** the placement is cancelled and the patient is told
 
+#### Scenario: A staff member's own balance is on hold
+- **WHEN** a biller tries to lift a hold on a balance the biller owes as guarantor, and another named human may lift it
+- **THEN** the lift is routed to that other person, and the attempt is recorded with both roles
+
 ### Requirement: PH-05 The patient is told, with no PHI in push or text content
 openPractice SHALL tell the patient when a hold's countdown starts and when a hold lifts (ruling 41), with a `patient.notice` of kind `hold_countdown_started` or `hold_lifted` through HealthLinc. Its template is the hold policy's approved notice wording (PH-03), and its `effective_at` is when the hold would take effect or when it lifted. The notice SHALL say what the hold blocks, what it never blocks (urgent help, billing contact and own records), and how to resolve it.
 
 The countdown SHALL start only when openPractice holds a `notice.ack` with outcome `delivered` for the countdown notice, or has recorded a delivery through another channel that the registry's contact rules allow (PR-05), with the channel, the time and who recorded it. Without either, the countdown does not start, nothing is withheld, and the placement becomes work owned by the biller lane (design call DC-41). The hold takes effect only after the full countdown has run from that delivery (design call DC-6).
 
-A hold notice SHALL go to the patient's own link, and to a representative only where the representative's proxy policy includes billing (PG-06, DC-34). Notices SHALL honor the patient's confidential-communication instructions (PR-05), carried as the notice's `restriction_codes`, which include every restriction that crosses a same-person link (`define-mvp-practice-foundation` PR-15), as flags only, kept after the link ends until that change's end-of-link review decides the party's own, and, for a representative link, the proxy policy (PG-06). Push-notification and text-message content MUST NOT contain PHI, an amount or the reason for the hold. The detail SHALL appear only after sign-in, or in a statement sent through a channel the instructions allow.
+A hold notice SHALL go to the patient's own link, and to a representative only where the representative's proxy policy includes billing (PG-06, DC-34). Notices SHALL honor the patient's confidential-communication instructions (PR-05), carried as the notice's `restriction_codes`, which include every restriction that crosses a same-person link (`define-mvp-practice-foundation` PR-15), as flags only, kept after the link ends until that change's end-of-link review decides the party's own, and, for a representative link, the proxy policy (PG-06). Where the instructions leave no permitted channel, nothing SHALL be sent: HealthLinc answers `failed` with `no_permitted_channel` (companion item), openPractice sends nothing by a channel the instructions bar, and the countdown does not start. Push-notification and text-message content MUST NOT contain PHI, an amount or the reason for the hold. The detail SHALL appear only after sign-in, or in a statement sent through a channel the instructions allow.
 
 #### Scenario: The countdown notice is delivered
 - **WHEN** HealthLinc answers a `hold_countdown_started` notice with `notice.ack` outcome `delivered`

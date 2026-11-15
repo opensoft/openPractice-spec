@@ -203,7 +203,7 @@ Each alert SHALL become work owned by the office manager (WI-02), and SHALL also
 - **THEN** the office manager is alerted, the on-call clinician receives a tracked alert, and no emergency-guidance instruction is sent
 
 ### Requirement: ER-08 Acknowledgment and response windows come from the medical director's policy, with fail-closed defaults
-The acknowledgment window and the response clock for each urgency SHALL come from a versioned routing-clock policy. The practice's medical director, a named human, SHALL approve each version; the approval SHALL NOT be opted in for agent signing (design call DC-28). The policy MAY name a covering clinician for ER-09's escalation (ruling 143).
+The acknowledgment window and the response clock for each urgency SHALL come from a versioned routing-clock policy. The practice's medical director, a named human, SHALL approve each version; the approval SHALL NOT be opted in for agent signing (design call DC-28). The policy MAY name a covering clinician for the case ER-09 states (ruling 143).
 
 Until a version is approved, openPractice SHALL use these fail-closed defaults, in calendar time (design call DC-3):
 - `urgent`: acknowledge within 5 minutes; respond within 60 minutes;
@@ -241,7 +241,7 @@ The fallback SHALL:
 - send a tracked alert to the on-call clinician for the hour (ER-13);
 - send HealthLinc `guidance.instruct` with `show_emergency_guidance` and a coded cause, so HealthLinc shows its own in-app emergency guidance. A `clock_expired` report, or silence past `respond_by`, uses cause `clinical_response_overdue`.
 
-A tracked alert SHALL go through the recipient's registered mobile approver (MA-02, MA-03) and through a second channel the practice sets in planning, with text that carries no PHI (ER-16). openPractice SHALL record each alert's delivery state and the recipient's acknowledgment. When the recipient does not acknowledge within the alert-acknowledgment window, openPractice SHALL re-send the alert and escalate it to the medical director, and SHALL keep re-sending to both until one of them acknowledges. The office manager SHALL be told of each escalation. When an alert's escalation would reach the same person as its recipient, as when the medical director is that recipient, openPractice SHALL record, with that alert's delivery state, that the escalation reached no second person (ruling 143; design call DC-64, PROPOSED). No alert, recipient, message or clock changes because of that record. The medical director MAY name a covering clinician in the routing-clock policy (ER-08), and the escalation then goes to that clinician (ruling 143). The window and the re-send interval come from the routing-clock policy (ER-08); until it states them, both are 5 minutes (design call DC-29). Acknowledging an alert never closes the item.
+A tracked alert SHALL go through the recipient's registered mobile approver (MA-02, MA-03) and through a second channel the practice sets in planning, with text that carries no PHI (ER-16). openPractice SHALL record each alert's delivery state and the recipient's acknowledgment. When the recipient does not acknowledge within the alert-acknowledgment window, openPractice SHALL re-send the alert and escalate it to the medical director, and SHALL keep re-sending to both until one of them acknowledges. The office manager SHALL be told of each escalation. The medical director MAY name a covering clinician in the routing-clock policy (ER-08; ruling 143). The covering clinician receives an escalation only where it would otherwise reach the alert's own recipient, as when the medical director is that recipient: in that case the cover is added, it replaces nobody, and nothing else about recipients changes (design call DC-64, PROPOSED, the reading of "let the medical director name cover in their policy"). When an alert's escalation reaches no one but its own recipient, because the medical director is that recipient and no covering clinician is named, or the covering clinician is that recipient too, openPractice SHALL record, with that alert's delivery state, that the escalation reached no second person (ruling 143; design call DC-64, PROPOSED). No alert, recipient, message or clock changes because of that record. The window and the re-send interval come from the routing-clock policy (ER-08); until it states them, both are 5 minutes (design call DC-29). Acknowledging an alert never closes the item.
 
 openPractice SHALL keep retrying the handoff while the fallback runs. openPractice MUST NOT give clinical advice: the instruction is a code, and the guidance is HealthLinc's. The pause switch (AO-09) and an unavailable Hermes SHALL NOT affect urgent routing, which never depends on an agent.
 
@@ -272,12 +272,16 @@ An urgent inquiry that openPractice rejects SHALL raise an exception owned by th
 - **THEN** the alert is re-sent and escalated to the medical director, re-sending continues until one acknowledges, and the office manager is told
 
 #### Scenario: The on-call clinician is the medical director
-- **WHEN** in a one-clinician practice the medical director, on call, does not acknowledge a tracked alert within the window
+- **WHEN** in a one-clinician practice the medical director, on call, does not acknowledge a tracked alert within the window, and the policy names no covering clinician
 - **THEN** the alert is re-sent as before, nothing else changes, and the escalation is recorded, with that alert's delivery state, as having reached no second person
 
 #### Scenario: The policy names a covering clinician
-- **WHEN** the approved routing-clock policy names a covering clinician, and the on-call clinician does not acknowledge a tracked alert within the window
-- **THEN** the alert is re-sent and the escalation goes to the covering clinician
+- **WHEN** the approved routing-clock policy names a covering clinician, and the medical director, on call, does not acknowledge a tracked alert within the window
+- **THEN** the alert is re-sent, the escalation also goes to the covering clinician, and no missing second person is recorded
+
+#### Scenario: A covering clinician is named, and another clinician is on call
+- **WHEN** the policy names a covering clinician, and an on-call clinician who is not the medical director does not acknowledge a tracked alert within the window
+- **THEN** the escalation goes to the medical director as before, and not to the covering clinician
 
 #### Scenario: An urgent inquiry on a revoked or unconfirmed link
 - **WHEN** an urgent inquiry arrives on a revoked link, or on a link that is still `pending_review`

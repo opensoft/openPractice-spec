@@ -185,7 +185,7 @@ In both posting modes, the system SHALL recognize net revenue as the constrained
 
 Billing, adjudication, remittance, cash and disputes SHALL be evidence events that update the estimate, never revenue triggers. Each re-estimate or true-up, whether from evidence or from the estimate run at each close, SHALL be a new dated entry referencing the estimate version or close snapshot it applies, and MUST NOT edit an earlier entry (FD-3). A disputed amount SHALL stay out of the recognized amount until including it meets the constraint. Price concessions SHALL reduce revenue, while the later non-payment of an amount that was expected to be collected SHALL post as a credit loss, separately from revenue.
 
-Every estimate SHALL record its estimator version, input window, cohort and evidence references in openPractice. Close re-estimates SHALL post automatically from the approved estimator version, with no approval step at close (FD-3: month-end is printing, not a procedure), and each close SHALL store a reproducible snapshot automatically. Only estimator versions and the D8 policy items SHALL need approval. The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, the outside-accountant roster entry of BAB-17 (ruling 141), and neither SHALL be opted in for agent signing (BAB-17).
+Every estimate SHALL record its estimator version, input window, cohort and evidence references in openPractice. Close re-estimates SHALL post automatically from the approved estimator version, with no approval step at close (FD-3: month-end is printing, not a procedure), and each close SHALL store a reproducible snapshot automatically. Only estimator versions and the D8 policy items SHALL need approval. The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, the outside-accountant roster entry of BAB-17 (ruling 141), and neither SHALL be opted in for agent signing (BAB-17). Neither SHALL be self-approved (`define-practice-readiness` SR-04).
 
 #### Scenario: Payer with history
 - **WHEN** a 200.00 charge is captured for a payer whose fee schedule allows 120.00 and whose history supports a constrained expected entitlement of 114.00
@@ -370,7 +370,7 @@ Before any destination goes live, its adapter SHALL verify and record whether th
 
 A destination that cannot carry line service dates SHALL NOT go live in customer-detail mode until the owner decides how to proceed.
 
-No destination SHALL go live until the practice's accountant has approved, and openPractice has recorded, the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (ruling 30). The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, the outside-accountant roster entry of BAB-17 (ruling 141), and neither SHALL be opted in for agent signing (BAB-17).
+No destination SHALL go live until the practice's accountant has approved, and openPractice has recorded, the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (ruling 30). The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, the outside-accountant roster entry of BAB-17 (ruling 141), and neither SHALL be opted in for agent signing (BAB-17). Neither SHALL be self-approved (`define-practice-readiness` SR-04).
 
 #### Scenario: ERPNext verification
 - **WHEN** the ERPNext adapter is prepared for go-live
