@@ -151,11 +151,11 @@ Logs, error messages, diagnostic bundles and every coded reason exchanged under 
 openPractice SHALL obtain the clinical facts it needs for charge capture only from the linked EHR, under contract `openpractice-ehr-clinical-facts/1.0`, in three forms:
 - pointer-only notifications, which carry no clinical content;
 - a capability result stating whether the EHR supports billable facts;
-- authenticated reads of FHIR R4-compatible resources, limited to linked patients and the billing purpose.
+- authenticated reads of FHIR R4-compatible resources, limited to linked patients and the billing purpose. A retraction after a link ends is the one exception to the active-link limit (EB-15, ruling 88).
 
 The reads SHALL be limited to:
 - Encounter: identifier, status, type, period, location and participating practitioners;
-- Condition, encounter-diagnosis category: coding, rank and encounter reference;
+- Condition, encounter-diagnosis category, for diagnoses whose verification status is `confirmed` only (ruling 87): coding, rank and encounter reference;
 - Procedure: coding, quantity where documented, performed time, performer and encounter reference;
 - a documentation-final indicator with signer reference and signed time.
 
@@ -172,12 +172,60 @@ openPractice SHALL treat clinical facts as billable only when the contract marks
 - **WHEN** a visit occurred but its documentation is not final
 - **THEN** openPractice creates no charge from EHR facts and shows the visit as waiting on clinical documentation, with the filing-deadline clock
 
-### Requirement: EB-15 Clinical corrections flow forward
-A corrected clinical fact SHALL arrive as a new version referencing the version it supersedes, and a retraction SHALL arrive as an explicit entered-in-error notification. openPractice SHALL record each one as a dated event citing the EHR as its source. It SHALL drive any corrected or voided claim through its own claim workflow, and MUST NOT edit the frozen copy of a claim as submitted.
+### Requirement: EB-15 Clinical corrections flow forward, and every retraction carries a reason code that reveals no restricted act
+A corrected clinical fact SHALL arrive as a new version referencing the version it supersedes. A retraction SHALL arrive as an explicit `clinical_fact.entered_in_error` notification, the contract's single retraction message, with a coded `retraction_reason` (ruling 89):
+- `entered_in_error`: exactly one Condition or Procedure that was itself marked entered in error while its encounter stays published;
+- `withdrawn`: every other retraction, with no reason given. That includes a diagnosis refuted or otherwise no longer `confirmed` (ruling 87), one moved to the problem list, a coding the canonical schema cannot hold, a correction delivered as a retraction after its link ended (ruling 88), and every retraction that names an Encounter, whatever its cause, together with each fact retracted with it.
+
+No code varies with the cause of an encounter-level retraction, because a restricted act in the EHR always withdraws the whole encounter. The contract has no code for a restricted, refuted or superseded fact, so nothing in it lets openPractice infer that a restricted act exists (proposed follow-up call F-1). A retraction without a `retraction_reason` means `withdrawn` (F-3).
+
+openPractice SHALL apply a retraction only to facts it received under the same `link_id` and for the same subject that the retraction names. A reference to a fact it received under another link, for another subject, or not at all SHALL change nothing and SHALL raise an integration exception that holds only identifiers. This holds for every retraction, on an active link or an ended one, so a retraction can never withdraw another patient's charges.
+
+openPractice SHALL treat both codes alike. For each retraction it SHALL record a dated event citing the EHR as its source, stop using every referenced fact for any new charge, hold any unfinalized charge built from them as work owned by a Roster entry, and, for a claim already submitted with them, make a corrected-claim or voided-claim action available to staff, who decide which applies (F-4). It SHALL drive any corrected or voided claim through its own claim workflow, and MUST NOT edit the frozen copy of a claim as submitted. For the two defined codes only, it SHALL keep the code as given and show `withdrawn` as "withdrawn by the EHR" with no reason. It MUST NOT infer, record or show a cause the code does not state. An undefined value is never kept: it SHALL appear in no record, log, diagnostic or stored copy of the message, and where openPractice keeps a copy of a received message, `withdrawn` replaces the undefined value before the copy is kept.
+
+`retraction_reason` is an open code: any lowercase code is schema-valid, and this version defines two. A code openPractice does not define, which a later MINOR version could add, SHALL be applied as `withdrawn`, never refused or dropped, and the retraction SHALL be recorded exactly as a `withdrawn` one, so nothing marks which retraction carried it (F-2, PROPOSED). Such a message validates against the pinned schema, so openPractice never applies a message that fails it, and EB-03 keeps no exception. Refusing the retraction would leave openPractice billing a fact the EHR has withdrawn, while `withdrawn` has the same billing effect as every other code and reveals nothing. The schema still refuses `entered_in_error` on a retraction that names an Encounter or more than one resource.
+
+**Undefined codes are reported in aggregate (F-2, PROPOSED).** openPractice SHALL raise one integration exception for each period in which it received at least one undefined code. The exception SHALL hold only the period and the number of such retractions: no message, patient, link, encounter or fact identifier, and not the code's value, so it cannot single out the encounters whose retractions carried the code. It SHALL be routed only to the integration operator, the person the practice names to run its EHR integration, and never to a staff work queue, a patient record or a report. It means the publisher is sending codes outside the contract. The operator checks whether a governed MINOR version has defined a new code, in which case openPractice re-pins to that version, and otherwise tells the publisher's operator to stop sending it. The period is a policy value, PROPOSED as one calendar day.
+
+**Companion expectation.** The publisher, openChart under `opensoft/openChart-spec` change `define-openpractice-boundary`, SHALL send only the two defined codes until a governed MINOR version defines another, and never a code that states a cause. It adopts this when it re-pins to this contract's digest.
+
+**After a link ends (ruling 88).** openPractice SHALL accept and apply, as pointers only, a retraction of a fact it received under a link that has since ended `revoked` or `superseded`. This is the one exception to the active-link limit of EB-13 and of the contract's `link_id` note. openPractice SHALL request no read on such a link, and none is served.
 
 #### Scenario: A diagnosis is corrected after the claim was sent
 - **WHEN** the EHR publishes a corrected diagnosis for a visit whose claim was already submitted
 - **THEN** openPractice records a dated event, keeps the submitted claim copy unchanged, and makes a corrected-claim action available
+
+#### Scenario: A published diagnosis is refuted
+- **WHEN** the EHR retracts a published diagnosis with `retraction_reason` `withdrawn` after a clinician refuted it
+- **THEN** openPractice stops using that diagnosis for any new charge, makes a corrected-claim action available for a claim already sent with it, and records no cause beyond "withdrawn by the EHR"
+
+#### Scenario: A whole encounter is withdrawn
+- **WHEN** the EHR retracts an Encounter and every published Condition and Procedure on it, with `retraction_reason` `withdrawn`
+- **THEN** openPractice applies the same billing effect to each, offers staff a corrected-claim or voided-claim action for any claim already sent, and draws no conclusion about why the encounter was withdrawn
+
+#### Scenario: One procedure is marked entered in error
+- **WHEN** the EHR retracts one published Procedure with `retraction_reason` `entered_in_error`, and its encounter stays published
+- **THEN** openPractice stops billing that procedure, and the encounter's other facts stay billable
+
+#### Scenario: An encounter-level retraction names a cause
+- **WHEN** a retraction that names an Encounter carries `retraction_reason` `entered_in_error`
+- **THEN** it fails the canonical schema, because every encounter-level retraction carries `withdrawn`
+
+#### Scenario: A retraction arrives after the link was revoked
+- **WHEN** the EHR delivers a retraction of a fact published under a link that has since been revoked
+- **THEN** openPractice accepts it as pointers only, applies it, and requests no read on that link (ruling 88)
+
+#### Scenario: A reason code from a later MINOR version
+- **WHEN** a retraction carries a well-formed reason code that openPractice does not define
+- **THEN** the message validates, openPractice applies and records it exactly as a `withdrawn` retraction, bills nothing the EHR withdrew, keeps the code's value in no record, log, diagnostic or stored copy, and counts it only in that period's aggregate exception to the integration operator
+
+#### Scenario: A publisher sends an undefined code only when an encounter is withdrawn
+- **WHEN** a faulty publisher sends an undefined code, such as one that states a cause, only on some Encounter retractions
+- **THEN** each retraction is recorded as `withdrawn` like every other, the period's exception holds only a count, and no record, log or exception shows which encounters carried the code
+
+#### Scenario: A retraction names another link's fact
+- **WHEN** a retraction on one `link_id` references a fact openPractice received under another link or for another subject
+- **THEN** that reference changes nothing, and an integration exception with identifiers only is raised
 
 ### Requirement: EB-16 openPractice keeps references and submitted copies, not clinical truth
 openPractice SHALL store references to EHR clinical facts, and SHALL freeze only the copies that a third party will judge, namely the claim as submitted. The EHR SHALL remain the source of truth for every clinical fact. openPractice MUST NOT present a stored copy as the current clinical record.

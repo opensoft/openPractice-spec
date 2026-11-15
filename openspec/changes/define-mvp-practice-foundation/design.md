@@ -29,7 +29,7 @@ Ideation paths are relative to the root of `opensoft/openPractice-spec`. All of 
 
 ## Owner rulings (2026-11-14)
 
-Every row has the same source: **Brett Heap, 2026-11-14, authoring session.** The requirement text matches each ruling.
+Rows 1 to 33 have the same source: **Brett Heap, 2026-11-14, authoring session.** Rows marked (2026-11-15) have the source **Brett Heap, 2026-11-15, accepting the recommendations on decisions 79 to 98 except 80**; each quotes the question and the accepted wording. The requirement text matches each ruling.
 
 | # | Ruling | Governs |
 |---|---|---|
@@ -66,6 +66,10 @@ Every row has the same source: **Brett Heap, 2026-11-14, authoring session.** Th
 | 31 | **Appointment authority; closes R-7.** openPractice is the system of record for the administrative appointment; the EHR owns the encounter and keeps an appointment reference if needed. The 1.0 contracts carry no appointment operations; appointment events are a future MINOR version. | EB-19, ownership matrix, Open Question 1 |
 | 32 | **Framework D1.** One Party with roles. "Customer" is a party role only for membership and retail buyers. For medical billing, the accounting-side customer (a guarantor account or payer, in `customer-detail` mode only) is derived from the guarantor or payer role and is not a separate party role. | AI-10, Decision 7; `define-customer-financial-data-boundaries` customer-role-boundaries |
 | 33 | **Framework D7; FD-5 governs.** Automation stays propose-only. Each action's FD-5 tier decides whether it needs an approval, a notification or a delay-and-cancel release, including the deadline escapes. Where a tier calls for an approval, release decision or attestation, the signer may be a named human or a named AI agent identified by an openWallet ID (opensoft/openWallet; identity mechanics decided in planning). Agent signing is opt-in per action type and never on by default. Every sign-off records the signer's identity, including an agent's openWallet ID, with provenance. Tier 4 stays human-only: hard delete, enabling `customer-detail`, refunds leaving the practice, material adjustments and record merges. | BAB-17, AI-06, EB-17, governance tiers, T-17 |
+| 87 | (2026-11-15) Question: which diagnoses does openChart publish to openPractice as billable facts? Accepted: "Only confirmed ones. If a published diagnosis is later refuted, a retraction is sent." | EB-13 (confirmed diagnoses only), EB-15 (the retraction carries `withdrawn`), clinical-facts schema `condition` |
+| 88 | (2026-11-15) Question: a patient link is revoked or superseded while corrections are queued; do the retractions still go out? Accepted: "Yes. Retractions of facts already published under that link are delivered, as pointers only. No new facts and no reads are served. Otherwise openPractice keeps billing withdrawn facts." | EB-15 (accepted after a link ends), EB-13, clinical-facts schema `link_id` note |
+| 89 | (2026-11-15) Question: the clinical-facts contract has only one retraction message, "entered in error", now also used where that reason is wrong. Accepted: "Add a retraction reason code to the contract now, while 1.0 is still unratified. That is a small follow-up PR in openPractice-spec …" The same follow-up also carries the erratum to the gateway change's companion list. | EB-15, clinical-facts schema `retraction_reason`, F-1 to F-3 |
+| 93 | (2026-11-15) Question: follow-up change to the merged openPractice contracts. Accepted: "Yes, one draft PR carrying: the agent operations Hermes lacks and the consent check; a verifiable entitlement; a clinician-acknowledged status; the representative's relationship and authority; the retraction reason code …" The list ends with an erratum to the gateway change's companion list: agent operations belong to medXfactory change `define-care-organization-hermes-openpractice-operations`, and clinical AI answering to medXfactory change `define-patient-medical-ai-connection`. | Here, the retraction reason code only; "Follow-up of 2026-11-15" below |
 
 **Mode names.** To implement ruling 26, the posting-mode names were aligned across this change, `define-customer-financial-data-boundaries` and openChart's `define-openpractice-boundary`. The pair is `summary-journal` and `customer-detail`; they replace this change's earlier "summary" and "patient-level". Rows 7 and 12 use the new names, and their substance is unchanged.
 
@@ -172,12 +176,12 @@ The canonical schema is `contracts/openpractice-ehr-patient-link-1.0.schema.json
 
 ### 5. The clinical-facts contract: `openpractice-ehr-clinical-facts/1.0`
 
-The canonical schema is `contracts/openpractice-ehr-clinical-facts-1.0.schema.json`, SHA-256 `6b2071fe61693d144aa91f4fc68e51d0cd7563d66b5cd2086f281a959f7e69ec`. The contract has three parts:
+The canonical schema is `contracts/openpractice-ehr-clinical-facts-1.0.schema.json`, SHA-256 `3aac773e9e8a8a370e1a78c845e5837d059b60146e411d973e0c54464aad12db` (it was `6b2071fe61693d144aa91f4fc68e51d0cd7563d66b5cd2086f281a959f7e69ec` before the follow-up of 2026-11-15). The contract has three parts:
 - pointer-only notifications;
 - a `capability.result` stating whether the EHR supports billable facts;
 - `facts.result` reads limited to the billing subset.
 
-Codings carry a system and a code only, never descriptor text (FD-11). openChart has no clinician encounters yet. Until it does, it reports `billable_facts_supported: false`, and linked patients' charges are entered manually (EB-17, ruling 21).
+Codings carry a system and a code only, never descriptor text (FD-11). Only `confirmed` encounter diagnoses are published (ruling 87). The single retraction message, `clinical_fact.entered_in_error`, carries a `retraction_reason` (ruling 89): `entered_in_error` for one Condition or Procedure itself entered in error while its encounter stays published, and `withdrawn` for every other retraction, including every encounter-level one, so no code reveals a restricted act (EB-15). A retraction of a fact published under a link that has since ended is still delivered and accepted, as pointers only (ruling 88). openChart has no clinician encounters yet. Until it does, it reports `billable_facts_supported: false`, and linked patients' charges are entered manually (EB-17, ruling 21).
 
 **Deadline escape** (EB-18). If a link in identity review would stall billing past the filing threshold, the claim is released from that gate. Staff are notified. A staff member may then enter the charge manually only after attesting that the patient's identity was verified and that the documentation is final and signed; the attestation is recorded with provenance, and without it the entry is refused (EB-17). The claim proceeds at tier 3. The link is never auto-confirmed.
 
@@ -436,3 +440,33 @@ Every remaining question is routed in `tasks.md` §3.5 to the feature or gate it
 5. **Mode continuity procedure** (opening-AR true-up). Blocks any mode change after first release (AI-09). Not part of the MVP.
 6. **R-2** (tier 3 versus Principle II). Avoided here, because release is explicit. Blocks any future automatic batch release.
 7. **Two receivable routes in one destination** (rulings 24 and 26). How do medical-billing receivables and membership or retail receivables coexist in one destination? This covers customer namespace collisions, a person appearing both as a guarantor-account customer and as a commerce customer, and reconciliation across the two routes. It is owned by change `define-customer-financial-data-boundaries` (on branch `define-customer-financial-data-boundaries`, not yet on main), which routes those obligations and references this contract for posting. It blocks Feature 3's go-live in a destination that also carries membership or retail customers, or whose explained deposits fund their balances. Ratifying that change does not by itself lift the block. The block lifts only when that change is ratified and Feature 3 has accepted evidence for the single deposit poster with `other_route_share` (BAB-14) and the offering-route check before charge finalization (BAB-16).
+8. **Telling withdrawals apart for claims already sent** (F-4). With two codes, openPractice cannot tell from a retraction whether a diagnosis was refuted or moved to the problem list, or whether a withdrawn encounter took place but can no longer be published or was entered in error. Both can matter to a claim already sent: a corrected claim against a voided one. Any code that told them apart at encounter level would reveal a restricted act, because a restricted act always withdraws the whole encounter (openChart-spec `define-clinical-acts-foundation`, design call CD-36). Until the owner decides otherwise, staff choose the claim action. The owner.
+9. **The PROPOSED follow-up calls F-1 to F-4**, including whether to keep the message name `clinical_fact.entered_in_error` for every retraction or add a new name later. The owner.
+
+## Follow-up of 2026-11-15 (ruling 93)
+
+This change was merged to `main` as an unratified draft. On 2026-11-15 the owner accepted rulings 87 to 89 and 93. Ruling 89 adds a retraction reason code "now, while 1.0 is still unratified", so the contract is edited in place and keeps the name `openpractice-ehr-clinical-facts/1.0`; the digest identifies the bytes. `Status` stays `draft`, and `owner-ratification.md` stays PENDING.
+
+| What changed | Why | Where |
+|---|---|---|
+| `retraction_reason` on `clinical_fact.entered_in_error`: an open code with two defined values, `entered_in_error` and `withdrawn` | The publisher used "entered in error" for retractions that were not entered in error (openChart-spec `define-clinical-acts-foundation`, tension CT-16); ruling 89. The two codes are the smallest list the publisher's PB-03 needs without revealing a restricted act (its CD-36) | EB-15, clinical-facts schema |
+| Confirmed diagnoses only, and refuted ones retracted | Ruling 87; nothing here said otherwise, so the wording is aligned | EB-13, schema `condition` |
+| Retractions accepted after a link ends | Ruling 88; the `link_id` note and EB-13's limit to linked patients could be read to refuse them | EB-15, EB-13, schema `link_id` note |
+
+**Proposed follow-up calls (for the owner).**
+
+| # | Call | Where |
+|---|---|---|
+| F-1 | **PROPOSED.** Two codes only, as the publisher asked: `entered_in_error` for exactly one Condition or Procedure entered in error while its encounter stays published, and `withdrawn` for every other retraction. The schema refuses `entered_in_error` on a retraction that names an Encounter or more than one resource, so every encounter-level retraction reads the same. No code for a refuted diagnosis is added; see Open Question 8. | EB-15, schema |
+| F-2 | **PROPOSED (revised in fix round 1 and the confirmation pass).** `retraction_reason` is an open code with two defined values, so a code a later MINOR version defines stays schema-valid and EB-03 needs no exception. An undefined code is applied and recorded as `withdrawn`, and is never refused, because a refused retraction would leave a withdrawn fact billable. Its value appears in no record, log, diagnostic or stored copy of the message. It is reported only in aggregate: one integration exception per period, holding a count and no identifier or value, routed only to the integration operator, who checks for a new MINOR version or tells the publisher it is sending codes outside the contract. The period is a policy value, PROPOSED as one calendar day. The trade-off: the schema no longer refuses a code that reveals a cause. The non-leak guarantee then rests on the publisher (its CD-36), on the rule that publishers send only defined codes, and on openPractice keeping no undefined value. The `entered_in_error` constraints stay enforced in the schema. | EB-15, schema |
+| F-3 | **PROPOSED.** The message keeps its name, and `retraction_reason` is optional: an absent value means `withdrawn`. A publisher's re-pin is mechanical: a fact-level retraction of one Condition or Procedure entered in error adds `entered_in_error`; every other retraction adds `withdrawn`, or may send none. | EB-15, schema |
+| F-4 | **PROPOSED.** Both codes have the same billing effect: the facts stop being billable, unfinalized charges are held, and staff choose a corrected or voided claim for a claim already sent. | EB-15 |
+| F-5 | **Fix round 1.** A retraction applies only to facts openPractice received under the same `link_id` and subject; any other reference changes nothing and raises an integration exception. This is a safety rule, not a design choice the owner must make. | EB-15 |
+
+| Contract | Digest before | Digest now |
+|---|---|---|
+| `openpractice-ehr-clinical-facts/1.0` | `6b2071fe61693d144aa91f4fc68e51d0cd7563d66b5cd2086f281a959f7e69ec` | `3aac773e9e8a8a370e1a78c845e5837d059b60146e411d973e0c54464aad12db` |
+| `openpractice-ehr-patient-link/1.0` | `76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802` | unchanged |
+| `openpractice-accounting-integration/1.0` | `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885` | unchanged |
+
+Every message valid before stays valid: the new field is optional, and is refused only on a notification that is not a retraction, as a value that is not a lowercase code, or as `entered_in_error` on an encounter-level or multi-resource retraction.

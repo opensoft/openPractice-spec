@@ -4,7 +4,7 @@ Status: **PENDING — SPECKIT FEATURE CREATION IS NOT AUTHORIZED**
 
 This record is the mandatory, durable owner gate for OpenSpec change `define-actors-agents-and-work-inbox`. Creating any Speckit feature before this record is completed exactly as required is prohibited.
 
-Brett Heap made rulings 34 to 54 on 2026-11-14, and they are recorded in `design.md`. Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
+Brett Heap made rulings 34 to 54 on 2026-11-14, and on 2026-11-15 accepted rulings 93 and 97, which govern this change's follow-up (`design.md`, "Follow-up of 2026-11-15"). All are recorded in `design.md`. Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
 
 ## Required Validation Evidence
 
@@ -28,7 +28,8 @@ Brett Heap made rulings 34 to 54 on 2026-11-14, and they are recorded in `design
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending owner confirmation. `tasks.md` §2 proposes folding the actor model and inbox into the registry feature or the feature right after it, followed by AI data handling, the agent contract and VA safeguards._
-- Design calls D-1 to D-17 accepted or amended: _pending_
+- Design calls D-1 to D-29 accepted or amended (D-18 to D-29, from the 2026-11-15 follow-up and its review, are PROPOSED; D-18 carries reading item text, which ruling 93 named only by reference): _pending_
+- Open Question 6 (a request mode below the rung the practice has set, not carried) dispositioned: _pending_
 - Tensions T-1 to T-7 dispositioned: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
@@ -40,7 +41,8 @@ Required owner statement:
 > - tier-4 actions stay human-only, and D8 approvals stay accountant-only;
 > - no agent receives a grant at any rung, and no PHI reaches an agent layer, without verified BAAs with the agent operator and each model provider, and a lapse suspends all agent PHI access;
 > - grants, rungs, limits and the pause are changed only by named humans, and an agent reads only its work item's patient;
-> - an agent answers a patient without a human only through AH-05 exception 1's read-only answers;
+> - an agent answers a patient without a human only through AH-05 exception 1's read-only answers, and only while the patient's consent is recorded (AH-06);
+> - the work-item operations of AO-13 never rise above `propose`;
 > - no remote VA reaches PHI without the verified agreement this change requires;
 > - this change cannot be archived until the implementing work and the assembly pin bump are merged and accepted.
 

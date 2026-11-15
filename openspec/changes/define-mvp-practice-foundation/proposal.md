@@ -11,7 +11,7 @@ openPractice has no ratified statement of what its minimum viable product must c
 
 Two of these are tracked as open items in the packet. Risk R-7 says the EHR boundary is specified in one direction only. The packet also leaves the accounting destination open.
 
-Brett Heap, the product owner, settled these boundaries on 2026-11-14 and ruled on 33 follow-up design questions the same day. Ruling 25 supersedes ruling 3, and ruling 30 supersedes ruling 22. The rulings are recorded in `design.md` under "Owner rulings (2026-11-14)". This change records the decisions and rulings as governed requirements before any runtime exists. **Rulings are not ratification:** the change stays draft until the owner completes `owner-ratification.md`.
+Brett Heap, the product owner, settled these boundaries on 2026-11-14 and ruled on 33 follow-up design questions the same day. Ruling 25 supersedes ruling 3, and ruling 30 supersedes ruling 22. The rulings are recorded in `design.md` under "Owner rulings (2026-11-14)". On 2026-11-15 he accepted rulings 87 to 89 and 93, which add a retraction reason code to the clinical-facts contract and align its diagnosis and ended-link wording; `design.md` lists those edits under "Follow-up of 2026-11-15". This change records the decisions and rulings as governed requirements before any runtime exists. **Rulings are not ratification:** the change stays draft until the owner completes `owner-ratification.md`.
 
 All ideation paths below are relative to the root of `opensoft/openPractice-spec`. Every cited ideation document is `Status: brainstorm`, except the framing decisions FD-1 to FD-11 in [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md), which were ratified on 2026-08-27. This change contradicts none of them, with two recorded exceptions:
 
@@ -67,7 +67,7 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
   - identity review with a single resolver, where revocation wins;
   - demographic publication under `openpractice-ehr-patient-link/1.0`, with a link-level suspension while the EHR holds an update;
   - correction requests from the EHR;
-  - clinical facts under `openpractice-ehr-clinical-facts/1.0`, including a capability result;
+  - clinical facts under `openpractice-ehr-clinical-facts/1.0`, including a capability result, confirmed diagnoses only (ruling 87), and retractions that carry a reason code, `entered_in_error` or `withdrawn`, that never reveals a restricted act and are still accepted after a link ends (rulings 88 and 89);
   - manual charge entry, marked manual, while no billable facts are available;
   - the FD-5 deadline escape, where manual entry for a visit under identity review needs a staff attestation that identity was verified and documentation is final and signed;
   - no PHI in diagnostics, and no direct database access;

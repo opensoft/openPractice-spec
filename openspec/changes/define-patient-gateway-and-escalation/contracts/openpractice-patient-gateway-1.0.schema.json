@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:openpractice:contract:openpractice-patient-gateway:1.0",
   "title": "openpractice-patient-gateway 1.0",
-  "description": "Canonical message schema for the patient gateway contract between HealthLinc (the owner's working name for the ecosystem patient app) and openPractice. Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required HealthLinc companion change. Every object is closed (additionalProperties false). Reasons are codes. References are opaque or (issuer, namespace, value) triples. message_id is a random UUID and is the idempotency key; no key carries PHI. The only free-text fields are the administrative inquiry body, the administrative reply body, and the patient-proposed demographic and coverage values; a clinical inquiry carries no body. The entitlement result always grants urgent_escalation, billing_contact and own_records_access; a payment hold may withhold only clinical_messaging_nonurgent, scheduling_new_nonurgent and medical_ai_consult, and is never revealed to a representative without billing scope. An inquiry names where its conversation lives: healthlinc (HealthLinc's coach) or medxfactory (medXfactory's medical AI). Patient notices carry no amount or reason text. A deployment whose operator agreement is not verified is refused with operator_agreement_unverified. 1.0 carries no appointment or payment operations; they come as later MINOR versions. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
+  "description": "Canonical message schema for the patient gateway contract between HealthLinc (the owner's working name for the ecosystem patient app) and openPractice. Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required HealthLinc companion change. Every object is closed (additionalProperties false). Reasons are codes. References are opaque or (issuer, namespace, value) triples. message_id is a random UUID and is the idempotency key; no key carries PHI. The only free-text fields are the administrative inquiry body, the administrative reply body, and the patient-proposed demographic and coverage values; a clinical inquiry carries no body. The entitlement result always grants urgent_escalation, billing_contact and own_records_access; a payment hold may withhold only clinical_messaging_nonurgent, scheduling_new_nonurgent and medical_ai_consult, and is never revealed to a representative without billing scope. An inquiry names where its conversation lives: healthlinc (HealthLinc's coach) or medxfactory (medXfactory's medical AI). Patient notices carry no amount or reason text. A deployment whose operator agreement is not verified is refused with operator_agreement_unverified. 1.0 carries no appointment or payment operations; they come as later MINOR versions. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version. An entitlement.request may name an assertion_audience; for a relying party the practice has registered, entitlement.result then carries an assertion: a JSON Web Token in JWS compact serialization (RFC 7515, RFC 7519), signed with EdDSA over Ed25519 (RFC 8037), whose protected header validates against entitlementAssertionHeader and whose decoded claims validate against entitlementAssertionClaims (PG-16). It proves what openPractice granted to one gateway link, for one audience, at one time; it does not prove who is using a session. It carries no PHI, no withheld reason and no hold, and urgent access never depends on it. A link.result that links a representative carries the representative's relationship and authority reference (PG-06). inquiry.status reports clinician_acknowledged when openChart reports that a clinician acknowledged the routed item (ER-19).",
   "oneOf": [
     {
       "$ref": "#/$defs/entitlementRequest"
@@ -476,8 +476,150 @@
         }
       }
     },
+    "representativeAuthority": {
+      "description": "The representative's relationship to the patient and the reference to the documented authority they act under, as recorded on the representative link when a named human confirmed it (PG-06; design call DC-49). The guarantor relationship of PR-06 is a billing fact and never stands in for either.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relationship",
+        "authority_ref"
+      ],
+      "properties": {
+        "relationship": {
+          "enum": [
+            "parent_or_guardian",
+            "personal_representative",
+            "caregiver_proxy"
+          ]
+        },
+        "authority_ref": {
+          "description": "Reference to the documented authority, held by the practice or HealthLinc. Never the document's content.",
+          "$ref": "#/$defs/opaqueRef"
+        }
+      }
+    },
+    "entitlementAssertionHeader": {
+      "description": "The decoded JWS protected header of an entitlement assertion (PG-16; design call DC-46, PROPOSED). alg is always EdDSA with an Ed25519 key (RFC 8037); a relying party refuses every other value, none included. typ names this token type, so the claims are read only under this contract (RFC 8725 explicit typing). kid is the RFC 7638 SHA-256 thumbprint of the signing key, base64url without padding, and names a key in the practice's JWK Set (RFC 7517) at the location fixed when the relying party was registered. The header carries nothing else: no jku, jwk, x5u, x5c or crit, so a token can never point a relying party at another key.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alg",
+        "typ",
+        "kid"
+      ],
+      "properties": {
+        "alg": {
+          "const": "EdDSA"
+        },
+        "typ": {
+          "const": "openpractice-entitlement+jwt"
+        },
+        "kid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        }
+      }
+    },
+    "entitlementAssertionClaims": {
+      "description": "The decoded JWT claims of an entitlement assertion (PG-16; design calls DC-46 to DC-48, PROPOSED). Registered claims: iss, the issuing openPractice deployment's configured issuer (EB-02); sub, the gateway_link_id the assertion is about; aud, the relying party's configured issuer, a single string; iat and exp, NumericDate seconds, with exp no later than the result's valid_until and no more than the maximum lifetime after iat (DC-52); jti, a random UUID; nonce, the relying party's nonce echoed when the request carried one. Private claims: link_kind; representative, for a representative link; and capabilities, the granted capabilities this audience may rely on, always including urgent_escalation. Nothing else: no name, date of birth, contact detail, patient reference, HealthLinc account reference, withheld capability, withheld reason, hold, amount or balance.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "iss",
+        "sub",
+        "aud",
+        "iat",
+        "exp",
+        "jti",
+        "link_kind",
+        "capabilities"
+      ],
+      "properties": {
+        "iss": {
+          "$ref": "#/$defs/issuer"
+        },
+        "sub": {
+          "description": "The gateway_link_id: a random UUID minted per link, not a patient identity.",
+          "$ref": "#/$defs/uuid"
+        },
+        "aud": {
+          "$ref": "#/$defs/issuer"
+        },
+        "iat": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "jti": {
+          "$ref": "#/$defs/uuid"
+        },
+        "nonce": {
+          "$ref": "#/$defs/opaqueRef"
+        },
+        "link_kind": {
+          "enum": [
+            "self",
+            "representative"
+          ]
+        },
+        "representative": {
+          "$ref": "#/$defs/representativeAuthority"
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/capability"
+          },
+          "contains": {
+            "const": "urgent_escalation"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "link_kind": {
+                "const": "representative"
+              }
+            },
+            "required": [
+              "link_kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "representative"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "link_kind": {
+                "const": "self"
+              }
+            },
+            "required": [
+              "link_kind"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "representative"
+              ]
+            }
+          }
+        }
+      ]
+    },
     "entitlementRequest": {
-      "description": "HealthLinc asks which capabilities a linked patient holds now (PG-03).",
+      "description": "HealthLinc asks which capabilities a linked patient holds now (PG-03). It may name a relying party as assertion_audience to receive a verifiable assertion (PG-16).",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -531,13 +673,35 @@
                 "capability_refresh",
                 "pre_submission"
               ]
+            },
+            "assertion_audience": {
+              "description": "The configured issuer of a relying party, such as the deployment of medXfactory's medical AI, for which HealthLinc asks openPractice to issue a verifiable assertion (PG-16). openPractice issues one only for an audience the practice has registered (DC-47).",
+              "$ref": "#/$defs/issuer"
+            },
+            "audience_nonce": {
+              "description": "Optional nonce that the relying party gave HealthLinc for this session; openPractice echoes it as the assertion's nonce claim. When the relying party supplied one, an assertion without it or with another value fails (DC-48).",
+              "$ref": "#/$defs/opaqueRef"
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "audience_nonce"
+                ]
+              },
+              "then": {
+                "required": [
+                  "assertion_audience"
+                ]
+              }
+            }
+          ]
         }
       }
     },
     "entitlementResult": {
-      "description": "openPractice answers with coded capabilities and coded reasons only (PG-03, PG-04, PG-06).",
+      "description": "openPractice answers with coded capabilities and coded reasons only (PG-03, PG-04, PG-06), and, when the request named a registered audience, a verifiable assertion (PG-16).",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -690,6 +854,12 @@
             },
             "hold_policy": {
               "$ref": "#/$defs/hold_policy_ref"
+            },
+            "assertion": {
+              "description": "Present only when the request named an assertion_audience that the practice registered (PG-16, DC-47). A JWT in JWS compact serialization: base64url header, payload and signature joined by dots, the signature being the 64 bytes of an Ed25519 signature over the ASCII header.payload (RFC 7515, RFC 8037). The decoded header SHALL validate against entitlementAssertionHeader and the decoded payload against entitlementAssertionClaims. Its sub SHALL equal this message's gateway_link_id, its link_kind this payload's link_kind, its capabilities SHALL be granted here, and its exp SHALL NOT be later than valid_until; the schema cannot check these, so the contract tests do (PG-14). Its absence never removes a capability and never affects urgent access.",
+              "type": "string",
+              "maxLength": 4096,
+              "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]{86}$"
             }
           },
           "allOf": [
@@ -956,7 +1126,7 @@
       }
     },
     "linkResult": {
-      "description": "openPractice reports the link outcome. A link becomes linked only after a named human confirms the verified identity (PG-05).",
+      "description": "openPractice reports the link outcome. A link becomes linked only after a named human confirms the verified identity (PG-05). A linked representative link carries the representative's relationship and authority reference (PG-06).",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -1042,6 +1212,10 @@
                 "unauthorized",
                 "operator_agreement_unverified"
               ]
+            },
+            "representative": {
+              "description": "Present exactly when result is linked and link_kind is representative (PG-06, DC-49).",
+              "$ref": "#/$defs/representativeAuthority"
             }
           },
           "allOf": [
@@ -1135,6 +1309,68 @@
                 "required": [
                   "granted_scope"
                 ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "linked"
+                  },
+                  "link_kind": {
+                    "const": "representative"
+                  }
+                },
+                "required": [
+                  "result",
+                  "link_kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "representative"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "link_kind": {
+                    "const": "self"
+                  }
+                },
+                "required": [
+                  "link_kind"
+                ]
+              },
+              "then": {
+                "not": {
+                  "required": [
+                    "representative"
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "enum": [
+                      "pending_review",
+                      "refused"
+                    ]
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "not": {
+                  "required": [
+                    "representative"
+                  ]
+                }
               }
             }
           ]
@@ -2246,8 +2482,10 @@
                 "recategorized",
                 "split_requested",
                 "handoff_exception",
-                "closed"
-              ]
+                "closed",
+                "clinician_acknowledged"
+              ],
+              "description": "Coded routing progress. clinician_acknowledged: openChart reported that the routed clinical item's owner, a named member of the clinical team (openChart's clinician or nurse role), explicitly acknowledged it in openChart's inbox while it was open (ER-19). It is not openChart's system acceptance of the offer, it names nobody, and it is never sent once the item is responded, returned_not_clinical or closed. It changes no alert, fallback or clock."
             },
             "applied_urgency": {
               "$ref": "#/$defs/urgency"

@@ -8,7 +8,7 @@ The roster brainstorm, `ideation/brainstorm/openpractice-small-practice-beta-ros
 
 ## Owner rulings (2026-11-14)
 
-Every row has the same source: **Brett Heap, 2026-11-14, authoring session.** **Rulings are not ratification.**
+Rows 34 to 54 have the same source: **Brett Heap, 2026-11-14, authoring session.** Rows marked (2026-11-15) have the source **Brett Heap, 2026-11-15, accepting the recommendations on decisions 79 to 98 except 80**; each quotes the question and the accepted wording. **Rulings are not ratification.**
 
 | # | Ruling | Governs here |
 |---|---|---|
@@ -33,6 +33,8 @@ Every row has the same source: **Brett Heap, 2026-11-14, authoring session.** **
 | 52 | Non-urgent medXfactory medical-AI consults sit behind the practice's access check. A payment hold may withhold them, with the same safeguards as non-urgent clinical messaging. Urgent is never withheld. HealthLinc's coach is HealthLinc's own and is never gated by the practice. | Sibling change (boundary context) |
 | 53 | The medical AI's exchanges with a patient are recorded in the chart through medXfactory's own governed path (MedxEHR and openChart). They never pass through openPractice, which holds no clinical content. | Sibling change (boundary context); AH-03 |
 | 54 | HealthLinc's coach gives general information only. Anything individualized is handed to medXfactory's medical AI or to the doctor. The content boundary is the rule; the not-medical-advice statement is required in addition. | Sibling change (boundary context) |
+| 93 | (2026-11-15) Question: follow-up change to the merged openPractice contracts. Accepted: "Yes, one draft PR carrying: the agent operations Hermes lacks and the consent check; a verifiable entitlement; a clinician-acknowledged status; the representative's relationship and authority; the retraction reason code …" The list ends with an erratum to the gateway change's companion list: agent operations belong to medXfactory change `define-care-organization-hermes-openpractice-operations`, and clinical AI answering to medXfactory change `define-patient-medical-ai-connection`. | AO-04, AO-11, AO-12, AO-13 (work-item operations); WI-04; AH-05 exception 1 condition 11 and AH-06 (consent check); schema; "Follow-up of 2026-11-15" below |
+| 97 | (2026-11-15) Question: does Hermes need each patient's consent before a model provider processes their administrative data? Accepted: "No; the provider agreement is enough for practice operations, with counsel to confirm. Consent applies to AI answering the patient directly." | AH-06 (consent gates only answers that reach the patient; AH-02's agreements cover provider processing for practice operations); D-23 |
 
 ## Goals / Non-Goals
 
@@ -67,6 +69,7 @@ AM-02 adds five recipes to the seven: remote VA, nurse, medical director, contro
 | D8 or estimator-version approval | Accountant approval | `propose` | The practice's accountant only |
 | Derived from untrusted content (AH-05) | — | `propose`, except AH-05 exception 1 | Human signer |
 | Read-only answer to the signed-in patient (AH-05 exception 1) | Tier 3 (outbound) | `act_after_delay` only, with a practice-set window the lane can cancel | Lane human, while the answer type is at `propose` |
+| Work-item operation (AO-13): read the item's text, propose a clinical re-route or an urgency raise, release the item to a human, cancel a pending answer | — (none changes a record) | `propose`; a read needs only `observe` | — (the routing rules apply a raise; a release or a cancellation puts the item before a human) |
 
 Raising an action type above `propose` is that action type's BAB-17 agent-signing opt-in; there is no second mechanism. Every grant, at any rung, needs the AH-01 gate. Grants, rungs, limits and the pause are changed only by named humans, and the decider of a proposal is never its proposer (AO-03, WI-03).
 
@@ -76,12 +79,14 @@ WI-07 lists the gates of `define-mvp-practice-foundation` that appear as work it
 
 ### 4. The agent operations contract
 
-The canonical schema is `contracts/openpractice-agent-operations-1.0.schema.json`, SHA-256 `894fe93fa36024e2fe61481e09e47884838fd6b263ebee30c106dfb7a0813c92`. It defines requests, responses, autonomy settings, read-only answer types and the daily digest. Payload content is validated against each registry operation's own schema (PR-09), which is defined in planning. The schema enforces these rules:
+The canonical schema is `contracts/openpractice-agent-operations-1.0.schema.json`, SHA-256 `5b1572e3b8b31191de2ff3f3567cc03da02741e0637063bd71e8696659db813c` (it was `894fe93fa36024e2fe61481e09e47884838fd6b263ebee30c106dfb7a0813c92` before the follow-up of 2026-11-15). It defines requests, responses, autonomy settings, read-only answer types, the work-item operations and the daily digest. Payload content is validated against each registry operation's own schema (PR-09), which is defined in planning. The schema enforces these rules:
 - A response that executes or schedules a tier-4 or D8 action is invalid. A hard delete's autonomy setting cannot rise above `propose`.
 - `granted_by` and the digest signer are human actors; an agent or an integration identity is refused (AO-03).
 - Every agent request names its work item, which binds its reads to one patient (AO-03).
 - A response states openPractice's own untrusted determination. An untrusted action is never executed, and it is scheduled only as a read-only answer at `act_after_delay` (AH-05).
 - A read-only answer request carries no payload, only the selected answer type. Its setting rises only to `act_after_delay`, with a cancel window. An answer type needs a human approver, a medical-director sign-off when health-adjacent, and topics that exclude records requests and demographics (AH-05 exception 1).
+- A work-item operation (AO-13) names its work item, carries no payload and no answer type, and carries exactly the one field its operation needs: `proposed_category`, `proposed_urgency`, `release_reason` or `cancels_request_id`. Its outcome is `read_result`, `applied_by_rule`, `released` or `cancelled`, never `executed`, `scheduled` or `proposed`, and its setting never rises above `propose`. Only `work_item.read_text` returns data in this schema, as `item_text`, whose only kind in 1.0 is the administrative inquiry.
+- A request refused because the patient's consent is not recorded or is held (AH-06) carries `consent_not_recorded`; a work-item operation on an item the agent does not own carries `not_item_owner`; a work-item operation past its AO-08 limit carries `rate_limited`, and its item passes to a human.
 
 ## Governance tiers (FD-5) for actions this change adds
 
@@ -98,6 +103,10 @@ The canonical schema is `contracts/openpractice-agent-operations-1.0.schema.json
 | Lift an AH-01 suspension after re-verification | 2 | Named human only (AH-01) |
 | Change rate or blast-radius limits | 2 | Practice manager, or controller or office manager; named human only (AO-03, AO-08) |
 | Sign the daily agent digest | Day close | Controller or office manager; named human |
+| Record a patient's consent to AI-authored administrative messaging (AH-06) | 2 | Named human only, on the patient's own instruction; never an agent, and never opted in for agent signing (D-22) |
+| Record a withdrawal of that consent (AH-06) | 1 | Any staff member who receives the request of the patient, or of a representative whose authority on the link is confirmed; takes effect at once (D-28) |
+| Record that consent stands after an agent's `ai_messaging_withdrawal_requested` release (AH-06) | 2 | Named human only, after checking with the patient; held answers restart their cancel windows (D-27) |
+| Cancel every pending or held agent answer to a patient on withdrawal (AH-06) | Automatic (D-29) | No sign-off; recorded with no PHI |
 
 **Deadline escapes (FD-5).** No gate this change adds stalls a claim. Work items that carry existing gates keep those gates' escapes unchanged (WI-06). An unsigned digest blocks nothing (AO-10).
 
@@ -108,7 +117,7 @@ The canonical schema is `contracts/openpractice-agent-operations-1.0.schema.json
 | I. HIPAA by design | No agent receives a grant at any rung, and no PHI reaches an agent layer, without verified BAAs with the agent operator and each model provider and their recipient profiles (AH-01 to AH-03). A lapse suspends all agent PHI access. Agents read only their work item's patient (AO-03). There is no PHI in logs (AO-12, AH-04). A VA BAA is required (VA-01). | Requirement level |
 | II. Security review | Every agent grant, every opt-in above `propose`, every read-only answer type and every VA company needs a security review and a risk-analysis entry. | Owed per feature |
 | III. Test-first | Contract tests cover every operation, rung, cap, limit and the pause (AO-12). | Owed per feature |
-| IV. Clinical boundary | No recipe grants clinical write authority. Recipient profiles admit no clinical content (AH-03). Reasoning artifacts hold no clinical content (AO-07). Read-only answers carry no clinical content (AH-05 exception 1). | Satisfied |
+| IV. Clinical boundary | No recipe grants clinical write authority. Recipient profiles admit no clinical content (AH-03). Reasoning artifacts hold no clinical content (AO-07). Read-only answers carry no clinical content (AH-05 exception 1). An agent reads only administrative text openPractice already holds; no clinical text exists to read (AO-13). | Satisfied |
 | V. Versioned contracts | One canonical schema with a digest. The API is the only path (AO-02). | Satisfied |
 | VI. Portability | The contract is vendor-neutral; openWallet is referenced by opaque ID. | Satisfied |
 | AGENTS.md: no autonomous financial or patient-impacting actions by default | Every action type starts at `propose` (AO-04). A read-only answer type answers without a human only after a named human approves its template and switches it on (AH-05 exception 1). | Satisfied |
@@ -148,13 +157,27 @@ The roster brainstorm, which is not ratified, ships "no permissions screen" and 
 | D-15 | Contract 1.0 has four read-only answer families: coverage on file, balance, appointment time and practice information. Each is available only once the data it reads exists under a ratified change, so appointment times wait for a scheduling change. Answer-type topics exclude records requests and demographics. | AO-11, schema |
 | D-16 | An AH-01 lapse suspends every grant and all PHI access on that path. Only a named human's tier-2 action lifts the suspension, after re-verification, and held delayed actions restart their windows. | AH-01 |
 | D-17 | An agent's search returns only the exact identity match for its work item's target patient, never a candidate list. | AO-03 |
+| D-18 | **PROPOSED (2026-11-15).** `work_item.read_text` returns only the administrative question text that the sibling change's PG-10 stores. A clinical inquiry, text removed on recategorization, and the document behind a registry item have no text in openPractice, and are refused with `text_not_held`; a document text kind needs a governed change and a MINOR version. A read needs no rung above `observe`, and its setting is capped at `propose`. Reading text is carried because a consumer finding asks for it (`MedxSoft/medXfactory`, change `define-care-organization-hermes-openpractice-operations`, finding U-11); the owner was shown the other four operations by name, so this one needs his confirmation. | AO-13, schema `itemText` |
+| D-19 | **PROPOSED (2026-11-15).** An agent's clinical re-route and urgency raise are always proposals, at `propose` with no higher rung, and openPractice's fixed routing rules apply them at once, raise-only, as the sibling's ER-02, ER-12 and DC-14 already provide for any agent proposal. The outcome is `applied_by_rule`. The more conservative alternative, a human decision on each raise, was rejected because the sibling's rulings make a safety raise never wait for an approval. | AO-13 |
+| D-20 | **PROPOSED (2026-11-15).** Releasing an item to a human and cancelling the agent's own pending answer take effect at once at `propose`, because each only puts the item before a human; neither has a rung above `propose`. After a cancellation the item passes to its lane's human owner. | AO-13, WI-04 |
+| D-21 | **PROPOSED (2026-11-15).** The release reasons are WI-04's (`exceeds_rung_or_cap`, `untrusted_content`, `limit_reached`, `cannot_complete`) plus `patient_asked_for_person` (ruling 45) and `ai_messaging_withdrawal_requested` (D-27). A cancellation names the `request_id` that scheduled the answer, and an agent may cancel only its own pending answer on an item it still owns. | AO-13, schema `releaseReason` |
+| D-22 | **PROPOSED (2026-11-15).** The consent record lives with the patient's administrative record in openPractice; its default is no consent (fail closed); only a named human records a grant, at tier 2, on the patient's own instruction; any staff member records a withdrawal, at tier 1, effective at once; a representative cannot grant it. The check runs before scheduling and immediately before every relay, and relays and withdrawals are serialized per patient, so a withdrawal recorded first wins. | AH-06 |
+| D-23 | **PROPOSED (2026-11-15).** The consent check covers every agent-authored reply that reaches a patient, including, once a MINOR carries it, a human-approved agent draft. It never gates provider processing for practice operations (ruling 97). | AH-06 |
+| D-24 | **PROPOSED (2026-11-15).** The work-item operations get their own outcomes (`read_result`, `applied_by_rule`, `released`, `cancelled`) instead of `executed`, so the rule that an action untrusted content contributed to is never `executed` stays unchanged. | Schema `response` |
+| D-25 | **PROPOSED (fix round 1).** At an AO-08 limit, a work-item operation cannot "become a proposal", since it already is one and the rules apply re-routes and raises at once. So further requests of that kind are refused with `rate_limited`, and the item passes to its lane's human owner, who may still re-route or raise it; the usual alert goes to the sponsor and the controller. A re-route removes the item's stored text, which cannot be undone (ER-12 of the sibling change), so a runaway agent must not be able to repeat it. The released item shows its human owner the refused proposal (category or urgency), and when the refused proposal was `urgent` the release alert goes to the owner at urgent priority, so a truly urgent item caught at the limit is not lost; the automatic application stays refused, so nothing floods the clinical queue or starts patient guidance without a human (confirmation pass). The limit values are policy, set in planning with the others (D-9). | AO-08, AO-13 |
+| D-26 | **PROPOSED (fix round 1).** Every work-item operation is refused with `not_item_owner` unless the agent is the item's current owner. This also closes reading text during a pause or a suspension, when the items have passed to humans. | AO-13, schema |
+| D-27 | **PROPOSED (fix round 1).** A patient who tells an agent to stop AI-authored answers is heard: the agent releases the item with `ai_messaging_withdrawal_requested`, and openPractice holds every agent answer to that patient until a staff member records the withdrawal or records that consent stands. Untrusted text can therefore only stop answers, never start them. | AH-06, AO-13 |
+| D-28 | **PROPOSED (fix round 1).** A representative whose authority on the link is confirmed may withdraw the patient's consent, never grant it. | AH-06 |
+| D-29 | **PROPOSED (fix round 1), under ruling 93.** The ruling names the consent check, not the cancellation. Cancelling every pending or held agent answer to the patient at once on withdrawal is this change's way of carrying the check out. | AH-06 |
 
 ## Risks / Trade-offs
 
 - **[Prompt injection through patient or fax content]** → openPractice derives untrusted contribution from provenance, so an agent cannot under-report it. AH-05 caps the action at `propose`. The read-only exception lets text only select an approved answer type; the server assembles the reply, and the agent writes no free text.
 - **[Privilege escalation]** → An agent holds only the agent recipe. Grants, rungs, limits and the pause are named-human-only, and the schema refuses an agent as `granted_by`. The decider is never the proposer.
 - **[Cross-patient disclosure]** → Every agent request names its work item, which binds reads to one patient (AO-03).
-- **[Runaway agent]** → Limits (AO-08), the pause (AO-09), the daily digest (AO-10) and same-day offboarding (AM-05).
+- **[Runaway agent]** → Limits (AO-08), the pause (AO-09), the daily digest (AO-10) and same-day offboarding (AM-05). At a limit, a work-item operation is refused and its item released to a human, so a runaway agent cannot keep re-routing items or raising their urgency (D-25).
+- **[Prompt injection through text an agent reads]** → The text is data, never instructions (AH-05). The work-item operations it could steer only raise care (a clinical re-route or an urgency raise, applied by rule), or put an item before a human (a release or a cancellation); none changes a record or sends anything (AO-13).
+- **[An answer after consent is withdrawn]** → openPractice checks consent before scheduling and again before sending, and cancels every pending answer on withdrawal (AH-06).
 - **[Approval fatigue from propose-first]** → The practice opts action types up within their caps (T-3).
 - **[VA data exfiltration]** → No export, masked fields, device rules and per-VA accountability. Screen capture remains a residual risk.
 - **[Operator or provider retention of PHI]** → Governed by the operator and provider agreements (AH-02) and recorded in the risk analysis.
@@ -175,3 +198,21 @@ The roster brainstorm, which is not ratified, ships "no permissions screen" and 
 3. The openWallet identity verification mechanics, decided in planning with the companion change.
 4. Whether an unsigned digest should eventually demote rungs (D-8).
 5. Each practice's read-only answer types: templates, allowlisted fields, topics, cancel windows and the sampled-audit rate (AH-05 exception 1). This blocks switching any answer type on.
+6. **A request mode below the rung the practice has set.** Should an agent be able to ask openPractice to treat one request at a lower rung than the one the practice set for that action type? A consumer asks for one (`MedxSoft/medXfactory`, change `define-care-organization-hermes-openpractice-operations`, finding U-11). Ruling 93 did not include it, and this change does not add it. The owner decides whether to. Its absence blocks nothing in openPractice, which always applies the rung the practice set (AO-04).
+7. **Reading item text (D-18).** Whether to keep `work_item.read_text`, which ruling 93's list carries only by reference to a consumer finding, and which the owner was not shown by name. It blocks agent work on any item whose text the agent must read.
+8. **The work-item placements, codes and limits (D-19 to D-21, D-24 to D-26).** The owner confirms or changes them; the limit values are set in planning. They block nothing until an agent is granted the operations.
+9. **The consent record (D-22, D-23, D-27 to D-29):** where it is kept, its default, who records it, the hold after an agent hears a withdrawal, a representative's withdrawal, the cancellation on withdrawal, whether a human-approved agent draft needs consent, and whether HealthLinc should carry a patient's own grant or withdrawal through the gateway. Counsel confirms its form. It blocks switching on any read-only answer type.
+
+## Follow-up of 2026-11-15 (ruling 93)
+
+This change was merged to `main` as an unratified draft. On 2026-11-15 the owner accepted ruling 93, a draft follow-up that closes gaps its consumers found. It is edited in place, because nothing here is ratified, built or archived, and the contract keeps the name `openpractice-agent-operations/1.0`; the digest identifies the bytes. `Status` stays `draft`, and `owner-ratification.md` stays PENDING.
+
+| What changed | Why | Where |
+|---|---|---|
+| Five work-item operations: read the item's text, propose a clinical re-route, propose an urgency raise, release the item to a human, cancel a pending answer | The agent layer had no contract path for these (`MedxSoft/medXfactory`, change `define-care-organization-hermes-openpractice-operations`, finding U-11); ruling 93 | AO-13; AO-04, AO-11, AO-12; WI-04; schema; D-18 to D-21, D-24 |
+| A consent check for agent answers, inside openPractice | The consent condition of ruling 68 named no check (same change, finding U-12); rulings 93 and 97 | AH-06; AH-05 exception 1 condition 11; governance tiers; D-22, D-23 |
+| Not added: a request mode below the rung the practice has set | A consumer asks for it (same change, finding U-11); ruling 93 did not include it | Open Question 6 |
+| Fix round 1 of the pull request review | Rate limits for the work-item operations; ownership; a withdrawal heard by the agent or given by a representative; the check before every relay; the cancellation on withdrawal marked as a design call | AO-08, AO-13, AH-06; D-25 to D-29 |
+| Confirmation pass of the review | An urgency raise refused at a limit was passed on unchanged, so a truly urgent item could sit at its old urgency | AO-08 (the refused proposal shown, an urgent-priority release alert), AO-12; D-25 |
+
+Contract digest: `openpractice-agent-operations/1.0` moved from `894fe93fa36024e2fe61481e09e47884838fd6b263ebee30c106dfb7a0813c92` to `5b1572e3b8b31191de2ff3f3567cc03da02741e0637063bd71e8696659db813c`. The new action types, outcomes, request fields, refusal reasons and digest counts are additive; nothing earlier was removed or renamed.

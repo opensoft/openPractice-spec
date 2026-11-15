@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:openpractice:contract:openpractice-ehr-clinical-facts:1.0",
   "title": "openpractice-ehr-clinical-facts 1.0",
-  "description": "Canonical schema for the clinical-facts contract: the EHR produces and openPractice consumes. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation; referenced by digest from opensoft/openChart-spec change define-openpractice-boundary. Notifications are pointer-only. Read results are FHIR R4-compatible subsets limited to the billing purpose. Codings carry a system and a code and never a display or descriptor text (FD-11). No note text, medication, result or order content exists in this contract. A consumer accepts any 1.x message and rejects any other MAJOR.",
+  "description": "Canonical schema for the clinical-facts contract: the EHR produces and openPractice consumes. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation; referenced by digest from opensoft/openChart-spec change define-openpractice-boundary. Notifications are pointer-only. Read results are FHIR R4-compatible subsets limited to the billing purpose. Codings carry a system and a code and never a display or descriptor text (FD-11). No note text, medication, result or order content exists in this contract. Only confirmed encounter diagnoses are published (ruling 87). clinical_fact.entered_in_error is the contract's single retraction message and carries a coded retraction_reason (ruling 89): entered_in_error only for one Condition or Procedure that was itself marked entered in error while its encounter stays published, and withdrawn, the neutral code that gives no reason, for every other retraction, including every retraction that names an Encounter, whatever its cause. An absent retraction_reason, or a code this version does not define, is applied as withdrawn. No code varies with the cause of an encounter-level retraction, so no code reveals a restricted act. A retraction is applied only to facts received under the same link_id and subject. A retraction of a fact already published under a link that has since ended revoked or superseded is still delivered and accepted, as pointers only (ruling 88). A consumer accepts any 1.x message and rejects any other MAJOR.",
   "oneOf": [
     { "$ref": "#/$defs/notification" },
     { "$ref": "#/$defs/capabilityResult" },
@@ -30,7 +30,7 @@
         "message_type": { "type": "string" },
         "issued_at": { "type": "string", "format": "date-time" },
         "issuer": { "$ref": "#/$defs/issuer" },
-        "link_id": { "description": "The openpractice-ehr-patient-link link_id; facts are served only for an active link.", "$ref": "#/$defs/uuid" },
+        "link_id": { "description": "The openpractice-ehr-patient-link link_id; facts are served only for an active link. The one exception is ruling 88: a clinical_fact.entered_in_error retraction of a fact already published under a link that has since ended revoked or superseded names that link, is delivered and is accepted, as pointers only; no new fact and no read is served on such a link (EB-15).", "$ref": "#/$defs/uuid" },
         "subject": {
           "type": "object", "additionalProperties": false,
           "required": ["openpractice_patient", "ehr_patient"],
@@ -58,11 +58,29 @@
             "required": ["resource_refs"],
             "properties": {
               "resource_refs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/resourceRef" } },
-              "supersedes": { "type": "array", "items": { "$ref": "#/$defs/resourceRef" } }
-            }
+              "supersedes": { "type": "array", "items": { "$ref": "#/$defs/resourceRef" } },
+              "retraction_reason": {
+                "description": "Only on clinical_fact.entered_in_error, where an absent value means withdrawn (ruling 89, EB-15). entered_in_error: exactly one Condition or Procedure that was itself marked entered in error while its encounter stays published. withdrawn: every other retraction, with no reason given: a diagnosis refuted or otherwise no longer confirmed (ruling 87), one moved to the problem list, a coding the schema cannot hold, a correction delivered as a retraction on a link that has ended (ruling 88), and every retraction that names an Encounter, whatever its cause. openPractice gives both codes the same billing effect and infers nothing from them. The value is an open code so that a code a later MINOR version defines stays schema-valid here: a receiver applies any code it does not define as withdrawn and keeps no record of its value (EB-15; proposed follow-up call F-2). A publisher sends only the two defined codes until a governed MINOR version defines another, and never a code that reveals a cause.",
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                "examples": ["entered_in_error", "withdrawn"]
+              }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "retraction_reason": { "const": "entered_in_error" } }, "required": ["retraction_reason"] },
+                "then": { "properties": { "resource_refs": { "maxItems": 1, "items": { "properties": { "resource_type": { "enum": ["Condition", "Procedure"] } } } } } }
+              }
+            ]
           }
         },
-        "required": ["payload"]
+        "required": ["payload"],
+        "allOf": [
+          {
+            "if": { "properties": { "message_type": { "enum": ["encounter.documentation_final", "clinical_fact.corrected"] } }, "required": ["message_type"] },
+            "then": { "properties": { "payload": { "not": { "required": ["retraction_reason"] } } } }
+          }
+        ]
       } ]
     },
     "capabilityResult": {
@@ -92,6 +110,7 @@
       }
     },
     "condition": {
+      "description": "An encounter diagnosis whose verification status is confirmed. openChart publishes only confirmed diagnoses, and retracts a published diagnosis that is later refuted or otherwise no longer confirmed, with retraction_reason withdrawn (ruling 87).",
       "type": "object", "additionalProperties": false,
       "required": ["id", "version", "category", "code", "encounter_ref"],
       "properties": {

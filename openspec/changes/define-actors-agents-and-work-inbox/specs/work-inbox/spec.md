@@ -63,7 +63,7 @@ An agent SHALL hand a work item to a human owner, with its evidence and reasonin
 - the agents are paused (AO-09);
 - the agent cannot complete the item.
 
-An agent SHALL NOT pass an item to another agent to avoid a cap.
+The agent hands the item over through the contract's `work_item.release_to_human` operation (AO-13), which takes effect at once and names a coded reason; when the agents are paused or their PHI access is suspended, the item routes to a human owner without it (AO-09, AH-01). An agent SHALL NOT pass an item to another agent to avoid a cap.
 
 #### Scenario: An agent meets a cap
 - **WHEN** an agent's action needs a tier-4 signature

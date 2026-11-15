@@ -90,6 +90,7 @@ An action that untrusted content contributed to SHALL NOT exceed `propose` unles
 8. **One patient.** During the conversation the agent reads only that one patient's data (AO-03).
 9. **Recorded, open and escapable.** The audit and the reply's attribution record the answer-type id and version. The item stays open, with a "this did not answer my question" path to staff, and the patient can always ask for a human.
 10. **Watched.** AO-08's limits apply. A sampled human audit reviews the answers. Any defect returns that answer type to `propose` automatically. The pause switch (AO-09) holds every pending answer. AH-01 and AH-02 still apply.
+11. **Consented.** The patient's consent to AI-authored administrative messaging is recorded and in force, checked before the answer is scheduled and again immediately before every relay, and its withdrawal cancels every pending answer (AH-06; rulings 93 and 97).
 
 When no single answer type fits, or the data an answer type needs is missing, the item goes to staff. Anything uncertain goes to staff. Anything that changes something stays a proposal or follows the ladder.
 
@@ -124,3 +125,67 @@ When no single answer type fits, or the data an answer type needs is missing, th
 #### Scenario: The audit finds a defect
 - **WHEN** the sampled human audit finds a wrong answer from an answer type
 - **THEN** that answer type returns to `propose` at once, and its pending answers wait for a human
+
+### Requirement: AH-06 An agent's answer reaches a patient only while the patient's consent is recorded, checked before scheduling and before every relay
+openPractice SHALL check the patient's consent to AI-authored administrative messaging itself, because openPractice, not the agent layer, assembles and relays every agent answer and holds the patient's link (ruling 97; change `define-patient-gateway-and-escalation` ER-10, which carries ruling 68's consent condition).
+
+**The record (design call D-22, PROPOSED).** openPractice SHALL keep one consent record per patient, with the patient's administrative record:
+- its state, `granted` or `withdrawn`;
+- the time it took effect;
+- the named human who recorded it, and the channel through which the patient gave the instruction;
+- an opaque evidence reference.
+
+Changes are kept as dated history and audited (PR-10). Until a grant is recorded, the patient has not consented, and no agent answer is sent (fail closed). Only a named human SHALL record a grant, as a tier-2 action, on the patient's own instruction; no agent SHALL record or change the record, and no untrusted content SHALL change it on its own word (AH-05). A representative SHALL NOT grant it, since a representative's question never receives an agent answer (design call D-14).
+
+**Withdrawal (design calls D-27 and D-28, PROPOSED).** Withdrawal only ever reduces what is sent, so it has more paths than a grant:
+- any staff member SHALL record a withdrawal at once, as a tier-1 action, on the patient's request through any channel; it takes effect when recorded;
+- a representative whose authority on the patient's link is confirmed (PG-06 of change `define-patient-gateway-and-escalation`) MAY withdraw it the same way, and SHALL NOT grant it;
+- when a patient tells an agent, in an item's text, to stop AI-authored answers, the agent SHALL release the item with `ai_messaging_withdrawal_requested` (AO-13). From that release, openPractice SHALL hold every agent answer to that patient, refuse new ones with `consent_not_recorded`, and give a staff member the work of recording the withdrawal or recording that consent stands. If consent stands, each held answer restarts its full cancel window; if it is withdrawn, the held answers are cancelled.
+
+**The check.** openPractice SHALL check the record for every agent answer to a patient:
+- before it schedules the answer. When no grant is in force, or answers are held, the request is refused with `consent_not_recorded`, and the item goes to its lane's staff;
+- again immediately before every relay of the answer, however it was released: at the end of its cancel window, on a human's approval of an answer at `propose`, or when a pause or a suspension that held it lifts. When no grant is in force, or answers are held, the answer is not sent. A withdrawal cancels it; a hold keeps it held.
+
+The relay of an agent answer and the recording of a withdrawal SHALL be serialized for each patient: whichever openPractice records first decides, so an answer relayed after a withdrawal was recorded is impossible, and a withdrawal recorded first always wins.
+
+**On withdrawal (design call D-29, PROPOSED under ruling 93).** Ruling 93 names the consent check; cancelling pending answers is how this change carries it out. When a withdrawal is recorded, openPractice SHALL at once cancel every pending or held agent answer to that patient, on every item and every link, before any of them is sent. Each item stays open under its lane's human owner, and each cancellation is recorded with no PHI.
+
+**Scope (design call D-23, PROPOSED).** The check applies to every agent-authored reply that reaches a patient: the read-only answers of AH-05 exception 1 in contract 1.0, and, once a governed MINOR version of `openpractice-agent-operations` carries it, an agent-drafted reply that a human approves. A reply a staff member writes is not AI-authored and is not gated by this record.
+
+**What it does not gate (ruling 97).** This consent governs only AI answers that reach the patient directly. It does not gate an agent's processing of administrative data with a model provider for practice operations: the verified agreements with the agent operator and each model provider (AH-02) are enough for that, and counsel confirms it. Every other control of AH-01 to AH-05 still applies. This change asserts no legal rule; counsel confirms the consent's form and wording.
+
+#### Scenario: No consent is recorded
+- **WHEN** an agent selects an eligible read-only answer type for a patient who has no recorded grant
+- **THEN** the request is refused with `consent_not_recorded`, no answer is scheduled, and the item goes to its lane's staff
+
+#### Scenario: Consent is withdrawn while answers are pending
+- **WHEN** a staff member records a patient's withdrawal while two of that patient's read-only answers wait in their cancel windows
+- **THEN** both answers are cancelled at once and never sent, each item stays open under its lane's human owner, and the cancellations are recorded with no PHI
+
+#### Scenario: Consent lapses inside the window
+- **WHEN** a patient's consent is withdrawn after an answer was scheduled but before its window ends
+- **THEN** the check before sending finds no grant in force, and the answer is not sent
+
+#### Scenario: A withdrawal and a relay race
+- **WHEN** a staff member records a withdrawal at the moment an answer's cancel window ends
+- **THEN** openPractice serializes the two: if the withdrawal is recorded first, the answer is cancelled and never sent
+
+#### Scenario: A human approves an answer after consent is withdrawn
+- **WHEN** a lane human approves an agent answer at `propose` for a patient whose consent was withdrawn after the answer was prepared
+- **THEN** the check before the relay finds no grant in force, and the answer is not sent
+
+#### Scenario: The patient tells the agent to stop
+- **WHEN** an agent releases an item with `ai_messaging_withdrawal_requested`
+- **THEN** every agent answer to that patient is held, new ones are refused with `consent_not_recorded`, and a staff member records the withdrawal or records that consent stands
+
+#### Scenario: A representative withdraws
+- **WHEN** a parent whose authority on the patient's link is confirmed asks staff to stop AI-authored answers
+- **THEN** the withdrawal is recorded, every pending agent answer to the patient is cancelled, and the parent cannot later grant consent in the patient's place
+
+#### Scenario: An agent tries to record consent
+- **WHEN** an agent, or a patient's message read by an agent, tries to record a grant of consent
+- **THEN** the change is refused, and only a named human may record a grant
+
+#### Scenario: Registry work with no per-patient consent
+- **WHEN** an agent on a path whose operator and provider agreements are verified prepares a registry proposal for a patient who has recorded no consent
+- **THEN** the work proceeds under AH-01 to AH-05, because the consent governs only AI answers that reach the patient (ruling 97)
