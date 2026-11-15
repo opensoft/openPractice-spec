@@ -308,3 +308,12 @@ Derived from [Feat Review Synthesis](openpractice-feat-review-synthesis.md)
 ratified, governs the Wave 1 paper prototypes and the Wave 2 rewrites of
 [Scope And Sequencing](../brainstorm/openpractice-small-practice-beta-scope-and-sequencing.md)
 and [Feature Normalization](../brainstorm/openpractice-small-practice-beta-feature-normalization.md).
+
+## Amendments (2026-11-14)
+
+Owner: **Brett Heap**, authoring session of 2026-11-14. The original text above stays unchanged as history. These amendments are recorded as owner rulings 36 and 38 in the draft changes `define-actors-agents-and-work-inbox` and `define-patient-gateway-and-escalation`. Both are on their own branches, not yet on main, and are not ratified.
+
+| Decision | Amended by | Amendment |
+|---|---|---|
+| FD-1 | Ruling 38 | The agent-operated practice is the primary frame, so screens are built for exceptions and approvals. The 2–4 in-house staff mode, with the external biller as a first-class actor, remains for when agents are off. The watch-out still stands: the frame governs defaults and surfaces, not data structures. |
+| FD-10(b) | Ruling 36 | The HealthLinc integration contract and escalation routing come into the MVP. HealthLinc's own app features stay on HealthLinc's roadmap. The patient money view remains beta scope as ratified. |
