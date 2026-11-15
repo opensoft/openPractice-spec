@@ -7,23 +7,22 @@ openPractice SHALL ship a starter kit with one template for each policy, profile
 3. the routing-clock policy, including the alert-acknowledgment window, the re-send interval and the clinician-acknowledgment alert window (ER-08, ER-09, ER-20);
 4. the messaging-continuity policy (PG-04);
 5. the on-call coverage plan (ER-13);
-6. the autonomy opt-in set: action types with the rung each could be opted up to, every one starting at `propose` (AO-03, AO-04, BAB-17);
+6. the autonomy opt-in set: the action types, each with the highest rung AO-04 allows for it, every one starting at `propose` (AO-03, AO-04, BAB-17);
 7. the agent rate and blast-radius limit values (AO-08);
 8. the revenue-recognition policy: the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy, with the approval record for the first estimator version (AI-12, AI-20);
 9. the read-only answer types, one for each family of AO-11 (coverage on file, balance, appointment time and practice information), each with its template reference, allowlisted fields, topics, cancel window and sampled-audit rate (AH-05 exception 1);
-10. the consent to AI-authored administrative messaging: its form and wording (AH-06);
-11. recipient profiles in the single AI-23 shape: for a customer-detail destination (AI-10), for the agent operator and for a model provider (AH-03), and for a business output (`define-customer-financial-data-boundaries`, "Every business output has a scoped recipient profile");
-12. the remote VA device, session and location rules (VA-04);
-13. the outreach policy (`define-customer-financial-data-boundaries`, "Audience analysis does not authorize outreach");
-14. the offering routes and membership entitlements (BAB-16; `define-customer-financial-data-boundaries`, "Offerings determine financial routing at line level");
-15. the retention policy profile, with no duration, jurisdiction, program, provider type, effective date or source filled in (`add-reimbursement-retention-control`, "Retention policy profiles are versioned and sourced");
-16. the account mapping per destination and posting mode (BAB-06), shipped only once a governed reason taxonomy exists.
+10. recipient profiles in the single AI-23 shape: for a customer-detail destination (AI-10), for the agent operator and for a model provider (AH-03), and for a business output (`define-customer-financial-data-boundaries`, "Every business output has a scoped recipient profile");
+11. the remote VA device, session and location rules (VA-04);
+12. the outreach policy (`define-customer-financial-data-boundaries`, "Audience analysis does not authorize outreach");
+13. the offering routes and membership entitlements (BAB-16; `define-customer-financial-data-boundaries`, "Offerings determine financial routing at line level");
+14. the retention policy profile, with no duration, jurisdiction, program, provider type, effective date or source filled in (`add-reimbursement-retention-control`, "Retention policy profiles are versioned and sourced");
+15. the account mapping per destination and posting mode (BAB-06), shipped only once a governed reason taxonomy exists.
 
-Each template SHALL name the gate and the requirement it serves, the authority whose sign-off the policy needs, and every item that the requirement says a version must state. When a later change adds a gate that needs a policy, that change SHALL say whether the kit gains a template; the kit follows the requirements as the checklist does (`readiness-checklist` RC-02). The kit SHALL contain no agreement text: business associate agreements, the operator agreements of PG-15 and PG-16, and every other agreement belong to their parties and to counsel, and the checklist only records them.
+Each template SHALL name the gate and the requirement it serves, the authority whose sign-off the policy needs, and every item that the requirement says a version must state. When a later change adds a gate that needs a policy, that change SHALL say whether the kit gains a template; the kit follows the requirements as the checklist does (`readiness-checklist` RC-02). The kit SHALL contain no agreement text: business associate agreements, the operator agreements of PG-15 and PG-16, and every other agreement belong to their parties and to counsel, and the checklist only records them. The kit SHALL contain no consent form either: AH-06 leaves the consent's form and wording to counsel, and no gate approves them.
 
 #### Scenario: A new practice opens the kit
 - **WHEN** a practice manager opens the starter kit in a release whose reason taxonomy is not yet governed
-- **THEN** fifteen templates are listed, each naming its gate, its requirement, the authority that must sign it and the items a version must state, and the account-mapping template is shown as waiting for the reason taxonomy
+- **THEN** fourteen templates are listed, each naming its gate, its requirement, the authority that must sign it and the items a version must state, and the account-mapping template is shown as waiting for the reason taxonomy
 
 #### Scenario: Someone looks for an agreement template
 - **WHEN** a user looks in the kit for a business associate agreement or an operator agreement
@@ -56,7 +55,7 @@ To use a template, an authorized person SHALL create a practice draft from it. T
 - **THEN** the approval is refused whatever the opt-in settings, as ER-08 requires
 
 ### Requirement: SK-04 Nothing is adopted by default or in bulk
-No template SHALL be adopted on installation, on upgrade, on first run or by default, and no approval SHALL cover more than one version. The system SHALL offer no action that adopts or approves several templates, policies, profiles or opt-ins at once, and SHALL refuse any request to do so. Each opt-in of the autonomy opt-in set SHALL be its own sign-off, for one agent and one action type, under AO-03 and AO-04; taking up the set's suggestion for one action type raises no other. A person who holds several authorities SHALL approve each version separately, in the role its requirement names (`signer-roles` SR-02). No agent SHALL approve a version made from a template or adopt an opt-in, and no such approval SHALL be opted in for agent signing (BAB-17, AO-03).
+No template SHALL be adopted on installation, on upgrade, on first run or by default, and no approval SHALL cover more than one version. The system SHALL offer no action that adopts or approves several templates, policies, profiles or opt-ins at once, and SHALL refuse any request to do so. Each opt-in SHALL be its own sign-off, for one agent and one action type, under AO-03 and AO-04. Opting one action type up raises no other, and the set shows only the highest rung AO-04 allows, never a suggested rung. A person who holds several authorities SHALL approve each version separately, in the role its requirement names (`signer-roles` SR-02). No agent SHALL approve a version made from a template or adopt an opt-in, and no such approval SHALL be opted in for agent signing (BAB-17, AO-03).
 
 #### Scenario: Someone asks to accept every starter policy
 - **WHEN** a user asks to adopt every template in the kit at once
@@ -70,8 +69,8 @@ No template SHALL be adopted on installation, on upgrade, on first run or by def
 - **WHEN** a physician who is the medical director approves a hold-policy version and a routing-clock policy version on the same day
 - **THEN** each is its own approval, through its own requirement's action, recording the medical director role
 
-#### Scenario: An opt-in set is taken up for one action type
-- **WHEN** the practice manager opts one agent up to `act_with_notice` for address updates, as the opt-in set suggests
+#### Scenario: One action type is opted up
+- **WHEN** the practice manager opts one agent up for one action type, to a rung no higher than AO-04 allows for it
 - **THEN** only that action type for that agent changes, and every other action type stays at `propose`
 
 ### Requirement: SK-05 Templates are versioned, and a new template version never changes a policy in force

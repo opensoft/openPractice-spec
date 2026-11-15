@@ -1,7 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: RC-01 One readiness checklist shows every readiness item the specifications require
-openPractice SHALL keep one readiness checklist for each practice. It SHALL list every readiness item: each policy version, approval, verification, attestation, agreement record, roster or coverage fact and configuration fact that an existing requirement makes a precondition of a function, and that is recorded once per practice, counterparty, destination, agent or version rather than once per transaction (design call RD-1). Each row SHALL show:
+openPractice SHALL keep one readiness checklist for each practice. It SHALL list every readiness item (design call RD-1). A readiness item is recorded once per practice, counterparty, destination, agent, roster entry or version, not once per transaction. It is a policy version, approval, verification, attestation, agreement record, roster or coverage fact, or configuration fact that either:
+- is made a precondition of a function by an existing requirement; or
+- is a version that an existing requirement gives a named authority to approve while a fail-closed default runs until it is approved, such as the routing-clock policy of ER-08.
+
+Each row SHALL show:
 - what the item is;
 - the requirement or requirements that enforce it at runtime, by requirement ID and change;
 - the authority that signs it, in the words of the enforcing requirement, and the named people who hold that authority now;
@@ -24,7 +28,7 @@ Rows SHALL be grouped by the function they gate, so a practice sees together eve
 - **THEN** the checklist shows it in the release-prerequisite section, read-only, and shows that every sign-off the medical director gives waits on it
 
 ### Requirement: RC-02 Checklist rows follow the requirements, never the other way round
-Each row SHALL be derived from the requirement that enforces it. When a change adds, alters or removes a gate, the row SHALL be added, altered or removed in the release that carries that change, and this requirement needs no change for it. The checklist SHALL NOT keep a row that no requirement states, and SHALL NOT add a condition, name an authority, state a consequence or set a deadline that the enforcing requirement does not state. Where the enforcing requirement names no authority, the row SHALL say "authority not named by the requirement" and SHALL NOT supply one (design call RD-4). A ruling that no requirement yet encodes SHALL produce no row; its row appears with the requirement that encodes it. The rows at the time this change is ratified are the inventory in this change's `design.md`, each traced to its source.
+Each row SHALL be derived from the requirement that enforces it. When a change adds, alters or removes a gate, the row SHALL be added, altered or removed in the release that carries that change, and this requirement needs no change for it. The checklist SHALL NOT keep a row that no requirement states, and SHALL NOT add a condition, name an authority, state a consequence or set a deadline that the enforcing requirement does not state. A consequence or authority found only in a design, a task list or an open question SHALL NOT appear on a row. Where the enforcing requirement names no authority, the row SHALL say "authority not named by the requirement" and SHALL NOT supply one (design call RD-4). A ruling that no requirement yet encodes SHALL produce no row; its row appears with the requirement that encodes it. The rows at the time this change is ratified are the inventory in this change's `design.md`, each traced to its source.
 
 #### Scenario: A later change alters a gate
 - **WHEN** a ratified change adds an item that every hold-policy version must state (PH-03)
@@ -63,10 +67,11 @@ The checklist SHALL read each row's state from the gate's own record, such as th
 
 ### Requirement: RC-04 Each row has a state read from its gate, with its dates
 Each row SHALL have exactly one of these states, read from the gate's own record (design call RD-3):
+- `unavailable`: the gate's record cannot be read at this moment. The row SHALL show no earlier state in its place, and the gate itself still decides;
 - `not_recorded`: nothing is recorded;
 - `in_progress`: a draft policy version, or a record or review that has begun but is not complete, such as counsel's review recorded on a hold-policy version that the medical director has not approved;
 - `in_force`: the gate's record is complete and current;
-- `lapsed`: the record has expired, or was revoked, withdrawn or suspended;
+- `lapsed`: the record has expired, or was revoked, withdrawn or suspended, or the gate has suspended what the record enables, such as a lapse under `define-actors-agents-and-work-inbox` AH-01, with the cause shown;
 - `not_required`: the enforcing requirement's own condition does not apply to the practice's configuration, such as legacy run-off (BAB-08) for a practice that has none.
 
 A row SHALL be `not_required` only when the enforcing requirement's own condition says so and the practice's configuration shows it; no person SHALL be able to mark a row as not required. Each row SHALL show the effective, expiry or renewal and review dates the gate's record holds, and the date of each change of state. Where a requirement keeps a fail-closed default running meanwhile, such as the default windows of ER-08, the row SHALL say that the default is in use.
@@ -75,9 +80,17 @@ A row SHALL be `not_required` only when the enforcing requirement's own conditio
 - **WHEN** the BAA recorded under VA-01 for a VA company reaches its expiry date
 - **THEN** the row shows `lapsed` with the expiry date, and VA-01 has already removed PHI access from that company's VAs
 
+#### Scenario: An agent operator's deletion confirmation is overdue
+- **WHEN** an agent operator's deletion confirmation under ER-12 is more than 72 hours late, and AH-01 suspends PHI access on that operator's path
+- **THEN** the operator, provider and zero-data-retention rows for that path show `lapsed` with that cause, while each agreement record stays verified
+
 #### Scenario: A routing-clock policy is not yet approved
 - **WHEN** no routing-clock policy version is approved
 - **THEN** the row shows `not_recorded` and says that the fail-closed default windows of ER-08 are in use
+
+#### Scenario: A gate's record cannot be read
+- **WHEN** the checklist cannot read the PH-03 policy record, after showing the hold-policy row as `in_force`
+- **THEN** the row shows `unavailable`, not `in_force`, and PH-03 still decides every hold placement from its own record
 
 #### Scenario: Staff try to mark a row not required
 - **WHEN** a user tries to mark the proxy-policy row as not required
@@ -97,11 +110,11 @@ Each row SHALL state, in the words of its enforcing requirement, what the gate k
 ### Requirement: RC-06 The checklist shows who holds each authority, and where one person holds several
 The checklist SHALL show, for each authority its rows name, the named people who hold it, and SHALL show together every authority one person holds (`signer-roles` SR-01). It SHALL mark:
 - each row whose sign-offs were given by one person in more than one role, with the role each sign-off recorded (SR-02);
-- each row whose authority is the practice's accountant or counsel, as needing a person who holds no other role in the practice (SR-04);
+- each row whose authority is the practice's accountant or a counsel sign-off that SR-04 covers, as needing a person engaged from outside the practice (SR-04);
 - each rule that needs two different people, or that loses its meaning when one person signs both sides, where one person now holds both sides, and whether a one-person alternative is in force for it (SR-03);
 - each chain that collapses onto one person, such as an on-call clinician who is also the medical director to whom ER-09 escalates, or an owner of work whose named cover under WI-05 does not exist, as a warning that changes nothing at runtime.
 
-The checklist SHALL also list each use of a one-person alternative and each sign-off in which one person signed both sides of a rule (SR-03), as a list apart from the rows.
+The checklist SHALL also list each use of a one-person alternative and each sign-off in which one person signed both sides of a rule (SR-03), as a list apart from the rows. A use or sign-off whose subject is a patient-side record SHALL appear only as a count for its rule (design call RD-19, PROPOSED). A patient-side record is a patient's record, or a guarantor, subscriber, representative or other role or link that ties a party to a patient. An example is an act on the actor's own balance or coverage under `define-mvp-practice-foundation` PR-15. The count carries an opaque reference that opens the audit entries (PR-10) only to a reader authorized to see that PHI. The checklist SHALL NOT show, for such a use, the person's name, any role the person holds in a patient record, or any amount.
 
 #### Scenario: A physician-owner holds three authorities
 - **WHEN** one named physician holds the medical director recipe, the practice manager recipe and the controller or office manager recipe, and is the only clinician on the on-call roster
@@ -109,14 +122,18 @@ The checklist SHALL also list each use of a one-person alternative and each sign
 
 #### Scenario: An accountant row
 - **WHEN** a practice manager reads the revenue-recognition row
-- **THEN** it says that the practice's accountant signs it, that the accountant may hold no other role in the practice except the bookkeeper recipe (SR-04), and who holds that authority now
+- **THEN** it says that the practice's accountant signs it, that the accountant must be engaged from outside the practice (SR-04), and who holds that authority now
 
 #### Scenario: A sponsor signs its own agent's digest
 - **WHEN** the controller who sponsors an agent signs a daily digest that includes that agent's actions (AO-10)
 - **THEN** the sign-off appears in the list of sign-offs in which one person signed both sides, with both roles recorded
 
+#### Scenario: The sole manager writes off her own balance
+- **WHEN** the only manager of a practice, who is also a guarantor there, writes off her own balance under PR-15's one-person alternative
+- **THEN** the checklist adds one to the count for PR-15's alternative, with an opaque reference to the audit entries, and shows no name, no role in a patient record and no amount
+
 ### Requirement: RC-07 The checklist holds no PHI and is read only through the versioned API
-The checklist SHALL hold no PHI. It shows items, requirement IDs, authorities, the names of workforce members and counterparties, states and dates. It SHALL be read only through openPractice's versioned API layer, under that layer's authorization (PR-09; `define-actors-agents-and-work-inbox` AO-02); which recipes may read it is decided in planning (design call RD-16). The checklist SHALL NOT copy an agreement document or a policy text into a log, a diagnostic bundle or a notification.
+The checklist SHALL hold no PHI. It shows items, requirement IDs, authorities, the names of workforce members and counterparties, states and dates, and, for a use whose subject is a patient-side record, only a count and an opaque reference (RC-06). It SHALL be read only through openPractice's versioned API layer, under that layer's authorization (PR-09; `define-actors-agents-and-work-inbox` AO-02); which recipes may read it is decided in planning (design call RD-16). The checklist SHALL NOT copy an agreement document or a policy text into a log, a diagnostic bundle or a notification.
 
 #### Scenario: A diagnostic bundle is made for the checklist
 - **WHEN** a checklist error produces a diagnostic bundle

@@ -18,9 +18,9 @@ This record collects acceptance evidence for OpenSpec change `define-practice-re
 - Requirement and scenario traceability for `readiness-checklist`, `policy-starter-kit` and `signer-roles`: _pending_
 - The checklist reads each row from the gate's own record, offers no write path, and enables nothing when every row is complete (RC-03): _pending_
 - Every row traced to its enforcing requirement; no row without one; a row whose requirement names no authority says so (RC-02): _pending_
-- Row states, with `not_required` only from the requirement's own condition (RC-04): _pending_
+- Row states, with `unavailable` when a gate's record cannot be read and `not_required` only from the requirement's own condition (RC-04): _pending_
 - What stays off and what still runs, in the enforcing requirement's words (RC-05): _pending_
-- Authority holders, one-person marks, collapse warnings and the list of sign-offs in which one person signed both sides (RC-06): _pending_
+- Authority holders, one-person marks, collapse warnings, and the list of one-person uses and both-sides sign-offs, with every use whose subject is a patient-side record shown only as a count behind an opaque reference (RC-06): _pending_
 - No PHI in the checklist, its logs or its diagnostics; read only through the versioned API (RC-07): _pending_
 - The starter kit's templates, none of them read by a gate; inert after installation and upgrade (SK-01, SK-02): _pending_
 - A version made from a template approved through the gate's own action with the same record as one written from scratch, and template provenance that changes no check (SK-03): _pending_
@@ -28,8 +28,8 @@ This record collects acceptance evidence for OpenSpec change `define-practice-re
 - Immutable template versions; a newer or withdrawn template changes no policy in force (SK-05): _pending_
 - Templates carry no legal, accounting or clinical rule; the retention template holds no duration (SK-06): _pending_
 - The role on every sign-off; refusal of a role not held or not allowed; two sign-offs for two roles (SR-01, SR-02): _pending_
-- Fail-closed handling of a two-person rule with no one-person alternative; each one-person use recorded and shown (SR-03): _pending_
-- Every SR-04 refusal: an owner, a person with another role, the other side of the same item, an agent: _pending_
+- Fail-closed handling of a two-person rule with no one-person alternative, or an unavailable one; each one-person use recorded (SR-03): _pending_
+- Every SR-04 refusal: no outside engagement, an owner or employee, the other side of the same item, an agent; and no SR-04 check outside the sign-offs it names: _pending_
 
 ## Boundary and Merge Evidence
 
