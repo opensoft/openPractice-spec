@@ -1,0 +1,76 @@
+## 1. Owner Ratification Gate
+
+- [ ] 1.1 Run `openspec validate define-patient-gateway-and-escalation --strict` against the exact artifacts proposed for ratification. Acceptance evidence: `owner-ratification.md` records the command, OpenSpec version, timestamp, exact artifact revision or checksums, exit code 0, and the output.
+- [ ] 1.2 Obtain the owner's unconditional ratification before any Speckit feature is created. Rulings 34 to 44 do not state a handoff shape; design call DC-21 proposes shape A, the ordered multi-feature handoff in section 2, as a stated exception to the workflow protocol's one-feature handoff. Acceptance evidence: the owner, not an agent, completes `owner-ratification.md`. That means identity, timestamp, exact revision, strict-validation evidence, the chosen handoff shape, his disposition of the design calls, and the unqualified decision `APPROVED UNCONDITIONALLY`. In the same revision, the owner changes the proposal's `Status` to `ratified`.
+- [ ] 1.3 Confirm the stacked dependencies are ratified first. Acceptance evidence: `owner-ratification.md` records the ratified revisions of `define-mvp-practice-foundation` and `define-actors-agents-and-work-inbox`, and confirms that the FD-1 amendment (ruling 38) and the FD-10(b) amendment (ruling 36) landed in `ideation/review/openpractice-framing-decisions.md`. A missing dependency blocks feature creation.
+- [ ] 1.4 Compare this change with each required companion change (ruling 40). For `opensoft/openChart-spec`: the clinical-handoff schema digest (`sha256sum -c contracts/SHA256SUMS`, matched against the digest the companion cites), the contract identifier, the namespaces (`healthlinc`, `openpractice`, the EHR's own) and the issuer handling. For HealthLinc: the gateway schema digest, the contract identifier, the `healthlinc` namespace, the issuer and the entitlement semantics. For MedxFactory/Hermes: the agent-operations contract version that carries the gateway action types, the ladder and the pause switch. Acceptance evidence: each revision compared, each digest pair and result recorded in `owner-ratification.md`. A mismatch with an existing companion blocks feature creation. A companion that does not yet exist blocks only live interoperation; features may build against contract doubles.
+
+## 2. Speckit Features That May Follow, In Order (Handoff Shape A, If Ratified)
+
+Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root `opensoft/openPractice` on its base branch.
+
+- [ ] 2.1 **Feature 1: patient gateway, openPractice side.** Owns PG-01 to PG-14. Gate: tasks 1.2 and 1.3, the patient-registry feature of `define-mvp-practice-foundation` merged, and change A's work-inbox feature merged. Acceptance evidence:
+  - contract tests validate every message against the gateway schema at its recorded digest, against a HealthLinc double;
+  - the always-granted capabilities and every withheld reason are tested, including evaluation failure;
+  - link verification, human confirmation, refusal without verification, and agent sign-off refusal are tested;
+  - representative links are refused without an approved proxy policy;
+  - proposals never auto-apply, and interim confidential-communication restrictions are honored;
+  - clinical inquiries with text are refused;
+  - the PHI safeguard plan, security review and risk-analysis update are recorded.
+
+  Live interoperation waits for the HealthLinc companion change to be ratified and to match (task 1.4).
+- [ ] 2.2 **Feature 2: escalation routing and clinical handoff, openPractice side.** Owns ER-01 to ER-17. Gate: Feature 1 merged, the EHR-link feature of `define-mvp-practice-foundation` merged, and change A's actor-model and work-inbox features merged. Acceptance evidence:
+  - contract tests validate every handoff message against the clinical-handoff schema at its recorded digest, against openChart and HealthLinc doubles;
+  - the reference-only payload is tested, including refusal of any content field;
+  - urgency is never lowered, by any path;
+  - every alert trigger, the urgent fallback with its guidance instruction, and the no-on-call fallback are tested;
+  - the link precondition, re-routing, splitting and text removal are tested;
+  - the pause switch sends administrative items to staff and leaves urgent routing untouched;
+  - clinical routing cannot be enabled without full on-call cover (DC-27).
+
+  Hermes drafting is enabled only after the agent-operations MINOR (DC-22) and the AH-01 and AH-02 gates. Live interoperation waits for the openChart and HealthLinc companion changes (task 1.4).
+- [ ] 2.3 **Feature 3: payment hold.** Owns PH-01 to PH-09. Gate: Feature 1 merged, and patient receivables available from `define-mvp-practice-foundation` Feature 3 with its prerequisites (the FD-7 Thread contract and the money ledger). Acceptance evidence:
+  - placement refused with no approved policy, and refused for an incomplete policy version;
+  - the hold withholds only the two capabilities and never the three always-granted ones;
+  - tier-3 placement with countdown and cancel, tier-2 lift, and agent ceilings;
+  - patient notice before effect, honoring PR-05, with no PHI in push or text content;
+  - disputed amounts and open GFE windows never count;
+  - no claim, statement or posting is held;
+  - automatic lift when the basis ends.
+
+  Holds stay refused in production until the medical director approves a counsel-reviewed policy version (Open Question 3).
+- [ ] 2.4 **Feature 4: mobile approver.** Owns MA-01 to MA-07. Gate: change A's work-inbox feature merged; Feature 2 merged before alerts are enabled. Acceptance evidence:
+  - every action goes through the versioned API, with server-side checks;
+  - notifications carry no PHI, and deep links need re-authentication;
+  - no PHI remains on the device after logoff, idle timeout or revocation;
+  - lost-device revocation through AM-05;
+  - sign-offs follow FD-5 and BAB-17, with re-authentication at signing, tier 4 human-only and D8 accountant-only;
+  - no clinical content is shown.
+
+## 3. Planning Gates For Every Feature
+
+- [ ] 3.1 Perform a meaningful Constitution Check against constitution v1.0.0 before each feature's plan phase. Acceptance evidence: the plan maps Principles I to VI and the quality gates to concrete obligations, records how T-5, T-6 and T-7 were dispositioned, and records the open questions routed to it in 3.5.
+- [ ] 3.2 Complete a documented security review and update the living risk analysis for each feature. Acceptance evidence: the review record and the risk-analysis diff are referenced from `closure-evidence.md`.
+- [ ] 3.3 Confine runtime changes to the openPractice code leg. Acceptance evidence: the plan's inventory shows no runtime edits in HealthLinc, openChart, MedxFactory or any vendor system.
+- [ ] 3.4 Keep this checklist governance-only. Acceptance evidence: executable tasks exist only in each feature's Speckit `tasks.md`, and `speckit-analyze` reports no unresolved critical inconsistency.
+- [ ] 3.5 Route every open question (design.md "Open Questions") to the work it blocks. Acceptance evidence: each feature's plan records how its question was answered, or why the work it blocks is out of that feature's scope:
+  - Open Question 1, identity verification: blocks Feature 1's link go-live.
+  - Open Question 2, proxy policy: blocks representative links only; Feature 1 records the refusal path.
+  - Open Question 3, hold policy: blocks placing holds only; Feature 3 records the refusal path.
+  - Open Question 4, holds across a guarantor's dependents: blocks Feature 3's placement logic for a guarantor with several patients.
+  - Open Question 5, a patient with no EB-01 link: owned by the openChart companion; Feature 2 records the exception path.
+  - Open Question 6, the on-call roster's source: blocks enabling clinical routing in Feature 2.
+  - Open Question 7, routing-clock windows: blocks nothing; Feature 2 uses the defaults until a policy is approved.
+  - Open Question 8, ruling 42 in a mixed membership practice: blocks only that practice's non-safety capabilities; Feature 1 records the fail-closed result.
+  - Open Question 9, AI-authorship disclosure: blocks Hermes drafting in Feature 2 until counsel answers or the owner accepts DC-18.
+  - Open Question 10, retention of administrative communication records: blocks Feature 1's go-live until a retention decision is recorded.
+  - Open Question 11, the agent-operations MINOR: blocks Hermes drafting in Feature 2 only.
+  - Open Question 12, HealthLinc name clearance: blocks nothing in `1.x`; the token stays fixed.
+
+## 4. Acceptance and Closure
+
+- [ ] 4.1 Complete implementation and verification only through the features in section 2. Acceptance evidence: `closure-evidence.md` maps every requirement and scenario to accepted evidence.
+- [ ] 4.2 Re-verify cross-repository consistency at landing. Acceptance evidence: `closure-evidence.md` records that the schema digests, contract identifiers, namespaces and issuer handling in the landed code match each companion's landed implementation, or records the companion's work as pending.
+- [ ] 4.3 Land each feature's leg pull requests and the assembly root pin bump. Acceptance evidence: pull-request identifiers, exact heads, check results and review dispositions are recorded.
+- [ ] 4.4 Run final strict validation on the final revision. Acceptance evidence: the command, version, timestamp, revision and output are recorded, with exit code 0.
+- [ ] 4.5 Archive only after 4.1 to 4.4 are complete for Features 1 to 4, and move the canonical schemas to the spec repository's `contracts/` directory with their digests unchanged. Acceptance evidence: the archive date and path, the schema move with matching digests, and the delta-spec sync disposition are recorded.

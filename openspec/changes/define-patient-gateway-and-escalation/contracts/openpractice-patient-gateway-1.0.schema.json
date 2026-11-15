@@ -1,0 +1,2560 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:openpractice:contract:openpractice-patient-gateway:1.0",
+  "title": "openpractice-patient-gateway 1.0",
+  "description": "Canonical message schema for the patient gateway contract between HealthLinc (the owner's working name for the ecosystem patient app) and openPractice. Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required HealthLinc companion change. Every object is closed (additionalProperties false). Reasons are codes. References are opaque or (issuer, namespace, value) triples. message_id is a random UUID and is the idempotency key; no key carries PHI. The only free-text fields are the administrative inquiry body, the administrative reply body, and the patient-proposed demographic and coverage values; a clinical inquiry carries no body. The entitlement result always grants urgent_escalation, billing_contact and own_records_access. 1.0 carries no appointment or payment operations; they come as later MINOR versions. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/entitlementRequest"
+    },
+    {
+      "$ref": "#/$defs/entitlementResult"
+    },
+    {
+      "$ref": "#/$defs/linkRequest"
+    },
+    {
+      "$ref": "#/$defs/linkResult"
+    },
+    {
+      "$ref": "#/$defs/linkRevoked"
+    },
+    {
+      "$ref": "#/$defs/proposalSubmitted"
+    },
+    {
+      "$ref": "#/$defs/proposalAck"
+    },
+    {
+      "$ref": "#/$defs/proposalResolved"
+    },
+    {
+      "$ref": "#/$defs/inquirySubmitted"
+    },
+    {
+      "$ref": "#/$defs/inquiryAck"
+    },
+    {
+      "$ref": "#/$defs/inquiryStatus"
+    },
+    {
+      "$ref": "#/$defs/inquiryRecategorized"
+    },
+    {
+      "$ref": "#/$defs/replyRelay"
+    },
+    {
+      "$ref": "#/$defs/replyAck"
+    },
+    {
+      "$ref": "#/$defs/guidanceInstruct"
+    },
+    {
+      "$ref": "#/$defs/guidanceAck"
+    },
+    {
+      "$ref": "#/$defs/messageAck"
+    }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "issuer": {
+      "description": "A deployment's configured, stable issuer identifier, unique across deployments and never derived from a host path (EB-02).",
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 255
+    },
+    "actorRef": {
+      "description": "Opaque reference to a Roster entry (a person, a remote VA or a named agent, AM-01, AM-04) or an integration identity. Never a name.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9:_-]{1,128}$"
+    },
+    "opaqueRef": {
+      "description": "Opaque reference. Carries no name, date of birth, contact detail, amount or clinical content.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9:_./-]{1,128}$"
+    },
+    "codedValue": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "urgency": {
+      "description": "Applied or proposed urgency. Ordered routine < priority < urgent. openPractice never lowers an applied urgency (ER-03).",
+      "enum": [
+        "routine",
+        "priority",
+        "urgent"
+      ]
+    },
+    "capability": {
+      "description": "Coded gateway capability. urgent_escalation, billing_contact and own_records_access are always granted to a linked patient (PG-03).",
+      "enum": [
+        "urgent_escalation",
+        "billing_contact",
+        "own_records_access",
+        "clinical_messaging_nonurgent",
+        "scheduling_new_nonurgent",
+        "administrative_questions",
+        "demographic_change_proposal",
+        "coverage_change_proposal"
+      ]
+    },
+    "withholdableCapability": {
+      "description": "Capabilities that may be withheld. The three always-granted capabilities are not in this list, so they can never be withheld.",
+      "enum": [
+        "clinical_messaging_nonurgent",
+        "scheduling_new_nonurgent",
+        "administrative_questions",
+        "demographic_change_proposal",
+        "coverage_change_proposal"
+      ]
+    },
+    "withholdReason": {
+      "description": "Coded reason a capability is withheld. No amount, balance or clinical detail is ever given.",
+      "enum": [
+        "registry_inactive",
+        "membership_not_current",
+        "membership_entitlement_unresolved",
+        "payment_hold",
+        "representative_scope",
+        "evaluation_unavailable"
+      ]
+    },
+    "lane": {
+      "description": "Administrative staff lane (ER-11).",
+      "enum": [
+        "front_desk",
+        "biller",
+        "office_manager"
+      ]
+    },
+    "adminTopic": {
+      "description": "HealthLinc's proposed administrative topic, used by openPractice's fixed rules to pick a lane.",
+      "enum": [
+        "scheduling",
+        "billing_statement",
+        "payment",
+        "coverage",
+        "demographics",
+        "records_request",
+        "forms",
+        "general"
+      ]
+    },
+    "rejectReason": {
+      "enum": [
+        "schema_invalid",
+        "unsupported_major_version",
+        "link_unknown",
+        "link_revoked",
+        "unauthorized",
+        "routing_unknown",
+        "proposal_unknown",
+        "capability_withheld"
+      ]
+    },
+    "healthlincRef": {
+      "description": "A HealthLinc account or message reference: (HealthLinc issuer, healthlinc, value). The namespace token healthlinc is a design call (design.md DC-1).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issuer",
+        "namespace",
+        "value"
+      ],
+      "properties": {
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "namespace": {
+          "const": "healthlinc"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "openpracticeRef": {
+      "description": "An openPractice patient reference: (openPractice issuer, openpractice, value), as EB-01.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issuer",
+        "namespace",
+        "value"
+      ],
+      "properties": {
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "namespace": {
+          "const": "openpractice"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "codedText": {
+      "description": "Patient-reported coded value with optional patient-entered text, as in the EB-06 snapshot.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "code": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 128
+        }
+      }
+    },
+    "period": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/date"
+        },
+        "end": {
+          "$ref": "#/$defs/date"
+        }
+      }
+    },
+    "legalName": {
+      "description": "Structured legal name, the same shape as the openpractice-ehr-patient-link snapshot. A single-name person carries only that name.",
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "family"
+          ]
+        },
+        {
+          "required": [
+            "given"
+          ]
+        }
+      ],
+      "properties": {
+        "family": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "given": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "suffix": {
+          "type": "string",
+          "maxLength": 32
+        }
+      }
+    },
+    "telecom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "system",
+        "value"
+      ],
+      "properties": {
+        "system": {
+          "enum": [
+            "phone",
+            "email"
+          ]
+        },
+        "use": {
+          "enum": [
+            "home",
+            "work",
+            "mobile",
+            "other"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 254
+        },
+        "preferred": {
+          "type": "boolean"
+        },
+        "period": {
+          "$ref": "#/$defs/period"
+        }
+      }
+    },
+    "address": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "use"
+      ],
+      "properties": {
+        "use": {
+          "enum": [
+            "home",
+            "mailing"
+          ]
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "postal_code": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "country": {
+          "type": "string",
+          "maxLength": 2
+        },
+        "preferred": {
+          "type": "boolean"
+        },
+        "period": {
+          "$ref": "#/$defs/period"
+        }
+      }
+    },
+    "confidentialCommunication": {
+      "description": "PR-05 confidential-communication instructions, proposed by the patient.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "alternate_address": {
+          "$ref": "#/$defs/address"
+        },
+        "alternate_telecom": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/telecom"
+          }
+        },
+        "restrictions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "no_voicemail",
+              "no_home_mail",
+              "no_text_messages",
+              "no_email",
+              "alternate_channel_only"
+            ]
+          }
+        }
+      }
+    },
+    "hold_policy_ref": {
+      "description": "The approved payment-hold policy version that applied (PH-03).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "version"
+      ],
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "entitlementRequest": {
+      "description": "HealthLinc asks which capabilities a linked patient holds now (PG-03).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "entitlement.request"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "purpose"
+          ],
+          "properties": {
+            "purpose": {
+              "enum": [
+                "session_start",
+                "capability_refresh",
+                "pre_submission"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "entitlementResult": {
+      "description": "openPractice answers with coded capabilities and coded reasons only (PG-03, PG-04).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "entitlement.result"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "request_message_id",
+            "evaluated_at",
+            "valid_until",
+            "capabilities",
+            "withheld"
+          ],
+          "properties": {
+            "request_message_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "evaluated_at": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "valid_until": {
+              "description": "HealthLinc re-asks after this time. A stale result never removes an always-granted capability.",
+              "$ref": "#/$defs/timestamp"
+            },
+            "capabilities": {
+              "description": "Granted capabilities. Always includes urgent_escalation, billing_contact and own_records_access for a linked patient, whatever the registry, membership or hold status (PG-03, PH-02).",
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/capability"
+              },
+              "allOf": [
+                {
+                  "contains": {
+                    "const": "urgent_escalation"
+                  }
+                },
+                {
+                  "contains": {
+                    "const": "billing_contact"
+                  }
+                },
+                {
+                  "contains": {
+                    "const": "own_records_access"
+                  }
+                }
+              ]
+            },
+            "withheld": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "capability",
+                  "reasons"
+                ],
+                "properties": {
+                  "capability": {
+                    "$ref": "#/$defs/withholdableCapability"
+                  },
+                  "reasons": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "$ref": "#/$defs/withholdReason"
+                    }
+                  }
+                }
+              }
+            },
+            "hold_policy": {
+              "$ref": "#/$defs/hold_policy_ref"
+            }
+          }
+        }
+      }
+    },
+    "linkRequest": {
+      "description": "HealthLinc asks openPractice to link a HealthLinc account to an openPractice patient (PG-05, PG-06). openPractice mints gateway_link_id in link.result.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "link.request"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "link_request_id",
+            "healthlinc_account",
+            "link_kind",
+            "verification",
+            "identity_claim"
+          ],
+          "properties": {
+            "link_request_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "healthlinc_account": {
+              "description": "The HealthLinc account asking for the link: the patient's own account, or the representative's.",
+              "$ref": "#/$defs/healthlincRef"
+            },
+            "link_kind": {
+              "enum": [
+                "self",
+                "representative"
+              ]
+            },
+            "verification": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "method",
+                "evidence_ref",
+                "verified_at"
+              ],
+              "properties": {
+                "method": {
+                  "description": "Coded identity-verification method of the account holder. The closed list is decided in planning. Possession of a device, a telephone number or an invitation code is never by itself verified identity.",
+                  "$ref": "#/$defs/codedValue"
+                },
+                "evidence_ref": {
+                  "$ref": "#/$defs/opaqueRef"
+                },
+                "verified_at": {
+                  "$ref": "#/$defs/timestamp"
+                }
+              }
+            },
+            "identity_claim": {
+              "description": "Identifies the patient whose openPractice record is to be linked: a practice-issued invitation reference, or the legal name and date of birth, which staff compare by exact match (PR-08). No link is ever made from matching alone.",
+              "type": "object",
+              "additionalProperties": false,
+              "anyOf": [
+                {
+                  "required": [
+                    "invitation_ref"
+                  ]
+                },
+                {
+                  "required": [
+                    "legal_name",
+                    "birth_date"
+                  ]
+                }
+              ],
+              "properties": {
+                "invitation_ref": {
+                  "$ref": "#/$defs/opaqueRef"
+                },
+                "legal_name": {
+                  "$ref": "#/$defs/legalName"
+                },
+                "birth_date": {
+                  "$ref": "#/$defs/date"
+                }
+              }
+            },
+            "representative": {
+              "description": "Present only for a representative link (PG-06).",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "relationship",
+                "authority_ref",
+                "requested_scope"
+              ],
+              "properties": {
+                "relationship": {
+                  "enum": [
+                    "parent_or_guardian",
+                    "personal_representative",
+                    "caregiver_proxy"
+                  ]
+                },
+                "authority_ref": {
+                  "description": "Reference to the documented authority, held by the practice or HealthLinc.",
+                  "$ref": "#/$defs/opaqueRef"
+                },
+                "requested_scope": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/$defs/capability"
+                  }
+                }
+              }
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "link_kind": {
+                    "const": "representative"
+                  }
+                },
+                "required": [
+                  "link_kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "representative"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "link_kind": {
+                    "const": "self"
+                  }
+                },
+                "required": [
+                  "link_kind"
+                ]
+              },
+              "then": {
+                "not": {
+                  "required": [
+                    "representative"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "linkResult": {
+      "description": "openPractice reports the link outcome. A link becomes linked only after a named human confirms the verified identity (PG-05).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "link.result"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "link_request_id",
+            "link_kind",
+            "result"
+          ],
+          "properties": {
+            "link_request_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "link_kind": {
+              "enum": [
+                "self",
+                "representative"
+              ]
+            },
+            "result": {
+              "enum": [
+                "linked",
+                "pending_review",
+                "refused"
+              ]
+            },
+            "gateway_link_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "openpractice_patient": {
+              "$ref": "#/$defs/openpracticeRef"
+            },
+            "granted_scope": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/capability"
+              }
+            },
+            "refuse_reason": {
+              "enum": [
+                "identity_not_verified",
+                "no_exact_match",
+                "authority_not_documented",
+                "proxy_policy_missing",
+                "link_exists",
+                "schema_invalid",
+                "unsupported_major_version",
+                "unauthorized"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "linked"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "gateway_link_id",
+                  "openpractice_patient"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "pending_review"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "gateway_link_id"
+                ],
+                "not": {
+                  "required": [
+                    "openpractice_patient"
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "refused"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "refuse_reason"
+                ],
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "gateway_link_id"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "openpractice_patient"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "linked"
+                  },
+                  "link_kind": {
+                    "const": "representative"
+                  }
+                },
+                "required": [
+                  "result",
+                  "link_kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "granted_scope"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "linkRevoked": {
+      "description": "Either side revokes a gateway link. Revocation wins over any concurrent confirmation (PG-07).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "link.revoked"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reason",
+            "revoked_by"
+          ],
+          "properties": {
+            "reason": {
+              "enum": [
+                "patient_request",
+                "representative_authority_ended",
+                "wrong_patient",
+                "identity_reverification_failed",
+                "account_closed",
+                "peer_request"
+              ]
+            },
+            "revoked_by": {
+              "$ref": "#/$defs/actorRef"
+            }
+          }
+        }
+      }
+    },
+    "proposalSubmitted": {
+      "description": "A patient-submitted change. It enters openPractice as a proposal with patient provenance and is never applied automatically (PG-08, PG-09).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "proposal.submitted"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "proposal_id",
+            "kind",
+            "submitted_by",
+            "submitted_at"
+          ],
+          "properties": {
+            "proposal_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "kind": {
+              "enum": [
+                "demographics",
+                "coverage"
+              ]
+            },
+            "submitted_by": {
+              "enum": [
+                "patient",
+                "representative"
+              ]
+            },
+            "submitted_at": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "demographics": {
+              "description": "Proposed administrative demographic changes (PR-02 to PR-05). Only the fields being changed are present.",
+              "type": "object",
+              "additionalProperties": false,
+              "minProperties": 1,
+              "properties": {
+                "legal_name": {
+                  "$ref": "#/$defs/legalName"
+                },
+                "preferred_name": {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "birth_date": {
+                  "$ref": "#/$defs/date"
+                },
+                "gender_identity": {
+                  "$ref": "#/$defs/codedText"
+                },
+                "pronouns": {
+                  "$ref": "#/$defs/codedText"
+                },
+                "preferred_language": {
+                  "description": "BCP 47 language tag.",
+                  "type": "string",
+                  "pattern": "^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$"
+                },
+                "telecom": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/telecom"
+                  }
+                },
+                "address": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/address"
+                  }
+                },
+                "confidential_communication": {
+                  "$ref": "#/$defs/confidentialCommunication"
+                }
+              }
+            },
+            "coverage": {
+              "description": "A proposed PR-07 coverage change. 1.0 carries no attachments such as card images (design.md DC-20).",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "action"
+              ],
+              "properties": {
+                "action": {
+                  "enum": [
+                    "add",
+                    "update",
+                    "end"
+                  ]
+                },
+                "coverage_ref": {
+                  "description": "Opaque reference to the registry coverage being updated or ended.",
+                  "$ref": "#/$defs/opaqueRef"
+                },
+                "payer_name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "payer_ref": {
+                  "$ref": "#/$defs/opaqueRef"
+                },
+                "member_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "group_number": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "subscriber": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "relationship"
+                  ],
+                  "properties": {
+                    "relationship": {
+                      "enum": [
+                        "self",
+                        "spouse",
+                        "child",
+                        "other"
+                      ]
+                    },
+                    "legal_name": {
+                      "$ref": "#/$defs/legalName"
+                    },
+                    "birth_date": {
+                      "$ref": "#/$defs/date"
+                    },
+                    "administrative_sex": {
+                      "enum": [
+                        "female",
+                        "male",
+                        "other",
+                        "unknown"
+                      ]
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "relationship": {
+                            "enum": [
+                              "spouse",
+                              "child",
+                              "other"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "relationship"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "legal_name",
+                          "birth_date",
+                          "administrative_sex"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "effective_start": {
+                  "$ref": "#/$defs/date"
+                },
+                "effective_end": {
+                  "$ref": "#/$defs/date"
+                },
+                "priority_hint": {
+                  "enum": [
+                    "primary",
+                    "secondary",
+                    "tertiary"
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "action": {
+                        "const": "add"
+                      }
+                    },
+                    "required": [
+                      "action"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "payer_name",
+                      "member_id",
+                      "subscriber",
+                      "effective_start"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "action": {
+                        "enum": [
+                          "update",
+                          "end"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "action"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "coverage_ref"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "demographics"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "demographics"
+                ],
+                "not": {
+                  "required": [
+                    "coverage"
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "coverage"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "coverage"
+                ],
+                "not": {
+                  "required": [
+                    "demographics"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "proposalAck": {
+      "description": "openPractice acknowledges receipt of a proposal.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "proposal.ack"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "proposal_id",
+            "result"
+          ],
+          "properties": {
+            "proposal_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "result": {
+              "enum": [
+                "received",
+                "rejected"
+              ]
+            },
+            "reject_reason": {
+              "$ref": "#/$defs/rejectReason"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "rejected"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "reject_reason"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "proposalResolved": {
+      "description": "openPractice reports a reviewed proposal's outcome with a coded reason.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "proposal.resolved"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "proposal_id",
+            "outcome"
+          ],
+          "properties": {
+            "proposal_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "outcome": {
+              "enum": [
+                "applied",
+                "declined"
+              ]
+            },
+            "applied_fields": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/codedValue"
+              }
+            },
+            "decline_reason": {
+              "enum": [
+                "could_not_verify",
+                "insufficient_evidence",
+                "superseded_by_later_change",
+                "not_patient_editable",
+                "duplicate_of_current"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "outcome": {
+                    "const": "declined"
+                  }
+                },
+                "required": [
+                  "outcome"
+                ]
+              },
+              "then": {
+                "required": [
+                  "decline_reason"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "outcome": {
+                    "const": "applied"
+                  }
+                },
+                "required": [
+                  "outcome"
+                ]
+              },
+              "then": {
+                "required": [
+                  "applied_fields"
+                ],
+                "not": {
+                  "required": [
+                    "decline_reason"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "inquirySubmitted": {
+      "description": "HealthLinc submits a patient question. A clinical question carries no body: no clinical content enters openPractice (ER-01, ER-05).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "inquiry.submitted"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "inquiry_ref",
+            "reply_path_ref",
+            "submitted_at",
+            "submitted_by",
+            "proposed_category",
+            "proposed_urgency",
+            "triage_ref"
+          ],
+          "properties": {
+            "inquiry_ref": {
+              "description": "HealthLinc's message reference. HealthLinc stays the store of the message.",
+              "$ref": "#/$defs/healthlincRef"
+            },
+            "reply_path_ref": {
+              "description": "Opaque reference to the HealthLinc conversation a reply goes into.",
+              "$ref": "#/$defs/opaqueRef"
+            },
+            "submitted_at": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "submitted_by": {
+              "enum": [
+                "patient",
+                "representative"
+              ]
+            },
+            "proposed_category": {
+              "description": "HealthLinc's AI proposal (ruling 44).",
+              "enum": [
+                "clinical",
+                "administrative"
+              ]
+            },
+            "proposed_urgency": {
+              "$ref": "#/$defs/urgency"
+            },
+            "triage_ref": {
+              "description": "Opaque reference to HealthLinc's triage output and model version; HealthLinc keeps the detail.",
+              "$ref": "#/$defs/opaqueRef"
+            },
+            "topic_hint": {
+              "$ref": "#/$defs/adminTopic"
+            },
+            "body": {
+              "description": "Administrative question text. Present only when proposed_category is administrative. It may contain PHI, is stored under Principle I safeguards, and is never logged (PG-10, PG-13).",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            "language": {
+              "description": "BCP 47 language tag.",
+              "type": "string",
+              "pattern": "^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$"
+            },
+            "split": {
+              "description": "Present when HealthLinc split a mixed question into parts (ER-12).",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "group_ref",
+                "part_no",
+                "part_count"
+              ],
+              "properties": {
+                "group_ref": {
+                  "$ref": "#/$defs/opaqueRef"
+                },
+                "part_no": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "part_count": {
+                  "type": "integer",
+                  "minimum": 2
+                }
+              }
+            },
+            "recategorizes_routing_id": {
+              "description": "Set when HealthLinc resubmits after inquiry.recategorized.",
+              "$ref": "#/$defs/uuid"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "proposed_category": {
+                    "const": "clinical"
+                  }
+                },
+                "required": [
+                  "proposed_category"
+                ]
+              },
+              "then": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "body"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "topic_hint"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "proposed_category": {
+                    "const": "administrative"
+                  }
+                },
+                "required": [
+                  "proposed_category"
+                ]
+              },
+              "then": {
+                "required": [
+                  "body",
+                  "topic_hint"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "inquiryAck": {
+      "description": "openPractice accepts and routes an inquiry, or rejects it with a coded reason. An urgent inquiry is never rejected for a withheld capability (ER-09).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "inquiry.ack"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "acked_message_id",
+            "result"
+          ],
+          "properties": {
+            "acked_message_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "result": {
+              "enum": [
+                "accepted",
+                "rejected"
+              ]
+            },
+            "routing_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "applied_category": {
+              "enum": [
+                "clinical",
+                "administrative"
+              ]
+            },
+            "applied_urgency": {
+              "description": "Never lower than proposed_urgency (ER-03).",
+              "$ref": "#/$defs/urgency"
+            },
+            "reject_reason": {
+              "$ref": "#/$defs/rejectReason"
+            },
+            "withheld_reasons": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/withholdReason"
+              }
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "accepted"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "routing_id",
+                  "applied_category",
+                  "applied_urgency"
+                ],
+                "not": {
+                  "required": [
+                    "reject_reason"
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "rejected"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "reject_reason"
+                ],
+                "not": {
+                  "required": [
+                    "routing_id"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "inquiryStatus": {
+      "description": "openPractice reports routing progress. Coded only; no content.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "inquiry.status"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "routing_id",
+            "status",
+            "applied_urgency",
+            "status_at"
+          ],
+          "properties": {
+            "routing_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "status": {
+              "enum": [
+                "routed_clinical",
+                "routed_staff",
+                "drafted_for_approval",
+                "answered",
+                "recategorized",
+                "split_requested",
+                "handoff_exception",
+                "closed"
+              ]
+            },
+            "applied_urgency": {
+              "$ref": "#/$defs/urgency"
+            },
+            "status_at": {
+              "$ref": "#/$defs/timestamp"
+            }
+          }
+        }
+      }
+    },
+    "inquiryRecategorized": {
+      "description": "openPractice tells HealthLinc an item changed category (ER-12).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "inquiry.recategorized"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "routing_id",
+            "new_category",
+            "reason",
+            "requested_action"
+          ],
+          "properties": {
+            "routing_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "new_category": {
+              "enum": [
+                "clinical",
+                "administrative",
+                "split"
+              ]
+            },
+            "reason": {
+              "enum": [
+                "misfiled_as_administrative",
+                "returned_by_clinician_not_clinical",
+                "mixed_question"
+              ]
+            },
+            "requested_action": {
+              "enum": [
+                "none",
+                "resubmit_as_administrative",
+                "resubmit_administrative_part"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "new_category": {
+                    "const": "clinical"
+                  }
+                },
+                "required": [
+                  "new_category"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "requested_action": {
+                    "const": "none"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "new_category": {
+                    "const": "administrative"
+                  }
+                },
+                "required": [
+                  "new_category"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "requested_action": {
+                    "const": "resubmit_as_administrative"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "new_category": {
+                    "const": "split"
+                  }
+                },
+                "required": [
+                  "new_category"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "requested_action": {
+                    "const": "resubmit_administrative_part"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "replyRelay": {
+      "description": "openPractice relays an administrative reply to HealthLinc (PG-11).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "reply.relay"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "routing_id",
+            "reply_id",
+            "body",
+            "author_kind",
+            "author_ref",
+            "lane",
+            "sent_at"
+          ],
+          "properties": {
+            "routing_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "reply_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "body": {
+              "description": "Administrative reply text. Never clinical advice. Never logged.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            "author_kind": {
+              "description": "HealthLinc shows the patient when a reply was written by an agent (design.md DC-18).",
+              "enum": [
+                "staff",
+                "agent"
+              ]
+            },
+            "author_ref": {
+              "$ref": "#/$defs/actorRef"
+            },
+            "autonomy_rung": {
+              "description": "The agent's rung for this action type (change A AO-04). A reply is tier 3, so act_with_notice, which would skip the countdown, is not allowed.",
+              "enum": [
+                "propose",
+                "act_after_delay"
+              ]
+            },
+            "approved_by": {
+              "description": "The named human who approved an agent draft at propose.",
+              "$ref": "#/$defs/actorRef"
+            },
+            "lane": {
+              "$ref": "#/$defs/lane"
+            },
+            "sent_at": {
+              "$ref": "#/$defs/timestamp"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "author_kind": {
+                    "const": "agent"
+                  }
+                },
+                "required": [
+                  "author_kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "autonomy_rung"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "author_kind": {
+                    "const": "staff"
+                  }
+                },
+                "required": [
+                  "author_kind"
+                ]
+              },
+              "then": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "autonomy_rung"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "approved_by"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "autonomy_rung": {
+                    "const": "propose"
+                  }
+                },
+                "required": [
+                  "autonomy_rung"
+                ]
+              },
+              "then": {
+                "required": [
+                  "approved_by"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "replyAck": {
+      "description": "HealthLinc confirms delivery of a relayed reply.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "reply.ack"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reply_id",
+            "result"
+          ],
+          "properties": {
+            "reply_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "result": {
+              "enum": [
+                "delivered",
+                "rejected"
+              ]
+            },
+            "reject_reason": {
+              "$ref": "#/$defs/rejectReason"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "rejected"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "reject_reason"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "guidanceInstruct": {
+      "description": "openPractice instructs HealthLinc to show its emergency guidance for an urgent item whose handoff failed (ER-09).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "guidance.instruct"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "routing_id",
+            "instruction",
+            "cause"
+          ],
+          "properties": {
+            "routing_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "instruction": {
+              "description": "HealthLinc shows its own in-app emergency guidance. openPractice sends no clinical advice (ER-09).",
+              "const": "show_emergency_guidance"
+            },
+            "cause": {
+              "enum": [
+                "clinical_handoff_unreachable",
+                "clinical_ack_overdue",
+                "clinical_handoff_rejected",
+                "no_active_ehr_link",
+                "ehr_link_in_review",
+                "content_unavailable"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "guidanceAck": {
+      "description": "HealthLinc acknowledges a guidance instruction.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "guidance.ack"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "routing_id",
+            "result"
+          ],
+          "properties": {
+            "routing_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "result": {
+              "enum": [
+                "received",
+                "rejected"
+              ]
+            },
+            "reject_reason": {
+              "$ref": "#/$defs/rejectReason"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "rejected"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "reject_reason"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "messageAck": {
+      "description": "Acknowledges link.revoked, proposal.resolved, inquiry.status and inquiry.recategorized.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "message.ack"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "acked_message_id",
+            "result"
+          ],
+          "properties": {
+            "acked_message_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "result": {
+              "enum": [
+                "received",
+                "rejected"
+              ]
+            },
+            "reject_reason": {
+              "$ref": "#/$defs/rejectReason"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "rejected"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "reject_reason"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
