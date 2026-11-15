@@ -21,14 +21,14 @@ For a clinical item, the routing record SHALL be all that openPractice keeps. No
 - **WHEN** a user or integration tries to attach a note or message text to a clinical routing record
 - **THEN** the attempt is refused and nothing is stored
 
-### Requirement: ER-02 HealthLinc's coach or medXfactory's medical AI proposes category and urgency, and openPractice's fixed rules apply them
-openPractice SHALL take the category and urgency that HealthLinc's coach or medXfactory's medical AI proposes, and apply them through openPractice's routing rules (rulings 44 and 51). Both proposers use the conservative defaults: an uncertain category is proposed as clinical, an uncertain urgency as urgent, and urgency is never lowered. The rules SHALL be a fixed, versioned rule set that ships with openPractice. Practice configuration SHALL be limited to staff lanes, practice hours and the on-call roster (FD-1 as amended by ruling 38; design call DC-17).
+### Requirement: ER-02 HealthLinc's coach, medXfactory's medical AI or the patient's red-flag checklist proposes category and urgency, and openPractice's fixed rules apply them
+openPractice SHALL take the category and urgency that HealthLinc's coach or medXfactory's medical AI proposes, or that HealthLinc's red-flag checklist yields for a message written straight to the doctor, and apply them through openPractice's routing rules (rulings 44, 51 and 71). The inquiry names its proposer as `proposal_source`: `coach_triage`, `medical_ai_triage` or `patient_checklist`. The two AIs use the conservative defaults: an uncertain category is proposed as clinical, an uncertain urgency as urgent, and urgency is never lowered. The checklist proposes `urgent` on any red flag, with HealthLinc's emergency guidance, `routine` with no red flag, and `priority` when the patient skips it (tension T-12); the patient may raise the result but never lower it, and the message is clinical. The rules SHALL be a fixed, versioned rule set that ships with openPractice. Practice configuration SHALL be limited to staff lanes, practice hours and the on-call roster (FD-1 as amended by ruling 38; design call DC-17).
 
 The rules SHALL apply these defaults (design call DC-14):
 - an unknown category routes as clinical;
 - an unknown urgency applies as `urgent`;
 - when any proposal marks a part clinical, that part routes as clinical;
-- the applied urgency is the highest of every urgency proposal received, whether from HealthLinc's coach, medXfactory's medical AI, a staff member or an agent, and of any minimum the rules set.
+- the applied urgency is the highest of every urgency proposal received, whether from HealthLinc's coach, medXfactory's medical AI, the patient's checklist, a staff member or an agent, and of any minimum the rules set.
 
 Applying the rules is automatic. It makes no decision for the patient; it only delivers the item to an owner (tension T-6). Each routing decision SHALL record the rule-set version and the inputs it used.
 
@@ -40,12 +40,28 @@ Applying the rules is automatic. It makes no decision for the patient; it only d
 - **WHEN** an agent proposes `urgent` for an item applied at `routine`
 - **THEN** the rules apply `urgent` at once, record the agent as the source, and no approval is awaited
 
+#### Scenario: A direct message with a red flag
+- **WHEN** a patient writes straight to the doctor, answers the red-flag checklist with a red flag, and HealthLinc submits it with `proposal_source` `patient_checklist` and `urgent`
+- **THEN** openPractice applies `urgent` and routes it as clinical at once, and HealthLinc has already shown its emergency guidance
+
+#### Scenario: A direct message with no red flag
+- **WHEN** the checklist shows no red flag and HealthLinc proposes `routine` with `patient_checklist`
+- **THEN** openPractice routes the item as clinical at `routine`
+
+#### Scenario: A skipped checklist
+- **WHEN** a patient skips the red-flag checklist and HealthLinc proposes `priority` with `patient_checklist`
+- **THEN** openPractice routes the item as clinical at `priority`, never lower
+
+#### Scenario: A patient tries to lower a checklist urgency
+- **WHEN** a patient resubmits the same direct message with a lower urgency than the checklist produced or than the item already has
+- **THEN** the applied urgency stays as it was, and the lower proposal is recorded
+
 #### Scenario: A practice tries to author a rule
 - **WHEN** an administrator tries to add a routing rule beyond lanes, hours and the on-call roster
 - **THEN** the change is refused
 
 ### Requirement: ER-03 Urgency is never downgraded
-openPractice MUST NOT lower an item's applied urgency, whether by rule, staff action, agent action or a later proposal from HealthLinc's coach or medXfactory's medical AI. Urgency MAY only be raised. Each raise SHALL be recorded with its source and time. A raise on a clinical item SHALL be sent to openChart as `handoff.urgency_raised`, with source `coach_triage`, `medical_ai_triage`, `staff`, `agent_proposal` or `routing_rule`. These two triage sources replace the earlier `healthlinc_triage`, which ruling 51 split; contract 1.0 is unratified, so no published value is withdrawn (design call DC-44). Neither contract SHALL contain a message that lowers urgency.
+openPractice MUST NOT lower an item's applied urgency, whether by rule, staff action, agent action or a later proposal from HealthLinc's coach or medXfactory's medical AI. Urgency MAY only be raised. Each raise SHALL be recorded with its source and time. A raise on a clinical item SHALL be sent to openChart as `handoff.urgency_raised`, with source `coach_triage`, `medical_ai_triage`, `patient_checklist`, `staff`, `agent_proposal` or `routing_rule`. A patient's own raise through HealthLinc's checklist uses `patient_checklist` (ruling 71). These two triage sources replace the earlier `healthlinc_triage`, which ruling 51 split; contract 1.0 is unratified, so no published value is withdrawn (design call DC-44). Neither contract SHALL contain a message that lowers urgency.
 
 A clinician MAY raise an item's urgency in openChart. openChart SHALL report it as `handoff.clinician_urgency_raised`, with the new urgency, the time, openChart's new `respond_by` and the clinician's reference, and openPractice SHALL acknowledge it with `message.ack` (design call DC-42). openPractice SHALL then:
 - record the raise, with the clinician reference as its source;
@@ -99,13 +115,13 @@ A `handoff.offer` SHALL carry exactly these fields, and no others (design call D
 - for `linked` and `link_in_review`, the EB-01 `link_id` and the EHR patient triple from that link;
 - for `unlinked`, no link and no EHR triple, but an `unlinked_identity` holding only the legal name, date of birth and administrative sex, a minimal subset of the `openpractice-ehr-patient-link/1.0` snapshot (`define-mvp-practice-foundation`, SHA-256 `76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802`), with the same shapes;
 - HealthLinc's request reference and reply-path reference;
-- where the conversation lives, as `conversation_source` (`healthlinc` or `medxfactory`), and the `conversation_ref` in that system (ruling 51);
+- where the conversation lives, as `conversation_source`: `healthlinc` for a conversation HealthLinc holds (a coach conversation, a direct message to the doctor or an administrative thread) or `medxfactory` for a medical-AI conversation, and the `conversation_ref` in that system (ruling 51);
 - the category `clinical` and the urgency;
 - the submitted, routed, acknowledge-by and respond-by times;
 - the clock policy reference;
 - the origin, and an opaque split-group reference for a split question.
 
-It MUST NOT carry the message body, question text, reply text, a medical-AI transcript, attachments or any other clinical content, and the schema SHALL refuse any other field. openChart SHALL fetch the conversation by reference from whichever system holds it: HealthLinc for a coach conversation, over HealthLinc's own link, or medXfactory for a medical-AI conversation (rulings 39 and 51). The clinician's reply SHALL go from openChart to HealthLinc over openChart's reply path, never through openPractice. Both are companion-change items.
+It MUST NOT carry the message body, question text, reply text, a medical-AI transcript, attachments or any other clinical content, and the schema SHALL refuse any other field. openChart SHALL fetch the conversation by reference from whichever system holds it, HealthLinc or medXfactory, through `openchart-conversation-retrieval/1.0`, the neutral conversation-retrieval contract that openChart owns in its change `define-clinical-message-inbox` and that HealthLinc and medXfactory implement (ruling 69). The clinician's reply SHALL go from openChart to HealthLinc over openChart's reply path, never through openPractice. Both are companion-change items.
 
 #### Scenario: An offer is built
 - **WHEN** openPractice builds a `handoff.offer`
@@ -263,7 +279,7 @@ Hermes SHALL answer an administrative item only in one of two forms, each at FD-
 
 An item that no read-only answer fits, or that is not eligible under AH-05 exception 1, routes to staff by lane (ER-11) until the drafted-reply MINOR exists. An item with `human_requested` set, and any follow-up on an item that already received a read-only answer, SHALL route to staff.
 
-Before Hermes processes any administrative question, change A's AH-01 gate SHALL be met: verified BAAs with the agent operator and with each model provider (AH-02), minimum necessary under AI-23 recipient profiles (AH-03), and no PHI in agent logs (AH-04). Hermes reads only the linked patient's data (AO-03). Before it drafts or answers, Hermes SHALL screen the item for clinical content; any hit makes it propose a re-route, which the rules apply as clinical (ER-12, DC-14). Hermes MUST NOT answer a clinical item or the clinical part of a mixed one. Hermes acts only as a roster entry with an openWallet ID and a sponsoring human (AM-04).
+Before Hermes processes any administrative question, change A's AH-01 gate SHALL be met: verified BAAs with the agent operator and with each model provider (AH-02), minimum necessary under AI-23 recipient profiles (AH-03), and no PHI in agent logs (AH-04). Hermes reads only the linked patient's data (AO-03). Before it drafts or answers, Hermes SHALL screen the item for clinical content; any hit makes it propose a re-route, which the rules apply as clinical (ER-12, DC-14). Hermes MUST NOT answer a clinical item or the clinical part of a mixed one. Hermes's administrative patient messages are kept separate from clinical ones under medXfactory's local policy (ruling 68): they follow ruling 45's guardrails, as change A's AH-05 exception 1 encodes them, and need no clinical review, while consent and data-sharing conditions still apply. Hermes acts only as a roster entry with an openWallet ID and a sponsoring human (AM-04).
 
 #### Scenario: Hermes gives a read-only answer
 - **WHEN** a patient asks on their own link about office hours, the item is eligible under change A's AH-05 exception 1, and the practice has switched the hours answer type on at `act_after_delay`

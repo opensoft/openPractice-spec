@@ -223,10 +223,18 @@
       }
     },
     "conversationSource": {
-      "description": "Where the patient's conversation lives (ruling 51): healthlinc for a conversation with HealthLinc's coach, medxfactory for a conversation with medXfactory's medical AI. openPractice stores no clinical content from either.",
+      "description": "Where the patient's conversation lives (ruling 51): healthlinc for a conversation HealthLinc holds (a coach conversation, a direct message to the doctor, or an administrative thread), medxfactory for a conversation with medXfactory's medical AI. openPractice stores no clinical content from either.",
       "enum": [
         "healthlinc",
         "medxfactory"
+      ]
+    },
+    "proposalSource": {
+      "description": "Who proposed the category and urgency: coach_triage (HealthLinc's coach), medical_ai_triage (medXfactory's medical AI) or patient_checklist (HealthLinc's red-flag checklist for a message written straight to the doctor with no AI triage; ruling 71).",
+      "enum": [
+        "coach_triage",
+        "medical_ai_triage",
+        "patient_checklist"
       ]
     },
     "conversationRef": {
@@ -1720,7 +1728,7 @@
       }
     },
     "inquirySubmitted": {
-      "description": "HealthLinc submits a patient question or an escalation to the patient's human doctor, from a coach conversation or a medXfactory medical-AI conversation (ruling 51). A clinical question carries no body: no clinical content enters openPractice (ER-01, ER-05).",
+      "description": "HealthLinc submits a patient question or an escalation to the patient's human doctor, from a conversation HealthLinc holds (a coach conversation, a direct message to the doctor or an administrative thread) or a medXfactory medical-AI conversation (rulings 51 and 71). A clinical question carries no body: no clinical content enters openPractice (ER-01, ER-05).",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -1771,6 +1779,7 @@
             "reply_path_ref",
             "submitted_at",
             "submitted_by",
+            "proposal_source",
             "proposed_category",
             "proposed_urgency",
             "triage_ref"
@@ -1799,19 +1808,22 @@
                 "representative"
               ]
             },
+            "proposal_source": {
+              "$ref": "#/$defs/proposalSource"
+            },
             "proposed_category": {
-              "description": "Proposed by HealthLinc's coach or medXfactory's medical AI, according to conversation_source (rulings 44 and 51). An uncertain category is proposed as clinical.",
+              "description": "Proposed by the source named in proposal_source (rulings 44, 51 and 71). An uncertain category is proposed as clinical, and a message written straight to the doctor is clinical.",
               "enum": [
                 "clinical",
                 "administrative"
               ]
             },
             "proposed_urgency": {
-              "description": "Proposed with the conservative default: an uncertain urgency is proposed as urgent (ruling 51). openPractice never lowers it (ER-03).",
+              "description": "From an AI, proposed with the conservative default: an uncertain urgency is proposed as urgent (ruling 51). From patient_checklist: urgent on any red flag, routine with none, priority when the checklist is skipped, and never lower than the patient chose (ruling 71). openPractice never lowers it (ER-03).",
               "$ref": "#/$defs/urgency"
             },
             "triage_ref": {
-              "description": "Opaque reference to the proposing AI's triage output and model version; the system that holds the conversation keeps the detail.",
+              "description": "Opaque reference to the proposing triage output: the coach's or medical AI's triage and model version, or the patient's checklist response; the system that holds the conversation keeps the detail.",
               "$ref": "#/$defs/opaqueRef"
             },
             "human_requested": {
@@ -1949,6 +1961,85 @@
                         "const": "medxfactory"
                       }
                     }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "conversation_source": {
+                    "const": "medxfactory"
+                  }
+                },
+                "required": [
+                  "conversation_source"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "proposal_source": {
+                    "const": "medical_ai_triage"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "proposal_source": {
+                    "enum": [
+                      "coach_triage",
+                      "patient_checklist"
+                    ]
+                  }
+                },
+                "required": [
+                  "proposal_source"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "conversation_source": {
+                    "const": "healthlinc"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "proposal_source": {
+                    "const": "medical_ai_triage"
+                  }
+                },
+                "required": [
+                  "proposal_source"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "conversation_source": {
+                    "const": "medxfactory"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "proposal_source": {
+                    "const": "patient_checklist"
+                  }
+                },
+                "required": [
+                  "proposal_source"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "proposed_category": {
+                    "const": "clinical"
                   }
                 }
               }

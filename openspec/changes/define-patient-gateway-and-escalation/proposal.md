@@ -15,7 +15,7 @@ FD-10(b) kept the companion app out of the beta. On 2026-11-14 the product owner
 
 The owner made rulings 34 to 44 that day, and later that day rulings 45 to 54. They are recorded in `design.md` under "Owner rulings (2026-11-14)". This change records them as governed requirements before any runtime exists. **Rulings are not ratification:** the change stays draft until the owner completes `owner-ratification.md`.
 
-Ideation paths are relative to the root of `opensoft/openPractice-spec`. FD-1 to FD-11 in [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md) were ratified on 2026-08-27. This change records eleven tensions, T-1 to T-11 in `design.md`. Two rest on owner amendments carried by change `define-actors-agents-and-work-inbox`: FD-10(b) by ruling 36 (T-1) and FD-1 by ruling 38 (T-2). Two are resolved by owner rulings: T-9 by ruling 50 and T-10 by ruling 52. T-11 records a gap in sibling changes, with a proposed follow-up. The rest are proposed conscious exceptions or design calls for the owner.
+Ideation paths are relative to the root of `opensoft/openPractice-spec`. FD-1 to FD-11 in [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md) were ratified on 2026-08-27. This change records twelve tensions, T-1 to T-12 in `design.md`. Two rest on owner amendments carried by change `define-actors-agents-and-work-inbox`: FD-10(b) by ruling 36 (T-1) and FD-1 by ruling 38 (T-2). Three are resolved by owner rulings: T-9 by ruling 50, T-10 by ruling 52 and T-12 by ruling 71. T-11 records a gap in sibling changes, with a proposed follow-up. The rest are proposed conscious exceptions or design calls for the owner.
 
 ## What Changes
 
@@ -25,7 +25,7 @@ Ideation paths are relative to the root of `opensoft/openPractice-spec`. FD-1 to
   - "active" as an active registry record plus, where the practice sells memberships, a current membership (ruling 42);
   - account and representative links, one per backend, with no master identity (ruling 39), after verified identity and a named human's confirmation;
   - patient-submitted demographic and coverage changes as proposals, reviewed before they apply;
-  - question and escalation intake from a coach or a medical-AI conversation, named by source and reference (ruling 51), and reply relay, where a clinical question carries no text;
+  - question and escalation intake from a conversation HealthLinc holds or a medical-AI conversation, named by source and reference (ruling 51), with the proposer named, including the red-flag checklist for a direct message to the doctor (ruling 71), and reply relay, where a clinical question carries no text;
   - patient notices (`patient.notice`, `notice.ack`) for hold countdowns and lifts and for ruling 50's grace periods, where a countdown or grace period starts only after delivery is confirmed or recorded;
   - no gateway capability for a HealthLinc deployment until the agreement counsel requires with its operator is verified;
   - no PHI in logs, notifications, keys or diagnostics, and contract tests.
@@ -45,15 +45,15 @@ Ideation paths are relative to the root of `opensoft/openPractice-spec`. FD-1 to
   - clinician urgency raises from openChart, which get the urgent path.
 - **`payment-hold` (PH-01 to PH-09).** A hold blocks only routine clinical messaging, new non-urgent scheduling and non-urgent medical-AI consults, and never urgent help, billing contact or the patient's own records (rulings 41 and 52). No hold is placed before the medical director approves a versioned, counsel-reviewed policy. Placing is tier 3 and lifting tier 2, both proposed. The patient is told. Disputed balances and GFE dispute windows never count until the policy states their treatment. A hold stalls no claim.
 - **`mobile-approver` (MA-01 to MA-07).** A thin client on the same versioned API, for approvals, administrative escalations, the day-close signature and alerts (rulings 35 and 38). No PHI in notifications or on the device; re-authentication for deep links and sign-offs; lost-device revocation through AM-05. The physician's clinical work stays in openChart.
-- **Design calls.** Forty-four items that go beyond the rulings are listed in `design.md` under "Design calls for owner review". Each either fails closed in binding text or is cited there as proposed.
+- **Design calls.** Forty-five items that go beyond the rulings are listed in `design.md` under "Design calls for owner review". Each either fails closed in binding text or is cited there as proposed.
 
 ## Required companion changes
 
 Ruling 40 requires three companion changes. Rulings 47 to 49 asked for them to be drafted, and they are being drafted in their own repositories, not here. `design.md` lists what each must contain.
 
-- **`opensoft/openChart-spec`, change `define-clinical-message-inbox`:** a clinical message inbox that receives routed escalations under `openpractice-clinical-handoff/1.0`, acknowledges each one, owns the response clock, fetches the conversation by reference from HealthLinc or medXfactory, gives the clinician a reply path to HealthLinc, and sends a clinician's clinical-need marker.
+- **`opensoft/openChart-spec`, change `define-clinical-message-inbox`:** a clinical message inbox that receives routed escalations under `openpractice-clinical-handoff/1.0`, acknowledges each one, owns the response clock, fetches the conversation by reference from HealthLinc or medXfactory through `openchart-conversation-retrieval/1.0`, the retrieval contract it owns (ruling 69), gives the clinician a reply path to HealthLinc, and sends a clinician's clinical-need marker.
 - **`opensoft/HealthLinc`, change `define-practice-gateway-integration`** (a private repository, cited by repository and change id only): the three patient paths of ruling 51 (coach, connect to my doctor, connect to medXfactory's medical AI), category and urgency proposals with the conservative defaults, an entitlement-check consumer, account links to each backend through that backend's own contract, and emergency guidance that stays in the app.
-- **`MedxSoft/medXfactory`, change `define-care-organization-hermes-openpractice-operations`:** agent identity through openWallet, consumption of the agent-operations contract, honoring the ladder and the pause switch, and, on the medical-AI side, clinical AI answering and its clinical-safety governance, with exchanges recorded in the chart through medXfactory's own path (ruling 53).
+- **`MedxSoft/medXfactory`, change `define-care-organization-hermes-openpractice-operations`:** agent identity through openWallet, consumption of the agent-operations contract, honoring the ladder and the pause switch, and, on the medical-AI side, clinical AI answering and its clinical-safety governance, with the medical AI's records reaching openChart through MedxEHR, which relays them with receipts (rulings 53 and 70), and Hermes's administrative messages kept separate from clinical ones (ruling 68).
 
 ## Dependencies
 

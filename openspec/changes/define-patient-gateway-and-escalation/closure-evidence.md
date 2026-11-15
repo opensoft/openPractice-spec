@@ -38,7 +38,8 @@ This record collects acceptance evidence for OpenSpec change `define-patient-gat
 - Clinical and urgent intake refused with `clinical_routing_unavailable` while clinical routing is missing or disabled: _pending_
 - Ruling 50's safeguards for routine clinical messaging and medical-AI consults: _pending_
 - `medical_ai_consult` gated like non-urgent clinical messaging, and HealthLinc's coach never gated: _pending_
-- Conversation source and reference for coach and medical-AI conversations, with no conversation content in openPractice: _pending_
+- Conversation source and reference for HealthLinc-held and medical-AI conversations, with no conversation content in openPractice: _pending_
+- `proposal_source` on every inquiry, and the red-flag checklist's `urgent`, `routine` and `priority` proposals applied and never lowered: _pending_
 - The clinical-need marker: attribution, `valid_until`, the urgent-origin check, and no openPractice-created marker: _pending_
 - `representative_scope` in place of a hold for a representative without billing scope: _pending_
 - Deletion of misrouted text from the agent layer and model provider under the AH-02 agreements: _pending_

@@ -228,12 +228,12 @@ A pending coverage proposal SHALL hold no claim, because claims use the registry
 ### Requirement: PG-10 Questions enter through inquiry intake, and a clinical question carries no text
 openPractice SHALL accept patient questions, and escalations to the patient's human doctor, as `inquiry.submitted` messages (rulings 44 and 51). Each carries:
 - HealthLinc's reference for the request;
-- where the conversation lives, as `conversation_source`: `healthlinc` for a conversation with HealthLinc's coach, or `medxfactory` for one with medXfactory's medical AI;
+- where the conversation lives, as `conversation_source`: `healthlinc` for a conversation HealthLinc holds, whether a coach conversation, a direct message to the doctor or an administrative thread, or `medxfactory` for one with medXfactory's medical AI;
 - a `conversation_ref` to the conversation in that system, whose namespace matches the source;
 - a reply-path reference and a triage reference;
-- the category and urgency proposed by HealthLinc's coach or medXfactory's medical AI.
+- the proposed category and urgency, with `proposal_source` naming who proposed them: HealthLinc's coach (`coach_triage`), medXfactory's medical AI (`medical_ai_triage`), or HealthLinc's red-flag checklist (`patient_checklist`) (design call DC-45).
 
-Both proposers use the conservative defaults (ruling 51): an uncertain category is proposed as clinical, and an uncertain urgency as urgent. An escalation may originate from either source; either way HealthLinc submits it through the gateway (design call DC-37). openPractice stores no clinical content from either conversation, and the medical AI's exchanges reach the chart through medXfactory's own governed path, never through openPractice (ruling 53).
+The two AIs use the conservative defaults (ruling 51): an uncertain category is proposed as clinical, and an uncertain urgency as urgent. When a patient writes straight to the doctor with no AI triage, HealthLinc asks a short red-flag checklist (ruling 71): any red flag proposes `urgent`, and HealthLinc shows its emergency guidance; no red flag proposes `routine`; a skipped checklist proposes `priority`. The patient may raise that urgency but never lower it, and such a message is clinical. An escalation may originate from any of these sources; either way HealthLinc submits it through the gateway (design call DC-37). openPractice stores no clinical content from any conversation. The medical AI's records reach openChart through MedxEHR, which relays them with receipts; medXfactory does not write to openChart directly, and openPractice is never in that path (rulings 53 and 70).
 
 An administrative inquiry SHALL carry its question text and a topic hint. A clinical inquiry MUST NOT carry question text or a topic hint, and the schema SHALL refuse one that does. This keeps clinical content out of openPractice at intake (ruling 34).
 
@@ -274,7 +274,7 @@ Clinical inquiry intake, and intake of any inquiry whose applied urgency is `urg
 
 #### Scenario: An escalation from medXfactory's medical AI
 - **WHEN** HealthLinc submits a clinical escalation whose conversation lives in medXfactory, with `conversation_source` `medxfactory`
-- **THEN** openPractice routes it to openChart by reference, with no text, and openChart fetches the conversation from medXfactory
+- **THEN** openPractice routes it to openChart by reference, with no text, and openChart retrieves the conversation from medXfactory through `openchart-conversation-retrieval/1.0`
 
 #### Scenario: Clinical routing is disabled
 - **WHEN** an urgent clinical inquiry arrives at a deployment whose clinical routing is disabled
