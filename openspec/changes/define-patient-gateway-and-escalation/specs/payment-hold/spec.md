@@ -150,7 +150,7 @@ A hold notice SHALL go to the patient's own link, and to a representative only w
 - **THEN** the patient receives a `hold_lifted` notice saying that every capability is restored
 
 ### Requirement: PH-06 Disputed balances and GFE dispute windows never count until the policy states their treatment
-A hold policy SHALL state how disputed balances, and balances inside an open GFE dispute window (FD-4), are treated (ruling 41). Until an approved policy states that treatment, a disputed amount SHALL never count toward a hold. An amount inside an open GFE dispute window SHALL count as disputed (design call DC-8). When a dispute opens on an amount that a hold relies on, openPractice SHALL re-evaluate the hold at once. When the remaining criteria are no longer met, the hold SHALL lift under PH-09.
+A hold policy SHALL state how disputed balances, and balances inside an open GFE dispute window (FD-4), are treated (ruling 41). Until an approved policy states that treatment, a disputed amount SHALL never count toward a hold. An amount inside an open GFE dispute window SHALL count as disputed (design call DC-8). When a dispute opens on an amount that a hold relies on, openPractice SHALL re-evaluate the hold at once, and SHALL do the same when a same-person reconciliation opens on an amount the hold relies on, which `define-revenue-cycle-core` PS-09, a draft not yet on `main`, leaves out of the balance it publishes (design call DC-68, PROPOSED). When the remaining criteria are no longer met, the hold SHALL lift under PH-09.
 
 #### Scenario: A disputed amount
 - **WHEN** a patient's only overdue amount is under dispute
@@ -163,6 +163,10 @@ A hold policy SHALL state how disputed balances, and balances inside an open GFE
 #### Scenario: A dispute opens on a held balance
 - **WHEN** a patient disputes the amount an active hold relies on
 - **THEN** the hold is re-evaluated at once and lifts if the criteria are no longer met
+
+#### Scenario: A same-person reconciliation opens on a held balance
+- **WHEN** a same-person reconciliation opens on the only overdue charge an active hold relies on
+- **THEN** the hold is re-evaluated at once and lifts under PH-09, because that charge no longer counts toward it
 
 ### Requirement: PH-07 A hold counts only medical-billing balances unless the policy says otherwise, and a lapsed membership is not a hold
 A hold SHALL count only balances that openPractice medical billing owns, including self-pay and direct-pay healthcare charges (FD-4). It MAY count membership obligations only when the approved policy explicitly includes them, and then only as change `define-customer-financial-data-boundaries`, merged on `main`, assigns their ownership. A lapsed or unpaid membership SHALL NOT by itself place a payment hold; membership affects access only through the entitlement check (PG-04, ruling 42) (design call DC-9). A hold SHALL NOT create, move or duplicate a collectible balance (AI-22).
@@ -194,6 +198,7 @@ A payment hold SHALL stall no claim (FD-5). It SHALL NOT hold charge finalizatio
 A hold SHALL lift when its basis ends. openPractice SHALL lift a hold automatically, as a tier-2 action with notification, when any of these happens (design call DC-7):
 - the balance it relies on is paid or resolved;
 - a dispute leaves the policy's criteria unmet (PH-06);
+- a same-person reconciliation leaves the policy's criteria unmet (PH-06; `define-revenue-cycle-core` PS-09, a draft not yet on `main`; design call DC-68, PROPOSED);
 - the policy version it relied on is withdrawn or expires.
 
 Every hold SHALL carry a review date from its policy. At that date it SHALL become work owned by the biller lane. A hold SHALL NOT be extended past its review date without a recorded review.

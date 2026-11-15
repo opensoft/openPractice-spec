@@ -101,7 +101,7 @@ The system SHALL track delivery state separately from the frozen batch content, 
 - **THEN** the posting becomes `failed_permanent` work, the batch content is not edited, and the resolution is a redelivery or a superseding posting
 
 ### Requirement: AI-08 A reconciliation report proves the mirror
-After each delivery, and on demand as of any date, the system SHALL produce a reconciliation report for a destination. The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category; in summary-journal mode also by service category, on lines that are revenue or a deduction from revenue; and in customer-detail mode also by customer. In `summary-journal` mode it SHALL also prove, for each payer-class control account, that openPractice's subledger total equals the destination's control-account balance as of the same cut-off, and that the gross-to-net allowance equals the sum of openPractice's current estimates. It SHALL list missing documents, unexpected documents, amount mismatches and destination-side edits. It SHALL state its exclusions: unidentified receipts held as liabilities, bank lines labelled "accounting system's", legacy collections, and other-route shares of explained deposits (BAB-14). Each exception SHALL become work owned by a Roster entry.
+After each delivery, and on demand as of any date, the system SHALL produce a reconciliation report for a destination. The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category; in summary-journal mode also by service category, on lines that are revenue or a deduction from revenue (design call F-14, PROPOSED); and in customer-detail mode also by customer. In `summary-journal` mode it SHALL also prove, for each payer-class control account, that openPractice's subledger total equals the destination's control-account balance as of the same cut-off, and that the gross-to-net allowance equals the sum of openPractice's current estimates. It SHALL list missing documents, unexpected documents, amount mismatches and destination-side edits. It SHALL state its exclusions: unidentified receipts held as liabilities, bank lines labelled "accounting system's", legacy collections, and other-route shares of explained deposits (BAB-14). Each exception SHALL become work owned by a Roster entry.
 
 #### Scenario: The mirror ties
 - **WHEN** every posting of a delivered batch is posted and nothing was edited in the destination
@@ -208,7 +208,7 @@ Every estimate SHALL record its estimator version, input window, cohort and evid
 - **THEN** it applies only after the practice's accountant approves it, from a stated effective date
 
 ### Requirement: AI-13 The contract posts every money event that touches a receivable or a deposit
-In customer-detail mode, the contract SHALL define the following postings. Each SHALL keep the deposit entry equal to its bank line.
+In customer-detail mode, the contract SHALL define the following postings. Each SHALL keep the deposit entry equal to its bank line. The payer-debit and provider-level-offset rows as revised, and every row after the one for an unidentified receipt identified later, are design call F-19, PROPOSED.
 
 | Event | Postings |
 |---|---|
@@ -276,10 +276,10 @@ Enabling customer-detail mode SHALL be a governance tier-4 hard stop. When the B
 - claim submission: reclassification from unbilled to billed receivable, with no revenue effect;
 - adjudication: the contractual adjustment realized against the allowance, and any estimate difference trued up;
 - payer and patient payments: cash clearing against the payer-class or patient receivable;
-- patient-share and payer-share transfers between control accounts, with no revenue effect;
+- patient-share and payer-share transfers between control accounts, with no revenue effect (payer-share transfers: design call F-15, PROPOSED);
 - disputes, credit losses, refund liabilities and reversals, each as a new entry.
 
-Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference; SHALL carry a payer class where it touches a receivable or revenue; and SHALL carry its benign service category and its group level where it is revenue or a deduction from revenue, and a service category on no other line. A payer-responsibility-transfer line SHALL carry the payer class that receives the amount as its payer class and the payer class that gives it up as its counter payer class, and no other line SHALL carry a counter payer class; its amount SHALL be greater than zero, so a reversed payer-share transfer SHALL be sent as a new payer-responsibility-transfer line with its two classes swapped. A patient-responsibility-transfer, chargeback, contractual-adjustment, payment-application, payment-received, returned-item, unbilled-to-billed or write-off-against-allowance line SHALL always carry its payer class, because it always touches a receivable; a credit-loss, payer-takeback, refund-liability, unapplied-payment or unidentified-receipt-reclassified line SHALL carry it where its reason category touches a receivable. A gross-to-net line, meaning a patient-services revenue, gross-to-net deduction or gross-to-net true-up line, SHALL carry the estimate version or close snapshot it applies, by reference. Each batch SHALL record the version of the practice's whole effective-dated service-category mapping that it used. Deposits SHALL be grouped per explained bank line. The contract SHALL NOT create or update any customer record in this mode. Summary postings MUST NOT contain any of the following:
+Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference; SHALL carry a payer class where it touches a receivable or revenue; and SHALL carry its benign service category and its group level where it is revenue or a deduction from revenue, and a service category on no other line (ruling 125; its details are design call F-14, PROPOSED). A payer-responsibility-transfer line SHALL carry the payer class that receives the amount as its payer class and the payer class that gives it up as its counter payer class, and no other line SHALL carry a counter payer class; its amount SHALL be greater than zero, so a reversed payer-share transfer SHALL be sent as a new payer-responsibility-transfer line with its two classes swapped (design call F-15, PROPOSED). A patient-responsibility-transfer, chargeback, contractual-adjustment, payment-application, payment-received, returned-item, unbilled-to-billed or write-off-against-allowance line SHALL always carry its payer class, because it always touches a receivable; a credit-loss, payer-takeback, refund-liability, unapplied-payment or unidentified-receipt-reclassified line SHALL carry it where its reason category touches a receivable (design call F-17, PROPOSED). A gross-to-net line, meaning a patient-services revenue, gross-to-net deduction or gross-to-net true-up line, SHALL carry the estimate version or close snapshot it applies, by reference (design call F-14, PROPOSED). Each batch SHALL record the version of the practice's whole effective-dated service-category mapping that it used (design call F-14, PROPOSED). Deposits SHALL be grouped per explained bank line. The contract SHALL NOT create or update any customer record in this mode. Summary postings MUST NOT contain any of the following:
 - customer records or customer names, or account numbers of patients or guarantors;
 - member, claim or subscriber identifiers;
 - a per-visit or per-person date of service;
@@ -290,7 +290,7 @@ Each destination SHALL have a minimum group size, which defaults to 11 underlyin
 
 #### Scenario: A summary batch is inspected
 - **WHEN** a reviewer inspects a summary-journal batch
-- **THEN** it holds only reason categories, neutral labels, payer classes, amounts, dates, estimate or snapshot references and batch references, and no customer record
+- **THEN** it holds no customer record, customer name, account number, member, claim or subscriber identifier, per-visit or per-person date of service, or anything else AI-15 says summary postings MUST NOT contain; any service category is a benign code
 
 #### Scenario: A day's charges are posted
 - **WHEN** a practice captures twenty Medicare-class office visits on one day
@@ -303,6 +303,10 @@ Each destination SHALL have a minimum group size, which defaults to 11 underlyin
 #### Scenario: A week crosses a month end
 - **WHEN** a week from October 28 to November 3 has 12 commercial-class office visits in October and 4 in November, with fewer than eleven on any day
 - **THEN** the week splits at October 31: the October part posts as a week-level group dated October 31, the November part rolls up to November's period-level group dated November 30, and no October revenue is dated in November
+
+#### Scenario: A partial payer-share reversal
+- **WHEN** 14.00 of a payer-share transfer from the Medicare class to a Medigap plan's class is reversed
+- **THEN** it is sent as a new payer-responsibility-transfer line of 14.00, with the Medicare class as its payer class and the Medigap class as its counter payer class, and never as a negative line
 
 ### Requirement: AI-16 Customer-detail postings carry the minimum necessary, with neutral labels
 Customer-detail postings created by this contract SHALL contain only:
@@ -380,11 +384,11 @@ Before any destination goes live, its adapter SHALL verify and record whether th
 - a service date on each invoice line;
 - cash-basis reporting over the postings this contract makes.
 
-A destination that cannot carry line service dates SHALL NOT go live in customer-detail mode until the owner decides how to proceed.
+A destination that cannot carry line service dates SHALL NOT go live in customer-detail mode until the product owner decides how to proceed.
 
 No destination SHALL go live until the practice's accountant has approved, and openPractice has recorded, the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (ruling 30). The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, the outside-accountant roster entry of BAB-17 (ruling 141), and neither SHALL be opted in for agent signing (BAB-17). Neither SHALL be self-approved (`define-practice-readiness` SR-04).
 
-Before any destination goes live, in either posting mode, openPractice SHALL also record, per destination, who books the bank debits that openPractice explains: either openPractice sends explained-bank-debit lines, with label `bank_debit_clearing_release`, or the destination books bank debits from its own bank feed and codes each against the account mapped to `cash_clearing`. Until that record exists, no explained-bank-debit line SHALL be sent. If the record later changes to openPractice sending them, only debits explained after its effective date SHALL be sent.
+Before any destination goes live, in either posting mode, openPractice SHALL also record, per destination, who books the bank debits that openPractice explains: either openPractice sends explained-bank-debit lines, with label `bank_debit_clearing_release`, or the destination books bank debits from its own bank feed and codes each against the account mapped to `cash_clearing`. The practice manager SHALL record it, keeping the role used, and the practice's accountant SHALL confirm it, beside the D8 record; a record the accountant has not confirmed counts as none. Until that record exists, no explained-bank-debit line SHALL be sent. If the record later changes to openPractice sending them, only debits explained after its effective date SHALL be sent (design call F-18, PROPOSED).
 
 #### Scenario: ERPNext verification
 - **WHEN** the ERPNext adapter is prepared for go-live
@@ -393,6 +397,10 @@ Before any destination goes live, in either posting mode, openPractice SHALL als
 #### Scenario: The accountant has not approved the policy
 - **WHEN** a destination is otherwise ready but no accountant approval of the revenue-recognition policy is recorded
 - **THEN** go-live is refused
+
+#### Scenario: No record of who books the bank debits
+- **WHEN** a destination is otherwise ready, but no confirmed record says who books the bank debits openPractice explains
+- **THEN** go-live is refused, and no `bank_debit_clearing_release` line is sent to it
 
 #### Scenario: Someone other than the accountant tries to approve
 - **WHEN** a named AI agent, or a person who is not the practice's accountant, tries to approve the D8 policy or an estimator version
@@ -439,8 +447,8 @@ Each adapter SHALL pass contract tests covering:
 - dates and late-charge flagging, including close re-estimate dating;
 - constrained-estimate revenue, evidence-driven true-ups and the absence of any gross-then-adjust fallback;
 - summary-journal control-account reconciliation by payer class;
-- the service category on every summary-journal line that is revenue or a deduction from revenue, its absence from every other line and from every customer-detail posting, the counter payer class on every payer-responsibility-transfer line and on no other line, a payer class on every patient- or payer-responsibility-transfer line and on every chargeback, contractual-adjustment, payment-application, payment-received, returned-item, unbilled-to-billed and write-off-against-allowance line, a payer class on every credit-loss, payer-takeback, refund-liability, unapplied-payment and unidentified-receipt-reclassified line whose reason category touches a receivable, tested by reason category, no payer-responsibility-transfer amount of zero or less, and the mapping version on every batch;
-- no explained-bank-debit line sent to a destination without its AI-20 record saying that openPractice sends them, or for a bank debit explained before that record's effective date;
+- the service category on every summary-journal line that is revenue or a deduction from revenue, its absence from every other line and from every customer-detail posting, the counter payer class on every payer-responsibility-transfer line and on no other line, a payer class on every patient- or payer-responsibility-transfer line and on every chargeback, contractual-adjustment, payment-application, payment-received, returned-item, unbilled-to-billed and write-off-against-allowance line, a payer class on every credit-loss, payer-takeback, refund-liability, unapplied-payment and unidentified-receipt-reclassified line whose reason category touches a receivable, tested by reason category, no payer-responsibility-transfer amount of zero or less, and the mapping version on every batch (design calls F-14, F-15 and F-17, PROPOSED);
+- no explained-bank-debit line sent to a destination without its AI-20 record saying that openPractice sends them, or for a bank debit explained before that record's effective date (design call F-18, PROPOSED);
 - the AI-13 events;
 - reconciliation;
 - the absence of PHI in keys and diagnostics;
