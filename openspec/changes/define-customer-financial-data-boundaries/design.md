@@ -44,7 +44,7 @@ marketing or money movement, amend the constitution, or enlarge beta acceptance.
 The customer role applies only to membership and retail buyers (ruling 32). For
 medical billing, an accounting-side customer (a guarantor account or payer, in
 `customer-detail` mode only) is derived from the guarantor or payer role and is
-not a separate party role. `define-mvp-practice-foundation` PR-15 states the one-party rule as a requirement, proposed on 2026-11-15, and its AI-10 withholds a restricted guarantor's billing address and contact (design call F-11, proposed the same day).
+not a separate party role. `define-mvp-practice-foundation` PR-15 states the one-party rule as a requirement, proposed on 2026-11-15, and its AI-10 withholds a restricted guarantor's billing address and contact (design call F-11, proposed the same day). Where this change's requirements give the practice's owner a view, it is the holder of the practice manager recipe, because an owner link grants no access and no authority (`define-mvp-practice-foundation` design call F-13, proposed on 2026-11-15).
 
 Person identity, customer, patient, member, payer and representative are distinct
 concepts. Keep effective dates, evidence, legal-entity scope and domain identifiers

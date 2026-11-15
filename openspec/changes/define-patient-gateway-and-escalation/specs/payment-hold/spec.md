@@ -84,7 +84,7 @@ Placing and lifting a hold SHALL each be a logged, tiered action, with the actio
 
 Both action types SHALL start at `propose` for agents (ruling 37; change A AO-04). An agent can never act with less friction than the tier requires. Above `propose`, an agent may place a hold only at `act_after_delay`, so the countdown and cancel window always run, and may lift a hold at `act_with_notice` or `act_after_delay`. Each rung above `propose` is reached only through that action type's BAB-17 opt-in. Agent placement SHALL obey AO-08's rate and blast-radius limits.
 
-Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the named human who placed or lifted it where a human did, the signer where one signs (BAB-17), the time and the provenance. A named human SHALL NOT place or lift a hold on a patient who is their own party or in its same-person group, or on a balance that their own party, or a party in that group, owes or guarantees, while another named human who may do so is on the roster, and an agent SHALL NOT do so for its sponsor's party or that party's group; `define-mvp-practice-foundation` PR-15's own-record rule and its one-person alternative govern, and the record then keeps both roles and that fact (its design call F-7, PROPOSED). It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
+Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the named human who placed or lifted it where a human did, the signer where one signs (BAB-17), the time and the provenance. A named human SHALL NOT place or lift a hold on a patient who is their own party or in its same-person group, or whom their own party, or a party in that group, represents, or on a balance that their own party, or a party in that group, owes or guarantees, while another named human who may do so is on the roster, and an agent SHALL NOT do so where any of those holds for its sponsor's party or for the party of a person on whose request or behalf it acts (its principal, change A AM-03), or for either's group; `define-mvp-practice-foundation` PR-15's own-record rule and its one-person alternative govern, and the record then keeps both roles and that fact (its design call F-7, PROPOSED). It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
 
 #### Scenario: A staff member places a hold
 - **WHEN** a biller places a hold under an approved policy
@@ -113,6 +113,14 @@ Every placement and lift SHALL record the policy version, the coded criteria met
 #### Scenario: An agent lifts its sponsor's hold
 - **WHEN** an agent at `act_with_notice` for lifts tries to lift a hold on its sponsor's own patient record
 - **THEN** the lift is refused as an own-record act of the sponsor, and the item goes to another named human
+
+#### Scenario: An agent lifts the hold of the person who asked it
+- **WHEN** an agent sponsored by one staff member, acting at the request of another staff member, tries to lift the hold on the requesting staff member's own patient record
+- **THEN** the lift is refused as an own-record act of the person who asked, and the item goes to another named human
+
+#### Scenario: A staff member represents the held patient
+- **WHEN** a staff member who is the confirmed representative of a patient on hold tries to lift that hold, and another named human may lift it
+- **THEN** it is an own-record act: the lift is routed to that other person
 
 ### Requirement: PH-05 The patient is told, with no PHI in push or text content
 openPractice SHALL tell the patient when a hold's countdown starts and when a hold lifts (ruling 41), with a `patient.notice` of kind `hold_countdown_started` or `hold_lifted` through HealthLinc. Its template is the hold policy's approved notice wording (PH-03), and its `effective_at` is when the hold would take effect or when it lifted. The notice SHALL say what the hold blocks, what it never blocks (urgent help, billing contact and own records), and how to resolve it.

@@ -51,7 +51,7 @@ Every openPractice ledger entry SHALL carry exactly one reason category, from a 
 The accounting integration SHALL record financial events and MUST NOT instruct the destination, or any bank or processor, to originate a payment, transfer or refund. Refunds SHALL be decided in openPractice and posted to the destination only as records of issued refunds.
 
 #### Scenario: A refund is approved
-- **WHEN** the owner approves a patient refund in openPractice
+- **WHEN** the holder of the practice manager recipe approves a patient refund in openPractice
 - **THEN** the destination receives a refund record only after the refund is recorded as issued, and no payment instruction is sent
 
 ### Requirement: BAB-08 Legacy receivables are excluded, but a mixed deposit still balances
@@ -75,15 +75,19 @@ Register changes SHALL be dated, kept as history, and audited.
 - **THEN** the register holds it with label, bank, type, masked number, mapped accounting account, status `active` and its effective date
 
 ### Requirement: BAB-10 Full bank account and routing numbers are encrypted, restricted and never exported
-openPractice SHALL store full bank account and routing numbers encrypted at rest. They SHALL be visible only to the owner and billing-administrator roles, and masked everywhere else. Every view of a full number SHALL be audited. Full numbers MUST NOT appear in logs, error messages, exports, accounting postings, idempotency keys or diagnostic bundles.
+openPractice SHALL store full bank account and routing numbers encrypted at rest. They SHALL be visible only to holders of the practice manager recipe and of the controller or office manager recipe (change `define-actors-agents-and-work-inbox` AM-02), and masked everywhere else; that is how this change reads ruling 23's "owner and billing-admin roles", since no recipe is an owner's and an owner link grants nothing (design call F-13, PROPOSED, put to the owner). Every view of a full number SHALL be audited. Full numbers MUST NOT appear in logs, error messages, exports, accounting postings, idempotency keys or diagnostic bundles.
 
 #### Scenario: A front-desk user opens the register
 - **WHEN** a front-desk user views the bank account register
 - **THEN** only masked numbers are shown
 
-#### Scenario: The owner reveals a full number
-- **WHEN** the owner reveals a full account number
+#### Scenario: The practice manager reveals a full number
+- **WHEN** the holder of the practice manager recipe reveals a full account number
 - **THEN** it is shown and the view is audited with actor and time
+
+#### Scenario: An owner who holds no such recipe opens the register
+- **WHEN** a physician recorded as an owner of the practice (PR-15), who holds the clinician recipe only, views the bank account register
+- **THEN** only masked numbers are shown, because an owner link grants no access
 
 #### Scenario: A posting is built for a deposit
 - **WHEN** a deposit posting for a register account is assembled
