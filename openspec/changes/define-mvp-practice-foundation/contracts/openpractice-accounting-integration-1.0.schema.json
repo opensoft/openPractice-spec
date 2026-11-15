@@ -189,12 +189,13 @@
         "amount": { "$ref": "#/$defs/money" },
         "currency": { "$ref": "#/$defs/currency" },
         "payer_class": { "$ref": "#/$defs/payerClass" },
+        "group_level": { "description": "Span the group covers. A day-level group below the destination's minimum group size rolls up to week, then period (AI-15); day-level detail stays in the detail manifest.", "enum": ["day", "week", "period"] },
         "effective_date": { "$ref": "#/$defs/date" },
         "estimate_ref": { "$ref": "#/$defs/estimateRef" },
         "deposit_bank_line_ref": { "type": "string", "maxLength": 128 }
       },
       "if": { "properties": { "label": { "$ref": "#/$defs/revenueLabel" } }, "required": ["label"] },
-      "then": { "required": ["estimate_ref", "payer_class"] }
+      "then": { "required": ["estimate_ref", "payer_class", "group_level"] }
     },
     "customerDetailBatch": {
       "allOf": [ { "$ref": "#/$defs/batchHeader" }, {

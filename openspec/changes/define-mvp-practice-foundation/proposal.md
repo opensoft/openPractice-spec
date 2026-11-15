@@ -11,9 +11,14 @@ openPractice has no ratified statement of what its minimum viable product must c
 
 Two of these are tracked as open items in the packet. Risk R-7 says the EHR boundary is specified in one direction only. The packet also leaves the accounting destination open.
 
-Brett Heap, the product owner, settled these boundaries on 2026-11-14 and ruled on 31 follow-up design questions the same day. Ruling 25 supersedes ruling 3, and ruling 30 supersedes ruling 22. The rulings are recorded in `design.md` under "Owner rulings (2026-11-14)". This change records the decisions and rulings as governed requirements before any runtime exists. **Rulings are not ratification:** the change stays draft until the owner completes `owner-ratification.md`.
+Brett Heap, the product owner, settled these boundaries on 2026-11-14 and ruled on 33 follow-up design questions the same day. Ruling 25 supersedes ruling 3, and ruling 30 supersedes ruling 22. The rulings are recorded in `design.md` under "Owner rulings (2026-11-14)". This change records the decisions and rulings as governed requirements before any runtime exists. **Rulings are not ratification:** the change stays draft until the owner completes `owner-ratification.md`.
 
-All ideation paths below are relative to the root of `opensoft/openPractice-spec`. Every cited ideation document is `Status: brainstorm`, except the framing decisions FD-1 to FD-11 in [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md), which were ratified on 2026-08-27. This change contradicts none of them, with one exception: it adds tier-4 gates beyond FD-5's list. That exception is deliberate, was ruled by the owner, and is recorded as tension T-13 in `design.md`.
+All ideation paths below are relative to the root of `opensoft/openPractice-spec`. Every cited ideation document is `Status: brainstorm`, except the framing decisions FD-1 to FD-11 in [`ideation/review/openpractice-framing-decisions.md`](../../../ideation/review/openpractice-framing-decisions.md), which were ratified on 2026-08-27. This change contradicts none of them, with two recorded exceptions:
+
+- It adds tier-4 gates beyond FD-5's list: hard delete and `customer-detail` enablement (ruling 12, tension T-13).
+- It keeps explicit sign-offs below tier 4 where FD-5 relies on reversibility and delay: `link_existing` confirmation and review resolution (EB-04, EB-05, ruling 12), export-batch release (AI-06, avoiding R-2), and the manual-entry attestation under identity review (EB-17). These are tension T-17.
+
+Close re-estimates post automatically, as FD-3 requires. Every hold keeps FD-5's tier-3 deadline escape. Signers follow ruling 33.
 
 ## The refined MVP statement
 
@@ -74,7 +79,8 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
   - payer deposit links per payer and billing entity;
   - an expected-account check and a re-enrollment worklist;
   - deposit-only reconciliation, including refund disbursements, with openPractice as the single poster of each deposit it explains and other-route shares posted as `other_route_share`;
-  - an offering-route check before charge finalization, so a membership-included service is never invoiced or claimed as medical;
+  - an offering-route check before charge finalization, so a membership-included service is not invoiced or claimed as medical, with FD-5's tier-3 release at the filing threshold;
+  - sign-offs that follow the FD-5 tiers, where a named AI agent with an openWallet ID may sign only opted-in action types and never at tier 4 (ruling 33, BAB-17);
   - a mapped account for the legacy share of a mixed deposit;
   - closed destination periods never edited, with late charges flagged.
 - **`accounting-integration`.** Adds `openpractice-accounting-integration/1.0` and its canonical schema, with operations, posting IDs and keys free of personal data, batches released by a person and frozen, delivery states, and a reconciliation report. It also covers:
@@ -82,6 +88,7 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
   - customers created only in `customer-detail` mode behind the BAA gate: guarantor accounts, which may carry name and billing address or contact (ruling 25), and payers, with any further field set by a versioned recipient profile;
   - accounting dates (date of service for charges, each event's own date for payments, refunds and deposits), and net revenue at the constrained expected entitlement, estimated at the date of service and re-estimated at each close (ruling 30);
   - the single recipient-profile definition (AI-23);
+  - accounting-side customers derived from the guarantor or payer role, not a separate party role (ruling 32);
   - the full set of money events;
   - a BAA gate, or an operator attestation for practice-operated destinations;
   - neutral labels;
@@ -123,7 +130,7 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
 ### New Capabilities
 - `patient-registry` (PR-01 to PR-14): the administrative patient record, its fields, confidential-communication instructions, guarantor, coverages, search, audit, deactivation and bounded hard delete.
 - `ehr-boundary` (EB-01 to EB-20): linked records, issuers, canonical schemas, identity review, demographic publication and suspension, correction requests, clinical facts, manual entry, deadline escape and no-PHI diagnostics.
-- `billing-accounting-boundary` (BAB-01 to BAB-16): billing ownership, the books of record, FD-3, the taxonomy, the bank register and deposit links, deposit-only reconciliation with a single deposit poster, legacy and other-route shares, late charges and the offering-route check.
+- `billing-accounting-boundary` (BAB-01 to BAB-17): billing ownership, the books of record, FD-3, the taxonomy, the bank register and deposit links, deposit-only reconciliation with a single deposit poster, legacy and other-route shares, late charges and the offering-route check.
 - `accounting-integration` (AI-01 to AI-23): the contract and schema, ownership of posting mechanics, adapters, keys, batches, mode, customers created by this contract and their recipient profile, dates, accrual, money events, BAA gate, PHI minimization, bank lines, verification, tests, no posting to records the contract does not own, and the one recipient-profile definition.
 
 ### Modified Capabilities

@@ -19,7 +19,7 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - all tests run against an EHR contract double.
 
   Live interoperation with openChart waits until openChart's change has been ratified and implemented.
-- [ ] 2.3 **Feature 3: billing–accounting boundary, banks, accounting contract and ERPNext adapter (Slice 4).** Owns BAB-01 to BAB-16 and AI-01 to AI-23. Gate: task 1.2. Two prerequisites must be complete first, each under its own governance: the FD-7 Thread contract must be versioned, and the money ledger and reason taxonomy must be defined. Acceptance evidence:
+- [ ] 2.3 **Feature 3: billing–accounting boundary, banks, accounting contract and ERPNext adapter (Slice 4).** Owns BAB-01 to BAB-17 and AI-01 to AI-23. Gate: task 1.2. Two prerequisites must be complete first, each under its own governance: the FD-7 Thread contract must be versioned, and the money ledger and reason taxonomy must be defined. Acceptance evidence:
   - contract tests for every operation, AI-13 event, key and `supersedes` case, mode lock, date rule, constrained-estimate revenue with evidence true-ups and close re-estimates, and summary-journal control-account reconciliation by payer class;
   - the ERPNext adapter passes over REST against the **remote** topology, using a contract double or a disposable synthetic instance (the remote topology alone satisfies acceptance);
   - openPractice tests green with no ERPNext present;
@@ -28,7 +28,9 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - bank-number protection is tested;
   - no destination enters customer-detail mode except before its first release, after a verified BAA or attestation, and with a risk entry;
   - customer names and billing contacts reach a destination only in customer-detail mode with its gate satisfied; summary-journal batches carry no customer record; every customer-detail batch records its recipient-profile version, and no profile adds an excluded field (AI-10, AI-15, AI-16, AI-23);
-  - openPractice is the single poster of each deposit it explains, other-route shares post as `other_route_share`, refund disbursements are matched, and charge finalization checks the offering route (BAB-14, BAB-16, AI-17).
+  - openPractice is the single poster of each deposit it explains, other-route shares post as `other_route_share`, refund disbursements are matched, and charge finalization checks the offering route, with tier-3 release at the filing threshold (BAB-14, BAB-16, AI-17);
+  - summary-journal minimum group size and roll-up (AI-15), and automatic close re-estimates (AI-12);
+  - sign-offs per BAB-17: agent sign-off refused when not opted in and at tier 4, and recorded with its openWallet ID when allowed.
 - [ ] 2.4 **Feature 4: clinical-fact consumption for charge capture (Slice 3).** Owns EB-13 to EB-18. It consumes the Thread, because waiting on clinical documentation and the deadline escape are thread conditions. Gate: task 1.2, Feature 2 merged, and the FD-7 Thread contract versioned. The owner may fold this feature into the Slice 3 charge-capture feature, provided ownership is recorded. Acceptance evidence:
   - contract tests run against the clinical-facts canonical schema at its recorded digest;
   - manual entry is marked manual while the capability result is false;

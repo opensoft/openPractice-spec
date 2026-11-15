@@ -152,7 +152,7 @@ openPractice SHALL never post into, or edit, a period the destination reports cl
 - **THEN** its posting date is the first open date, its line keeps October 28 as the date of service, and it is flagged as a late charge
 
 ### Requirement: BAB-16 Charge finalization checks the offering route before any medical invoice
-Before openPractice finalizes a charge for an invoice under AI-12, or for an insurance claim, it SHALL check the service's offering route and the patient's membership entitlement, as change `define-customer-financial-data-boundaries` defines them. A service whose approved membership terms include it without a separate charge SHALL NOT be invoiced or claimed as medical billing. A discounted or separately chargeable service SHALL be charged under its approved terms. An unresolved route or entitlement SHALL hold finalization as work owned by a Roster entry. Until offering routes are configured, every service SHALL route as medical billing, except that a practice that sells memberships SHALL hold each member's charge this way until its routes are configured. The hold's FD-5 deadline escape is escalation: when a held charge reaches the payer's filing threshold, the work escalates to the owner, and the charge is never invoiced or claimed by default.
+Before openPractice finalizes a charge for an invoice under AI-12, or for an insurance claim, it SHALL check the service's offering route and the patient's membership entitlement, as change `define-customer-financial-data-boundaries` defines them. A service whose approved membership terms include it without a separate charge SHALL NOT be invoiced or claimed as medical billing. A discounted or separately chargeable service SHALL be charged under its approved terms. An unresolved route or entitlement SHALL hold finalization as work owned by a Roster entry. Until offering routes are configured, every service SHALL route as medical billing, except that a practice that sells memberships SHALL hold each member's charge this way until its routes are configured. The hold's FD-5 deadline escape SHALL release the charge at tier 3 as medical billing when it reaches the payer's filing threshold. The release SHALL notify staff, run the tier-3 cancel window, and record its provenance.
 
 #### Scenario: A membership-included visit
 - **WHEN** a member's visit is a service that the membership's approved terms include without a separate charge
@@ -161,3 +161,22 @@ Before openPractice finalizes a charge for an invoice under AI-12, or for an ins
 #### Scenario: The entitlement is unresolved
 - **WHEN** a member's visit cannot be resolved as included, discounted or separately chargeable
 - **THEN** finalization is held as owned review work, and nothing is invoiced or claimed
+
+#### Scenario: The hold reaches the filing threshold
+- **WHEN** a held member charge is still unresolved at the payer's filing threshold
+- **THEN** it releases at tier 3 as medical billing, staff are notified with a cancel window, and the release records its provenance
+
+### Requirement: BAB-17 Sign-offs follow the FD-5 tiers; a named AI agent signs only where opted in and never at tier 4
+Every action this change defines SHALL follow its FD-5 tier (ruling 33). Its tier decides whether it needs an approval, a notification or a delay-and-cancel release, including the deadline escapes. Automation SHALL only propose. Where a tier, or a gate this change defines, calls for an approval, a release decision or an attestation, the signer SHALL be a named human or a named AI agent identified by an openWallet ID (opensoft/openWallet). An agent MAY sign an action type only after that action type is opted in for agent signing, and no action type SHALL be opted in by default. Tier-4 actions SHALL be signed by a named human only. They are hard delete, enabling `customer-detail` mode, refunds leaving the practice, material adjustments and record merges. Every sign-off SHALL record the signer's identity, including the openWallet ID for an agent, with the action, the time and the provenance. How an openWallet identity is verified SHALL be decided in planning.
+
+#### Scenario: An agent signs an action type that is not opted in
+- **WHEN** a named AI agent tries to release an export batch, and batch release is not opted in for agent signing
+- **THEN** the sign-off is refused and the batch waits for an authorized signer
+
+#### Scenario: An agent tries to sign a tier-4 action
+- **WHEN** a named AI agent tries to approve a refund leaving the practice or to enable `customer-detail` mode
+- **THEN** the sign-off is refused whatever the opt-in settings, and only a named human may sign
+
+#### Scenario: An opted-in agent signs
+- **WHEN** batch release is opted in for agent signing and a named AI agent releases a batch
+- **THEN** the release is recorded with the agent's name, its openWallet ID, the time and the provenance

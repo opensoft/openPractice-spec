@@ -33,7 +33,9 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 - Accountant approval of the reporting basis, estimator, classification, materiality and reopening policy, recorded before any destination went live (ruling 30, D8): _pending_
 - Customers keyed by guarantor account number and named only in customer-detail mode behind the BAA gate, with the recipient-profile version recorded (ruling 25); neutral labels; accounting dates, including event dates for payments, refunds and deposits; late-charge flag: _pending_
 - Single deposit poster with `other_route_share` lines, refund-disbursement matching, and the offering-route check before charge finalization (BAB-14, BAB-16): _pending_
-- Manual entry under identity review only with a recorded staff attestation, and refusal without it (EB-17): _pending_
+- Manual entry under identity review only with a recorded attestation, and refusal without it (EB-17): _pending_
+- Sign-offs per FD-5 tiers: agent signing opt-in only, refused at tier 4, recorded with the openWallet ID (BAB-17, ruling 33): _pending_
+- Summary-journal minimum group size and roll-up, and automatic close re-estimates (AI-15, AI-12): _pending_
 - Bank register, deposit links, expected-account check, re-enrollment worklist, and encrypted, role-restricted, audited bank numbers: _pending_
 - Date-of-birth hold suspension, correction requests and single-resolver identity review: _pending_
 - Messages validated against canonical schemas at their recorded digests (`contracts/SHA256SUMS`): _pending_

@@ -72,7 +72,7 @@ The system SHALL assemble postings into export batches per destination. Each bat
 - the releasing actor's opaque reference and the release time;
 - a SHA-256 content digest over the RFC 8785 canonical JSON of the batch content.
 
-A batch SHALL be released only by an explicit action of an authorized person. Scheduled automatic release MUST NOT be enabled by default. Release SHALL freeze the content. Release SHALL be refused in each of these cases:
+A batch SHALL be released only by an explicit release decision of an authorized signer: a named human or, where that action type is opted in, a named AI agent identified by an openWallet ID (BAB-17). Scheduled automatic release MUST NOT be enabled by default. Release SHALL freeze the content. Release SHALL be refused in each of these cases:
 - a line lacks a mapping;
 - the batch fails the canonical schema;
 - the batch is in customer-detail mode and the destination's BAA gate is not satisfied;
@@ -129,7 +129,7 @@ Each destination SHALL have a posting mode, `customer-detail` or `summary-journa
 - **THEN** customer-detail delivery halts, pending work is held unconverted, and the mode does not change
 
 ### Requirement: AI-10 Summary-journal is the default; customers exist only in opt-in customer-detail mode, as guarantor accounts and payers named behind the BAA gate
-`summary-journal` SHALL be the default and recommended posting mode (ruling 28). It posts balanced category totals to payer-class control accounts, and patient-level receivable detail stays in openPractice. `customer-detail` SHALL be a per-destination opt-in, available only after the destination's BAA gate is satisfied and only before its first released batch. A destination SHALL stay in the mode its first released batch used (AI-09). The customers this requirement describes exist only in `customer-detail` mode (rulings 2, 25 and 28).
+`summary-journal` SHALL be the default and recommended posting mode (ruling 28). It posts balanced category totals to payer-class control accounts, and patient-level receivable detail stays in openPractice. `customer-detail` SHALL be a per-destination opt-in, available only after the destination's BAA gate is satisfied and only before its first released batch. A destination SHALL stay in the mode its first released batch used (AI-09). The customers this requirement describes exist only in `customer-detail` mode (rulings 2, 25 and 28). Each SHALL be derived from the guarantor or payer role of a party, and SHALL NOT be a separate party role (ruling 32).
 
 The customers created by this contract derive from openPractice medical billing. There SHALL be two kinds:
 - **Guarantor accounts**, for patient balances. These include self-pay and direct-pay healthcare charges (FD-4), which are medical billing. Each SHALL be keyed by its opaque guarantor account number.
@@ -157,7 +157,7 @@ No guarantor or patient name, address or contact SHALL reach a destination whose
 
 ### Requirement: AI-11 Accounting dates are the date of service, the finalization date and the statement terms
 In both posting modes, postings SHALL use these accounting dates:
-- in `customer-detail` mode, every invoice, debit-note and credit-note line SHALL carry its date of service; in `summary-journal` mode, charge totals SHALL be grouped by date of service and carry no per-visit date;
+- in `customer-detail` mode, every invoice, debit-note and credit-note line SHALL carry its date of service; in `summary-journal` mode, charge totals SHALL be grouped by date of service, subject to AI-15's minimum group size, and carry no per-visit date;
 - the posting date of a charge posting (an invoice, debit note or credit note, or a summary-journal charge total) SHALL be the date of service when that period is open in the destination; otherwise it SHALL be the first open date, the line keeps the date of service, and the posting is flagged as a late charge;
 - the posting date of a payment, payment application, refund, reversal, deposit or journal posting SHALL be its own event date: the receipt date of a payment, the application date of an application, the issue date of a refund, and the bank line's posted date for a deposit or other bank-line event. The same closed-period rule applies: when that period is closed, the posting date SHALL be the first open date and the posting is flagged with the same flag;
 - a re-estimate made at a close (AI-12) SHALL be dated in the period being closed when that period is open in the destination, and otherwise on the first open date;
@@ -179,7 +179,7 @@ In both posting modes, the system SHALL recognize net revenue as the constrained
 
 Billing, adjudication, remittance, cash and disputes SHALL be evidence events that update the estimate, never revenue triggers. Each re-estimate or true-up, whether from evidence or from the estimate run at each close, SHALL be a new dated entry referencing the estimate version or close snapshot it applies, and MUST NOT edit an earlier entry (FD-3). A disputed amount SHALL stay out of the recognized amount until including it meets the constraint. Price concessions SHALL reduce revenue, while the later non-payment of an amount that was expected to be collected SHALL post as a credit loss, separately from revenue.
 
-Every estimate SHALL record its estimator version, input window, cohort, evidence references and approver in openPractice, and each close SHALL store a reproducible snapshot. A named person SHALL approve estimator versions and close snapshots.
+Every estimate SHALL record its estimator version, input window, cohort and evidence references in openPractice. Close re-estimates SHALL post automatically from the approved estimator version, with no approval step at close (FD-3: month-end is printing, not a procedure), and each close SHALL store a reproducible snapshot automatically. Only estimator versions and the D8 policy items SHALL need approval, by the practice's accountant or the owner (AI-20).
 
 #### Scenario: Payer with history
 - **WHEN** a 200.00 charge is captured for a payer whose fee schedule allows 120.00 and whose history supports a constrained expected entitlement of 114.00
@@ -195,7 +195,11 @@ Every estimate SHALL record its estimator version, input window, cohort, evidenc
 
 #### Scenario: A period closes before settlement
 - **WHEN** the estimate run at a close changes the expected entitlement of open balances
-- **THEN** the difference posts as a new entry dated in the closing period if it is open, otherwise on the first open date, referencing the close snapshot
+- **THEN** the difference posts automatically, with no approval step, as a new entry dated in the closing period if it is open, otherwise on the first open date, referencing the close snapshot
+
+#### Scenario: A new estimator version is proposed
+- **WHEN** automation proposes a new estimator version
+- **THEN** it applies only after the practice's accountant or the owner approves it, from a stated effective date
 
 ### Requirement: AI-13 The contract posts every money event that touches a receivable or a deposit
 In customer-detail mode, the contract SHALL define the following postings. Each SHALL keep the deposit entry equal to its bank line.
@@ -257,7 +261,9 @@ Enabling customer-detail mode SHALL be a governance tier-4 hard stop. When the B
 - patient-share transfers between control accounts, with no revenue effect;
 - disputes, credit losses, refund liabilities and reversals, each as a new entry.
 
-Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference, and SHALL carry a payer class where it touches a receivable or revenue. A revenue or deduction line SHALL carry the estimate version or close snapshot it applies, by reference. Deposits SHALL be grouped per explained bank line. The contract SHALL NOT create or update any customer record in this mode. Summary postings MUST NOT contain any of the following:
+Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference, and SHALL carry a payer class where it touches a receivable or revenue.
+
+Each destination SHALL have a minimum group size, which defaults to 11 underlying visits. A day-level group for a payer class and category that falls below it SHALL roll up to the week. If the week group is still below it, the group SHALL roll up to the accounting period. A rolled-up group SHALL record its group level and be dated on the last day of the span it covers, or on the first open date if that period is closed. Day-level detail SHALL stay in openPractice's detail manifest. A revenue or deduction line SHALL carry the estimate version or close snapshot it applies, by reference. Deposits SHALL be grouped per explained bank line. The contract SHALL NOT create or update any customer record in this mode. Summary postings MUST NOT contain any of the following:
 - customer records or customer names, or account numbers of patients or guarantors;
 - member, claim or subscriber identifiers;
 - a per-visit or per-person date of service;
@@ -269,8 +275,12 @@ Each line SHALL carry a reason category, a neutral label, an amount, a posting d
 - **THEN** it holds only reason categories, neutral labels, payer classes, amounts, dates, estimate or snapshot references and batch references, and no customer record
 
 #### Scenario: A day's charges are posted
-- **WHEN** a practice captures ten Medicare-class office visits on one day
-- **THEN** one balanced group posts the gross total and its deduction to the Medicare-class control accounts, dated that day, and the ten visits stay in openPractice's detail manifest
+- **WHEN** a practice captures twenty Medicare-class office visits on one day
+- **THEN** one balanced day-level group posts the gross total and its deduction to the Medicare-class control accounts, dated that day, and the twenty visits stay in openPractice's detail manifest
+
+#### Scenario: A small day rolls up
+- **WHEN** a practice captures three commercial-class office visits on one day and fewer than eleven in that week
+- **THEN** no day-level or week-level group posts for them; they roll up to the period-level group for that payer class and category, and the day-level detail stays in the manifest
 
 ### Requirement: AI-16 Customer-detail postings carry the minimum necessary, with neutral labels
 Customer-detail postings created by this contract SHALL contain only:
