@@ -454,7 +454,7 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 
 **Decision.**
 
-- openPractice keeps only a routing record, with no clinical content (ruling 34). It also receives billable facts from a linked EHR (rulings 21, 87 and 88, below). For now the physician uses openChart, on mobile or workstation; the openPractice app, on workstation and mobile, covers administrative work and approvals. This is a current-phase decision and can be revisited (ruling 35).
+- openPractice keeps only a routing record, with no clinical content (ruling 34). It also receives billable facts from a linked EHR (rulings 21, 87 and 88, below). What "no clinical content" means once those facts arrive is open (OT-9). For now the physician uses openChart, on mobile or workstation; the openPractice app, on workstation and mobile, covers administrative work and approvals. This is a current-phase decision and can be revisited (ruling 35).
 - There is no master patient identity across HealthLinc, openPractice and openChart. HealthLinc links to each backend through that backend's own link contract (ruling 39).
 - openPractice is the source for administrative demographics and publishes them to a linked EHR; each system owns its own record (ruling 29). openChart refuses direct edits to a linked patient's projected fields and routes them to openPractice as correction requests, intake flows included (ruling 17). Sex assigned at birth and sexual orientation stay out of openPractice's registry (clinical; owned by openChart) (ruling 11). Confidential-communication instructions are in the registry and carried in the link snapshot, and openChart, and anything it drives (for example HealthLinc), must honor them for every patient communication it originates (rulings 10, 27).
 - openPractice is the system of record for the administrative appointment. The EHR owns the encounter and keeps an appointment reference if needed. The 1.0 contracts carry no appointment operations; appointment events are a future MINOR version (ruling 31).
@@ -464,7 +464,7 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 
 **Changed from v1.** New. Version 1 has no decision on openPractice's boundary with the clinical systems.
 
-**Open tensions:** none listed.
+**Open tensions:** OT-9.
 
 ---
 
@@ -502,6 +502,7 @@ Each item names both sources. This draft does not resolve any of them. Where a c
 | OT-6 | **FD-3:** "Month-end is printing, not a procedure"; "the practice never sees a lock." | **Ruling 30:** revenue "re-estimated at each close", with a "reopening policy" the accountant approves; **ruling 4:** postings move to the first open date when a period is closed. `define-mvp-practice-foundation` makes the close re-estimate automatic with no sign-off (its governance tiers); no ruling says whether that satisfies FD-3. | `define-mvp-practice-foundation`, "Verification dispositions (fix round 4)", finding M-B "close-snapshot approval versus FD-3", disposed by AI-12: close re-estimates post automatically, and only estimator versions and D8 items need approval. The disposition is the change's, not a ruling. |
 | OT-7 | **Ruling 33:** "Automation stays propose-only." | **Ruling 37** (an opted-in agent may act with notice or after a delay) and **ruling 45** (Hermes answers patients without a human). Ruling 37 says its ladder reconciles with FD-5 and BAB-17, the requirement that carries ruling 33, and `define-actors-agents-and-work-inbox` makes raising a rung the same act as ruling 33's agent-signing opt-in (its design call D-5). No ruling says that ruling 33's "propose-only" is read that way. | Not recorded as a tension; `define-actors-agents-and-work-inbox` D-5 is that change's reconciliation |
 | OT-8 | **FD-2 "Changes":** "the expectation engine leaves the beta's critical path." | **Ruling 30:** net revenue is the constrained expected entitlement, estimated at the date of service, and the practice's accountant approves the estimator before go-live. Accounting is a beta slice (Slice 4 of scope-and-sequencing; Feature 3 of `define-mvp-practice-foundation`), and that change's AI-08 proves that the gross-to-net allowance equals the sum of openPractice's current estimates, so an estimator is on the beta's critical path. No ruling says whether that estimator is the expectation engine FD-2 took off it. | Not recorded as a tension in any change |
+| OT-9 | **Ruling 53**, in its table row: the medical AI's exchanges "never pass through openPractice, which holds no clinical content." | **Rulings 21, 87 and 88:** billable facts reach openPractice from a linked EHR, confirmed diagnoses among them (ruling 87); retractions of published facts are still delivered after a link ends (ruling 88); and charges are entered manually while an EHR reports no billable-facts capability (ruling 21). `define-mvp-practice-foundation` treats billable facts as references and as copies of claims as submitted, with codings that carry a system and a code only (its ownership matrix, its Constitution Check for Principle IV, and its Decision 5); that is the change's own design, not a ruling. The question for the owner is what "no clinical content" means once coded billable facts arrive. It matters now: ruling 110 puts the revenue-cycle core next, and claims carry diagnosis codes. | Not recorded as a tension in any change |
 
 ## Rulings not folded into a decision
 
@@ -538,7 +539,7 @@ Version 2 of [Framing Decisions](openpractice-framing-decisions.md), which stays
 | FD-13 | Safety routing | new | pending |
 | FD-14 | The clinical boundary | new | pending |
 | FD-15 | The billing and accounting boundary | new | pending |
-| OT-1 to OT-8 | Open tensions | for the owner's disposition | pending |
+| OT-1 to OT-9 | Open tensions | for the owner's disposition | pending |
 
 - Ratified by: pending
 - Date: pending
