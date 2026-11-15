@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: SL-01 Every movement of money is one entry between two fixed buckets
-openPractice SHALL record every movement of money it owns as one ledger entry that moves a positive amount from one balance bucket to another, both from the fixed list of SL-02 (ruling 124). Each entry SHALL debit one bucket and credit the other by the same amount, so the ledger balances by construction and no unbalanced entry can exist. The one exception to two different buckets is `guarantor_transfer`, which debits one guarantor account's `patient_receivable` and credits another's by the same amount (RT-02, PS-12). The pair of buckets SHALL be the one the entry's reason code fixes (RT-02); an entry SHALL NOT choose its own buckets. openPractice SHALL NOT author, add or rename accounts: the buckets are openPractice's own balances, and each accounting destination maps them to its own accounts through the reason codes (BAB-02, BAB-06).
+openPractice SHALL record every movement of money it owns as one ledger entry that moves a positive amount from one balance bucket to another, both from the fixed list of SL-02 (ruling 124). Each entry SHALL debit one bucket and credit the other by the same amount, so the ledger balances by construction and no unbalanced entry can exist. There are two exceptions to two different buckets: `guarantor_transfer`, which debits one guarantor account's `patient_receivable` and credits another's by the same amount (PS-12), and `payer_share_transfer`, which debits a later coverage's `payer_receivable` and credits the earlier coverage's (RM-07) (RT-02). The pair of buckets SHALL be the one the entry's reason code fixes (RT-02); an entry SHALL NOT choose its own buckets. openPractice SHALL NOT author, add or rename accounts: the buckets are openPractice's own balances, and each accounting destination maps them to its own accounts through the reason codes (BAB-02, BAB-06).
 
 #### Scenario: A self-pay charge is finalized
 - **WHEN** a 150.00 self-pay office visit is finalized for a guarantor account
@@ -67,7 +67,7 @@ Every amount in the ledger SHALL be stored as a whole number of cents with its I
 - **THEN** the allocations are 33.33, 33.34 and 33.33, they add to 100.00, and the payment is still 100.00
 
 ### Requirement: SL-05 Entries are never edited, and balances are answerable as of any date
-A ledger entry SHALL NOT be edited or deleted once recorded (BAB-04, FD-3). A correction SHALL be a reversing entry of the same amount between the same buckets in the opposite direction, referencing the entry it reverses, followed by a replacement entry where one is needed. Every balance SHALL be answerable as of any past date and time, by both accounting date and recorded time. openPractice SHALL NOT lock a period (BAB-04).
+A ledger entry SHALL NOT be edited or deleted once recorded (BAB-04, FD-3). A correction SHALL be a reversing entry of the same amount between the same buckets in the opposite direction, referencing the entry it reverses, followed by a replacement entry where one is needed. Moving a payment that was recorded against the wrong guarantor account SHALL be such a correction, made by a person at FD-5 tier 2 with a notification, with an agent at `propose` and PR-15's rule for a staff member's own record applying (design call CR-99, PROPOSED). Every balance SHALL be answerable as of any past date and time, by both accounting date and recorded time. openPractice SHALL NOT lock a period (BAB-04).
 
 #### Scenario: A payment was put on the wrong guarantor account
 - **WHEN** staff correct a payment recorded last week against the wrong guarantor account
@@ -86,7 +86,7 @@ A counterparty account SHALL reference parties only through their roles (PR-15),
 - **THEN** both visits' patient balances belong to the parent's guarantor account, and each entry names its own child's thread
 
 ### Requirement: SL-07 An allocation is its own record
-Applying a payment, credit or adjustment to charge lines SHALL be an allocation record that names the money, each charge line and the amount applied to it, and that posts the entries that move the money (SL-01). Every entry an allocation posts SHALL name the same counterparty account on each side that carries one, so that one guarantor account's money is never applied to another's charges; money moves between guarantor accounts only by `guarantor_transfer` (PS-12; design call CR-65, PROPOSED). Reallocating SHALL reverse the allocation and record a new one; it SHALL NOT edit the first (BAB-04). Reallocating SHALL be FD-5 tier 2, done with a notification (design call CR-66, PROPOSED). A split SHALL use BAB-18's cumulative rounding in the order the allocation states.
+Applying a payment, credit or adjustment to charge lines SHALL be an allocation record that names the money, each charge line and the amount applied to it, and that posts the entries that move the money (SL-01). Every entry an allocation posts SHALL name the same counterparty account on each side that carries one, so that one guarantor account's money is never applied to another's charges. What a guarantor account owes SHALL move to another account only by `guarantor_transfer` (PS-12), and money it paid SHALL move only by correcting a payment recorded against the wrong account (SL-05) (design call CR-65, PROPOSED). No allocation SHALL take a charge line's `patient_receivable` below zero; the rest of the money SHALL stay in, or move to, `unapplied_credit` (design call CR-92, PROPOSED). Reallocating SHALL reverse the allocation and record a new one; it SHALL NOT edit the first (BAB-04). Reallocating SHALL be FD-5 tier 2, done with a notification (design call CR-66, PROPOSED). A split SHALL use BAB-18's cumulative rounding in the order the allocation states.
 
 #### Scenario: A misapplied payment is reallocated
 - **WHEN** a payment applied to visit A should have gone to visit B
@@ -141,3 +141,14 @@ When deposit explanation matches a bank debit line to money openPractice recorde
 #### Scenario: A takeback inside a remittance
 - **WHEN** a payer takes back 50.00 by netting it inside a 400.00 deposit
 - **THEN** no `bank_debit_explained` posts for it, because `deposit_explained` for the 400.00 net deposit already clears it
+
+### Requirement: SL-14 A fee posts only from a matched record, and a deposit shortfall stays owned work
+A fee, whether `merchant_fee`, `virtual_card_fee`, `chargeback_fee` or `bank_fee`, SHALL post by itself only from a processor or bank record that deposit explanation has matched (BAB-14). Any other fee SHALL be recorded by a person at FD-5 tier 2, with a notification, citing its evidence, and an agent SHALL stay at `propose` for it (design call CR-94, PROPOSED). A difference between the money receipted for a deposit and the bank line that no matched record explains, including a bank's correction of a deposit, SHALL stay in `cash_clearing` as owned work (TH-12), and SHALL NOT be posted as a fee. The list has no kind for cash over or short, because ruling 130 leaves the drawer count and close sheet to a later change.
+
+#### Scenario: A deposit is short with no bank record
+- **WHEN** 100.00 in cash is receipted, the bank credits 90.00 for that deposit, and no bank record explains the 10.00
+- **THEN** no fee posts, the 10.00 stays in `cash_clearing` as owned work, and staff are told
+
+#### Scenario: A processor fee on a settlement
+- **WHEN** a card settlement's processor record shows a 2.40 fee netted from the settlement
+- **THEN** the fee posts as `merchant_fee` from the matched record, and the net settlement matches its bank line

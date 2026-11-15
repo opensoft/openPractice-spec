@@ -5,7 +5,7 @@ openPractice SHALL record each billable service as a charge line in the visit's 
 - its catalog item (SC-01), and the procedure code and any modifiers it bills under, each as a code system and a code only;
 - the units and the date of service;
 - the rendering provider and the billing entity, identified by TIN and NPI;
-- the location and place of service;
+- the location, and the place of service that the location's record gives;
 - the price, which is the catalog item's price on the date of service times the units (SC-03);
 - pointers to the visit's ranked diagnosis references, held once on the charge set;
 - its source: references to the EHR facts and their versions, or the manual-entry record (CG-02);
@@ -22,7 +22,7 @@ A charge line's procedure and diagnosis codes SHALL come from one of two sources
 - the EHR's final, coded clinical facts for the encounter, read under `openpractice-ehr-clinical-facts/1.0` (EB-13, EB-14), which publishes only confirmed diagnoses (ruling 87, EB-13);
 - manual entry by authorized staff in the cases EB-17 allows, marked manual, with its provenance (ruling 21).
 
-A code SHALL come from no other source (design call CR-76, PROPOSED). openPractice SHALL NOT infer, suggest, derive, prefill or default a code: not from text, not from the booked catalog item, not from an earlier visit, not from a template or favorite list, and not from an agent's choice. It SHALL NOT change a code the EHR supplied; a disagreement SHALL go back to the EHR as a question, outside this contract. In the manual case, only a named human SHALL enter or select a code, from the superbill or the documentation in front of them. A charge line's catalog item SHALL be found from its code, by an exact match on code system and code, and never its code from its item; a code that matches no active item SHALL become a work item.
+Modifiers and diagnosis pointers SHALL come from the same two sources: the EHR's coded facts, or a named human in the manual case. A code SHALL come from no other source (design call CR-76, PROPOSED). openPractice SHALL NOT infer, suggest, derive, prefill or default a code: not from text, not from the booked catalog item, not from an earlier visit, not from a template or favorite list, and not from an agent's choice. It SHALL NOT change a code the EHR supplied; a disagreement SHALL go back to the EHR as a question, outside this contract. In the manual case, only a named human SHALL enter or select a code, from the superbill or the documentation in front of them. A charge line's catalog item SHALL be found from its code, by an exact match on code system and code, and never its code from its item; a code that matches no active item SHALL become a work item. Units MAY start from the item's default, and the place of service SHALL come from the location's record; neither is a code under this requirement. An adapter's code edits SHALL only flag or hold a claim, never change a code (CP-02).
 
 #### Scenario: openChart cannot yet supply facts
 - **WHEN** a patient is linked to openChart and openChart reports no billable-facts support
@@ -37,7 +37,7 @@ A code SHALL come from no other source (design call CR-76, PROPOSED). openPracti
 - **THEN** no charge line is created for it, and a work item names the code
 
 ### Requirement: CG-03 A charge set starts as a draft, and a draft posts nothing
-A charge set SHALL start as a draft. Staff MAY prepare a draft. An agent MAY prepare one at most at `act_with_notice` (ruling 132, TH-13), and only from final EHR facts, carrying exactly the codes those facts supply; an agent SHALL prepare no draft in the manual case and SHALL choose no code (CG-02, CR-76). A draft SHALL post no ledger entry, SHALL NOT appear on a claim or a statement, and MAY be changed freely until it is finalized.
+A charge set SHALL start as a draft. Staff MAY prepare a draft. An agent MAY prepare one at most at `act_with_notice` (ruling 132, TH-13), and only from final EHR facts, carrying exactly the codes, modifiers and diagnosis pointers those facts supply; an agent SHALL assign none of them, SHALL prepare no draft in the manual case, and SHALL prepare no draft from a fact that PR-15's same-person safeguard has sent to reconciliation (CG-05; CG-02, CR-76). A draft SHALL post no ledger entry, SHALL NOT appear on a claim or a statement, and MAY be changed freely until it is finalized.
 
 #### Scenario: An agent drafts charges from facts
 - **WHEN** an agent opted up to `act_with_notice` drafts a charge set from newly final facts
@@ -59,7 +59,8 @@ Before a charge set becomes final, openPractice SHALL check, and SHALL refuse fi
 - the offering route and the patient's membership entitlement (BAB-16, SC-06). An unresolved route SHALL hold the thread with reason `offering_route_unresolved`, released at tier 3 as medical billing at the payer's filing threshold under BAB-16;
 - the date of service is on or before any deactivation date of the patient's record (PR-11);
 - every fact the charge set uses is final (EB-14), and none has been retracted (EB-15). A retraction SHALL hold the thread with reason `clinical_fact_retracted`;
-- for a manual entry under identity review, the attestation EB-17 requires is recorded.
+- for a manual entry under identity review, the attestation EB-17 requires is recorded;
+- no same-person reconciliation is open for the visit's service date. Where PR-15's rules for a same-person group send a fact to reconciliation, because another record of the group holds a charge for that service date, or hold a staying record's charge until a duplicate's charge is voided or credited, the thread SHALL be held with reason `same_person_reconciliation` until a named human closes that work (TH-06; design call CR-97, PROPOSED).
 
 #### Scenario: A retracted diagnosis
 - **WHEN** the EHR retracts a diagnosis that an unfinalized charge set points to

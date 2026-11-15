@@ -56,10 +56,10 @@ A thread's station SHALL be one of ten. Visit threads use nine, every station bu
 | `charged` | Our side is complete and priced |
 | `claimed` | Something left the building and we wait on someone outside |
 | `remitted` | The outside party answered |
-| `banked` | The money owed on the thread was received by the practice |
+| `banked` | The money owed on the thread was received by the practice, or the practice holds money paid toward the visit |
 | `closed` | Nobody owes anybody anything on the thread |
 
-`banked` SHALL mean that the practice recorded receipt of the money; whether that money reached the bank is shown by deposit explanation (BAB-14), not by the thread.
+`banked` SHALL mean that the practice recorded receipt of the money owed on the thread, or holds money paid toward a visit that will not be charged (AP-04); whether that money reached the bank is shown by deposit explanation (BAB-14), not by the thread.
 
 A move from one station to another SHALL follow this table. Legality SHALL be judged by the pair of stations: the Occasion column gives examples, not limits. Any other move between stations SHALL be refused, not warned about. Three further kinds of transition SHALL always be legal (design call CR-70, PROPOSED):
 - a transition that keeps the station and changes only the condition, such as placing or releasing a hold or opening or ending a dispute (TH-05, TH-06);
@@ -135,7 +135,10 @@ A hold SHALL use one reason from a closed list that the product ships and the pr
 - `clinical_fact_retracted`: placed by CG-05, CG-08 and CL-04; it never escapes into a claim, and at the filing threshold it escalates (CL-06);
 - `identity_review`: placed by EB-05 and EB-18; it escapes as EB-18 states;
 - `offering_route_unresolved`: placed by CG-05; it escapes as BAB-16 states;
-- `waiting_on_authorization`: placed by EV-02 and CL-04; it never escapes by itself, and at the filing threshold it escalates to a named human who may release the claim with a recorded reason (EV-02).
+- `waiting_on_authorization`: placed by EV-02 and CL-04; it never escapes by itself, and at the filing threshold it escalates to a named human who may release the claim with a recorded reason (EV-02);
+- `same_person_reconciliation`: placed by CG-05 under PR-15's rules for a same-person group, either on a charge whose duplicate's charge has not yet been voided or credited, or on a fact for a service date on which another record of the group already holds a charge; it never releases by itself, and at the filing threshold it escalates to the practice manager, escalation being its only deadline escape (design call CR-97, PROPOSED).
+
+Each hold SHALL carry an identifier unique among that thread's holds. Besides its release condition, a hold SHALL also end when a named human closes the work it guards: a write-off of the guarded amount (PS-11), a conversion to self-pay (EG-05), or a `seen` to `closed` disposition (TH-04). The person SHALL record the reason, at FD-5 tier 2, done with a notification (design call CR-90, PROPOSED). A `clinical_fact_retracted` hold SHALL end only when every line using the fact is reversed or replaced, or when the thread closes with no claim built from those lines; a `same_person_reconciliation` hold SHALL end only when a named human closes the reconciliation work.
 
 A dispute is the `disputed` condition (TH-05), not a hold. No thread hold SHALL stop a patient from being booked, arriving or being seen: a thread hold stops money work, never care (EV-04). A payment hold is a different thing, governed by PH-01 and AP-07.
 
@@ -144,6 +147,10 @@ Each hold SHALL record a release condition as structured data that a query can e
 #### Scenario: A free-text hold
 - **WHEN** a user tries to hold a thread with the reason "waiting for Dana to call back"
 - **THEN** the hold is refused, and the user is offered the snooze of TH-12 instead
+
+#### Scenario: A held claim is written off
+- **WHEN** a claim held because the provider's enrollment was denied (`never`) is written off by a named human under PS-11
+- **THEN** the participation hold ends with the write-off's recorded reason, and the thread can close
 
 #### Scenario: One release frees many threads
 - **WHEN** a provider's enrollment with a payer becomes effective from a date on or before the dates of service of seven held claims
@@ -157,7 +164,7 @@ Every transition SHALL record:
 - the FD-5 tier that governed it;
 - whether its effect left the building.
 
-A minting transition SHALL also record the thread type and the owner, and any other transition that changes the owner SHALL record the new one, so that a thread's snapshot can be rebuilt from its transitions alone. A thread SHALL never rewind. Undoing a tier-1 or tier-2 move SHALL append the reverse move (TH-04). A move's undo window SHALL last until anything derived from the move leaves the building, and never longer than 30 days (design call CR-71, PROPOSED). Reopening a `closed` thread SHALL be a forward move that appends. Once an effect has left the building, the only correction SHALL be a replacement or a void (CL-08), never an erasure.
+A minting transition SHALL also record the thread type and the owner; every other transition SHALL record the condition it leaves, and any transition that changes the owner SHALL record the new one, so that a thread's snapshot can be rebuilt from its transitions alone. A transition may keep a thread held without placing or releasing a hold, when it leaves a held or disputed thread, such as a station move on a held thread or a dispute ending while a hold stays. A thread SHALL never rewind. Undoing a tier-1 or tier-2 move SHALL append the reverse move (TH-04). A move's undo window SHALL last until anything derived from the move leaves the building, and never longer than 30 days (design call CR-71, PROPOSED). Reopening a `closed` thread SHALL be a forward move that appends. Once an effect has left the building, the only correction SHALL be a replacement or a void (CL-08), never an erasure.
 
 #### Scenario: Undo of an arrival
 - **WHEN** staff mark the wrong patient as arrived and undo it a minute later
@@ -196,8 +203,8 @@ Threads SHALL reference each other only through named link types: `spawned_from`
 - **THEN** a `recoupment` case thread is minted and linked `recoups` to the visit thread, and the visit thread changes only when the recoupment posts
 
 ### Requirement: TH-10 Inbound records match a thread by a key set and are never attached silently
-Because outside systems do not carry the thread's identifier, each thread SHALL publish a key set: the patient's link or registry identity, the payer and member identifier of the coverage version, the date of service, the rendering provider, the billed amount, the EHR encounter reference when known, and the payer's claim control number once known (design call CR-7, PROPOSED). An inbound record, such as a set of clinical facts or a remittance line, SHALL attach to a thread only when it matches exactly one thread on at least the keys required for its kind, and when no key it carries conflicts with that thread's value (design call CR-7, PROPOSED). The required keys SHALL be:
-- for clinical facts: the patient's link, the date of service and the rendering provider; and also the EHR encounter reference wherever the thread already holds one, or wherever more than one encounter is known for that patient, date and provider;
+Because outside systems do not carry the thread's identifier, each thread SHALL publish a key set: the patient's link or registry identity, the payer and member identifier of the coverage version, the date of service, the rendering provider, the billed amount, the EHR encounter reference when known, the openPractice appointment reference that the EHR keeps when it keeps one (EB-19), and the payer's claim control number once known (design call CR-7, PROPOSED). An inbound record, such as a set of clinical facts or a remittance line, SHALL attach to a thread only when it matches exactly one thread on at least the keys required for its kind, and when no key it carries conflicts with that thread's value (design call CR-7, PROPOSED). The required keys SHALL be:
+- for clinical facts: the patient's link, the date of service and the rendering provider; the EHR encounter reference wherever the thread already holds one, or wherever more than one encounter is known for that patient, date and provider; and the appointment reference wherever the facts carry one. Where the EHR keeps appointment references, facts that carry none SHALL NOT match a thread minted by a booking;
 - for a remittance's claim payment: the payer's claim control number; or, where the payer gave none, the patient's registry identity, the payer and member coverage, the date of service and the billed amount;
 - for any other inbound record: the patient's identity, the date of service, and every other key of the thread that the record carries.
 
@@ -214,6 +221,10 @@ A key the record carries that differs from the thread's value SHALL exclude that
 #### Scenario: A second encounter on the same day
 - **WHEN** a patient seen in the morning, whose thread now holds encounter E1, is seen again that afternoon with no booking, and facts arrive for encounter E2 with the same patient, date and provider
 - **THEN** the conflicting encounter reference excludes the morning thread, and a new thread is minted at `seen` for E2
+
+#### Scenario: The afternoon facts arrive first
+- **WHEN** the EHR keeps appointment references, and facts for an unbooked afternoon encounter, carrying no appointment reference, arrive before the morning visit's facts
+- **THEN** they do not match the morning visit's booked thread, and a new thread is minted at `seen`
 
 ### Requirement: TH-11 The thread contract is versioned and has one canonical schema
 The thread SHALL be defined by the contract `openpractice-thread/1.0`, with one canonical schema, `contracts/openpractice-thread-1.0.schema.json` in this change, identified by the SHA-256 digest of its bytes (FD-7; design call CR-2, PROPOSED). The contract SHALL be versioned before any feature reads it. Every thread SHALL be stamped at minting with the contract version it was minted under, and the stamp SHALL never change. Every feature that reads threads SHALL declare the MAJOR version it reads, and SHALL treat a station or condition it does not know as "show it, do nothing". Additive changes, such as a new case type, hold reason, link type or legal move, SHALL increment MINOR. A breaking change, such as removing a station or changing what a station's amount means, SHALL need a new MAJOR version, a new digest, and every reader able to read both versions for as long as threads minted under the old one exist.

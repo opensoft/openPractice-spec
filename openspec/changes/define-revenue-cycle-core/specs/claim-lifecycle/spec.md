@@ -102,7 +102,7 @@ Every claim submission, replacement and void SHALL be authorized before it leave
 - **THEN** its outcome is indeterminate, the claims are not sent again, and reconciliation asks the adapter before anything else happens
 
 ### Requirement: CL-12 A claim moves the receivable from unbilled to billed when it is accepted
-When the payer or clearinghouse accepts a claim, openPractice SHALL post `claim_accepted` for its amount, moving it from `unbilled_receivable` to `payer_receivable` (RT-02, AI-15). Sending alone SHALL post nothing, and a rejection SHALL post nothing (design call CR-15, PROPOSED). For a claim recorded through the manual path, the entry SHALL post when staff record its acceptance (CP-04). Neither event SHALL create revenue (AI-12).
+When the payer or clearinghouse accepts a claim, openPractice SHALL post `claim_accepted` for its amount, moving it from `unbilled_receivable` to `payer_receivable` (RT-02, AI-15). Sending alone SHALL post nothing, and a rejection SHALL post nothing (design call CR-15, PROPOSED). For a claim recorded through the manual path, the entry SHALL post when staff record its acceptance (CP-04). A claim to a later coverage position SHALL post nothing on acceptance, because the amount it asks for already moved to that coverage's payer receivable as `payer_share_transfer` (RM-07). Neither event SHALL create revenue (AI-12).
 
 #### Scenario: A claim is accepted
 - **WHEN** the clearinghouse accepts a 200.00 claim

@@ -43,7 +43,7 @@ A change that alters a Good Faith Estimate's service, price or provider SHALL le
 - **THEN** the booking warns that the claim will be held (EG-02), and the move is still allowed
 
 ### Requirement: AP-04 Cancellations, no-shows and patients who leave unseen are dispositions, never deletions
-A cancellation, a no-show and a patient who leaves without being seen SHALL each be recorded as a disposition on the thread, with a coded reason, the time and the actor, and the thread SHALL move to `closed` (TH-04). No appointment SHALL be deleted. Where money paid toward the visit is still held when the disposition is recorded, its prepayment SHALL move to `unapplied_credit` with the disposition (`prepayment_to_credit`, PY-03), the thread SHALL move to `banked` instead of `closed`, and it SHALL close only when that credit has been applied, refunded or moved to a credit-balance case (PY-06; design call CR-69, PROPOSED). A missed-appointment fee SHALL never be charged automatically: a person MAY charge it later from a catalog item routed as direct-pay healthcare, which moves the thread from `closed` or `banked` to `charged` (TH-04; design call CR-23, PROPOSED). A cancellation SHALL be FD-5 tier 2, done with a notification (design call CR-84, PROPOSED), and an agent SHALL stay at `propose` for it (ruling 132).
+A cancellation, a no-show and a patient who leaves without being seen SHALL each be recorded as a disposition on the thread, with a coded reason, the time and the actor, and the thread SHALL move to `closed` (TH-04). No appointment SHALL be deleted. Where money paid toward the visit is still held when the disposition is recorded, its prepayment SHALL move to `unapplied_credit` with the disposition (`prepayment_to_credit`, PY-03), the thread SHALL move to `banked` instead of `closed`, and it SHALL close only when that credit has been applied, refunded or moved to a credit-balance case (PY-06; design call CR-69, PROPOSED). Undoing the disposition SHALL also reverse that `prepayment_to_credit`, and the undo SHALL be refused once the credit has been applied or refunded. A missed-appointment fee SHALL never be charged automatically: a person MAY charge it later from a catalog item routed as direct-pay healthcare, which moves the thread from `closed` or `banked` to `charged` (TH-04; design call CR-23, PROPOSED). A cancellation SHALL be FD-5 tier 2, done with a notification (design call CR-84, PROPOSED), and an agent SHALL stay at `propose` for it (ruling 132).
 
 #### Scenario: A no-show
 - **WHEN** a patient does not arrive and staff record a no-show
@@ -57,8 +57,8 @@ A cancellation, a no-show and a patient who leaves without being seen SHALL each
 - **WHEN** an agent opted up to `act_with_notice` for booking tries to cancel an appointment
 - **THEN** it can only propose the cancellation, and a person decides
 
-### Requirement: AP-05 Walk-ins are booked at arrival, and a visit with no appointment is still billable
-A walk-in with no booking SHALL mint a visit thread at `arrived` (TH-02), with the same facts AP-02 requires. A visit that the EHR documents with no openPractice appointment SHALL stay billable from its clinical facts or a manual charge, without an appointment (EB-19, TH-02).
+### Requirement: AP-05 A walk-in is recorded at arrival, not scheduled, and a visit with no appointment is still billable
+A walk-in with no booking SHALL be recorded when the patient arrives, minting a visit thread at `arrived` (TH-02) with the same facts AP-02 requires; recording it is not scheduling a new appointment. A visit that the EHR documents with no openPractice appointment SHALL stay billable from its clinical facts or a manual charge, without an appointment (EB-19, TH-02).
 
 #### Scenario: Billing a visit with no booking
 - **WHEN** the EHR reports final facts for an encounter that no appointment matches

@@ -8,7 +8,7 @@ openPractice SHALL reach payers only through claim-pathway adapters that impleme
 - **THEN** openPractice offers no status query, and silence is handled by CL-09's work item
 
 ### Requirement: CP-02 Payer and jurisdiction rules live only in adapters
-Everything specific to a payer, a claim format or a jurisdiction SHALL live in the adapter: the claim format and channel, code edits and required fields, the readiness checklist it fills in for each claim, its acknowledgment window, and the tables that normalize its codes (framework §8). The core SHALL hold only claims, claim versions and lines, status events, remittances and the readiness checklist the adapter fills in. A change of jurisdiction or payer SHALL never require a change to the core.
+Everything specific to a payer, a claim format or a jurisdiction SHALL live in the adapter: the claim format and channel, code edits and required fields, the readiness checklist it fills in for each claim, its acknowledgment window, and the tables that normalize its codes (framework §8). An adapter's code edits SHALL only flag or hold a claim, and SHALL never change a code a biller confirmed (CG-02, CG-04); its normalization tables SHALL apply only to codes a payer sends back, such as adjustment reason and remark codes (RT-05). The core SHALL hold only claims, claim versions and lines, status events, remittances and the readiness checklist the adapter fills in. A change of jurisdiction or payer SHALL never require a change to the core.
 
 #### Scenario: A second jurisdiction
 - **WHEN** a practice in a different Medicare jurisdiction adopts openPractice

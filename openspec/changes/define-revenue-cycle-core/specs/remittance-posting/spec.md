@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: RM-01 A remittance is the payer's answer, and it is not the money
-openPractice SHALL record each payer remittance as the payer's answer: its claim payments, each claim payment's service-line decisions (RM-06), and any payer-level adjustments (RM-08). The payment itself SHALL be a separate record carrying the payer's trace or check reference, never a bank account or routing number (BAB-10), so that deposit explanation can match it to a bank line (BAB-14). A remittance may arrive before or after its money, and one deposit may cover several remittances (framework §4.3). Where the money arrived first and was recorded as an unidentified receipt, posting the answer SHALL move that money with `unidentified_receipt_to_payer` in place of `payer_payment`, linked to the receipt (design call CR-58, PROPOSED). The remittance SHALL be frozen as received (TH-14).
+openPractice SHALL record each payer remittance as the payer's answer: its claim payments, each claim payment's service-line decisions (RM-06), and any payer-level adjustments (RM-08). The payment itself SHALL be a separate record carrying the payer's trace or check reference, never a bank account or routing number (BAB-10), so that deposit explanation can match it to a bank line (BAB-14). A remittance may arrive before or after its money, and one deposit may cover several remittances (framework §4.3). Where the money arrived first and was recorded as an unidentified receipt, posting the answer SHALL move that money with `unidentified_receipt_to_payer` in place of `payer_payment`, linked to the receipt (design call CR-58, PROPOSED). openPractice SHALL make that link by itself only when the remittance's trace number and payment amount both equal the receipt's; any other link SHALL be work for a person under PY-06 (design call CR-95, PROPOSED). The remittance SHALL be frozen as received (TH-14).
 
 #### Scenario: The answer arrives before the money
 - **WHEN** a remittance arrives on Monday and its EFT reaches the bank on Wednesday
@@ -26,7 +26,7 @@ Each claim payment SHALL attach to a submitted claim version only when it matche
 - **THEN** the money posts as `legacy_collection`, and no openPractice receivable is created
 
 ### Requirement: RM-04 Exactly matched lines post by themselves, with notice and undo
-A claim payment whose every part matches exactly SHALL post without a person, at FD-5 tier 2, done with a notification and undoable (ruling 120). Exactly matched SHALL mean all eight of these (design call CR-52, PROPOSED):
+A claim payment whose every part matches exactly SHALL post without a person, at FD-5 tier 2, done with a notification and undoable (ruling 120). Exactly matched SHALL mean all nine of these (design call CR-52, PROPOSED):
 - it attached to exactly one claim version under RM-03;
 - that claim version is the current one: not voided, not replaced and not held for a retracted fact;
 - no answer from this payer has already posted for that claim version, judged by the payer's claim control number and by the payment's trace number, so a resent or stale file never posts twice;
@@ -34,6 +34,7 @@ A claim payment whose every part matches exactly SHALL post without a person, at
 - no two service lines match the same claim line;
 - every adjustment code is in the normalization table (RT-05);
 - on every line, the paid amount, the adjustments and the patient responsibility add up to the billed amount;
+- the claim payment equals the sum of its line payments, with no claim-level adjustment;
 - no line reverses or takes back an earlier posting.
 
 A claim payment that fails any of them is a proposal for a human under RM-05 (ruling 120). Undo SHALL be a reversal of everything the posting made (SL-05), made by a person at FD-5 tier 2 with a notification, and available until the payment has been explained in a deposit; after that, a correction SHALL need a person's reason (design calls CR-53 and CR-66, PROPOSED). This automatic posting is a shipped rule, not an agent action.
@@ -69,13 +70,17 @@ Posting a claim payment SHALL make these entries (AI-12, AI-15):
 - `contractual_adjustment` for the billed amount less the allowed amount;
 - a true-up for any difference between the estimate and what the answer shows (RE-05);
 - `payer_payment` for what the payer paid;
-- `patient_share_transfer` for the patient's responsibility, unless the patient has a later coverage position for that date, in which case the share SHALL wait as work for a person to decide whether a later payer is billed first (design call CR-54, PROPOSED).
+- `patient_share_transfer` for the patient's responsibility, unless the patient has a later coverage position for that date, in which case the share SHALL wait as work for a person to decide whether a later payer is billed first (design call CR-54, PROPOSED). When the person decides to bill the later payer, the amount SHALL move to that coverage's payer receivable as `payer_share_transfer`, posted with the decision and under its governance; when they decide not to, it moves to the patient as `patient_share_transfer` (design call CR-91, PROPOSED).
 
 A denied amount SHALL never be written off automatically: it SHALL become work for a person to appeal, which marks it disputed (SL-10), or to write off under PS-11 (design call CR-55, PROPOSED). The thread SHALL move from `claimed` to `remitted` (TH-04).
 
 #### Scenario: Paid with a patient share
 - **WHEN** a 200.00 claim is allowed 120.00, paid 96.00, with 24.00 coinsurance, and the estimate expected 114.00
 - **THEN** 80.00 posts as `contractual_adjustment`, 96.00 as `payer_payment`, 24.00 as `patient_share_transfer`, and a 6.00 `estimate_increase` true-up records that the estimate was low
+
+#### Scenario: A Medigap plan pays the rest
+- **WHEN** Medicare pays 96.00 on a 120.00 allowed amount, the patient has a Medigap plan for that date, and a person decides to bill it
+- **THEN** 24.00 moves from Medicare's coverage account to the Medigap coverage account as `payer_share_transfer`, and recording the Medigap claim's acceptance posts nothing more (CL-12)
 
 #### Scenario: A denied line
 - **WHEN** a payer denies one line of a claim

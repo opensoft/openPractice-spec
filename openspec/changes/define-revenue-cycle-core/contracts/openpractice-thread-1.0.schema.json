@@ -62,7 +62,8 @@
         "clinical_fact_retracted",
         "identity_review",
         "offering_route_unresolved",
-        "waiting_on_authorization"
+        "waiting_on_authorization",
+        "same_person_reconciliation"
       ]
     },
     "releaseParameters": {
@@ -76,7 +77,7 @@
       }
     },
     "hold": {
-      "description": "One hold on a thread (TH-05, TH-06). A thread may carry several at once, each with its own reason, release condition, owner and clock.",
+      "description": "One hold on a thread (TH-05, TH-06). A thread may carry several at once, each with its own reason, release condition, owner and clock. hold_id is unique among a thread's holds (TH-06); a schema cannot check that.",
       "type": "object",
       "additionalProperties": false,
       "required": ["hold_id", "reason", "release", "owner_ref"],
@@ -347,7 +348,7 @@
           "description": "For a re-association, the key names that matched (TH-10); names only, never values.",
           "type": "array",
           "items": {
-            "enum": ["patient_link", "registry_identity", "payer", "member_coverage", "date_of_service", "rendering_provider", "billed_amount", "encounter_ref", "payer_claim_control_number"]
+            "enum": ["patient_link", "registry_identity", "payer", "member_coverage", "date_of_service", "rendering_provider", "billed_amount", "encounter_ref", "appointment_ref", "payer_claim_control_number"]
           },
           "uniqueItems": true
         },
@@ -356,8 +357,14 @@
       "allOf": [
         {
           "if": { "not": { "required": ["from_station"] } },
-          "then": { "required": ["minting_event", "thread_type", "to_owner_ref"] },
-          "else": { "not": { "anyOf": [{ "required": ["minting_event"] }, { "required": ["thread_type"] }] } }
+          "then": {
+            "required": ["minting_event", "thread_type", "to_owner_ref"],
+            "not": { "required": ["from_condition"] }
+          },
+          "else": {
+            "required": ["from_condition"],
+            "not": { "anyOf": [{ "required": ["minting_event"] }, { "required": ["thread_type"] }] }
+          }
         },
         {
           "if": { "properties": { "minting_event": { "const": "booking" } }, "required": ["minting_event"] },
@@ -390,7 +397,13 @@
         },
         {
           "if": { "properties": { "to_condition": { "const": "held" } }, "required": ["to_condition"] },
-          "then": { "anyOf": [{ "required": ["place_hold"] }, { "required": ["release_hold_id"] }] }
+          "then": {
+            "anyOf": [
+              { "required": ["place_hold"] },
+              { "required": ["release_hold_id"] },
+              { "properties": { "from_condition": { "enum": ["held", "disputed"] } }, "required": ["from_condition"] }
+            ]
+          }
         },
         {
           "if": { "properties": { "to_condition": { "const": "moving" } }, "required": ["to_condition"] },

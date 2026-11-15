@@ -5,7 +5,7 @@ openPractice SHALL record each patient payment the practice receives: its amount
 
 #### Scenario: A copay at the desk
 - **WHEN** a patient pays 25.00 in cash at checkout for today's visit
-- **THEN** the payment is recorded against the guarantor account with the method, date and recorder, and allocated to the visit (PY-04)
+- **THEN** the payment is recorded against the guarantor account with the method, date and recorder, as an unapplied credit because the visit's charge is not yet final (PY-03), and it is allocated to the visit's charge line once the guarantor account owes on it (PY-04)
 
 #### Scenario: Someone types a card number
 - **WHEN** a user tries to record a full card number as the payment's reference
@@ -19,11 +19,11 @@ Every recorded payment SHALL produce one receipt that states the amount, the dat
 - **THEN** a new receipt is issued that replaces the first, and both are kept
 
 ### Requirement: PY-03 Money received before the service is a liability, and money not yet applied is a credit
-A payment received before the service it pays for is given SHALL post as `prepayment` to `contract_liability`, and SHALL be applied with `prepayment_applied` when that service's charge is finalized (framework §5A.2.7; design call CR-11, PROPOSED). A payment received after the service and not yet allocated, or received beyond what the guarantor account owes, SHALL post to `unapplied_credit` (AI-13). No payment SHALL be recorded as revenue when it is received (AI-12).
+A payment received before the service it pays for is given SHALL post as `prepayment` to `contract_liability` (framework §5A.2.7; design call CR-11, PROPOSED). When that service's charge is finalized, it SHALL be applied with `prepayment_applied` only up to what the guarantor account then owes on the charge, and the rest SHALL move to `unapplied_credit` with `prepayment_to_credit` in the same finalization (design call CR-92, PROPOSED). For an insured visit the guarantor owes nothing until the payer answers (RM-07), so the whole prepayment moves to the credit at finalization and is allocated from there once the patient's share is known (PY-04). A payment received after the service and not yet allocated, or received beyond what the guarantor account owes, SHALL post to `unapplied_credit` (AI-13). No payment SHALL be recorded as revenue when it is received (AI-12).
 
 Money already received SHALL reach `unapplied_credit` without the payment being reversed or recorded again (design call CR-56, PROPOSED):
 - a prepayment that will not be applied SHALL move from `contract_liability` as `prepayment_to_credit`, posted with the act that makes it unappliable and under that act's governance: the cancellation, no-show or left-unseen disposition of the visit it paid for (AP-04), or the finalization of a charge smaller than the prepayment (CG-09). PY-06 SHALL watch the resulting credit;
-- when a correction, void or retraction reduces a charge line below what the guarantor account has already paid on it, the excess SHALL move from `patient_receivable` as `patient_overpayment_to_credit`, posted with the correction that created it and under that correction's governance.
+- whenever any posting leaves a charge line's `patient_receivable` below zero, whatever its cause, such as a correction, a void, a retraction or a payer's corrected remittance (RM-10), the amount below zero SHALL move to `unapplied_credit` as `patient_overpayment_to_credit`, posted with that posting and under its governance (design call CR-92, PROPOSED).
 
 The credit is then applied, moved to `refund_liability` (PY-07) or worked under PY-06.
 
@@ -34,6 +34,10 @@ The credit is then applied, moved to `refund_liability` (PY-07) or worked under 
 #### Scenario: The prepayment is larger than the final charge
 - **WHEN** a patient prepaid 150.00 and the procedure's final self-pay charge, after the discount, is 120.00
 - **THEN** 120.00 is applied with `prepayment_applied`, and the other 30.00 moves to `unapplied_credit` with `prepayment_to_credit` in the same finalization
+
+#### Scenario: A prepayment before an insured visit
+- **WHEN** a patient prepays 50.00 before an insured visit, the charge is finalized, and Medicare later assigns a 24.00 share
+- **THEN** the 50.00 moves to `unapplied_credit` at finalization, 24.00 of it is allocated to the patient's share when the remittance posts, and the other 26.00 stays a credit that PY-06 watches; no charge line's receivable goes below zero
 
 #### Scenario: A paid charge is retracted
 - **WHEN** a visit's charge was paid by the payer and by the patient, and a retraction voids the charge line (EB-15)
@@ -54,7 +58,7 @@ openPractice SHALL generate a deposit slip for the cash and checks recorded and 
 - **THEN** openPractice prints one slip for 145.00 listing the three items, and the deposit is later matched to its bank line by that total
 
 ### Requirement: PY-06 Money held that is not the practice's becomes a credit-balance case with a clock
-When money sits in `unapplied_credit`, `refund_liability` or `unidentified_receipts` and is not applied within the period the approved parameters set, or is identified as owed back, openPractice SHALL mint a `credit_balance` case thread (TH-08) recording its cause: an unidentified receipt, a patient credit or a payer overpayment. Its clock SHALL come from a parameter that counsel has verified for that cause, such as a payer overpayment's report-and-return deadline (framework §5A.2.7). Until such a parameter is verified, the case SHALL be due at once and owned (design call CR-41, PROPOSED). Identifying the owner of an unidentified receipt SHALL be done by a person at FD-5 tier 2, with a notification: it posts `unidentified_receipt_identified` for a guarantor account, or `unidentified_receipt_to_payer` for a payer's payment that arrived before its remittance (RM-01) (design call CR-66, PROPOSED).
+When money sits in `unapplied_credit`, `refund_liability` or `unidentified_receipts` and is not applied within the period the approved parameters set, or is identified as owed back, openPractice SHALL mint a `credit_balance` case thread (TH-08) recording its cause: an unidentified receipt, a patient credit or a payer overpayment. Its clock SHALL come from a parameter that counsel has verified for that cause, such as a payer overpayment's report-and-return deadline (framework §5A.2.7). Until such a parameter is verified, the case SHALL be due at once and owned (design call CR-41, PROPOSED). Identifying the owner of an unidentified receipt SHALL be done by a person at FD-5 tier 2, with a notification: it posts `unidentified_receipt_identified` for a guarantor account, or `unidentified_receipt_to_payer` for a payer's payment that arrived before its remittance (design call CR-66, PROPOSED). The one exception is RM-01's automatic link, made only when the remittance's trace number and payment amount both equal the receipt's (design call CR-95, PROPOSED).
 
 #### Scenario: A payer overpays
 - **WHEN** a remittance pays 20.00 more than the claim's balance
@@ -75,7 +79,11 @@ A refund to a staff member's own guarantor account, or to an account whose party
 - **THEN** that other person decides the refund
 
 ### Requirement: PY-09 A chargeback or a returned item reopens what it paid
-A card chargeback or a returned check SHALL post `chargeback` or `returned_item`, and that entry SHALL itself be the reversal of the payment's effect: it reopens the patient receivable on the charge lines the payment was allocated to, referencing the payment and its allocation (SL-03), and no other reversal of that payment or allocation SHALL post. Any fee SHALL post separately as `chargeback_fee` or `bank_fee` (AI-13). A bank debit for it SHALL clear under SL-13. Recording a chargeback or a returned item SHALL be done by a person at FD-5 tier 2, with a notification (design call CR-66, PROPOSED). A thread the payment had closed SHALL move forward again (TH-07).
+A card chargeback or a returned check SHALL undo the payment in two parts (design call CR-93, PROPOSED). The part allocated to charge lines SHALL post as `chargeback` or `returned_item`, and that entry SHALL itself be the reversal of the payment's effect: it reopens the patient receivable on those lines, referencing the payment and its allocation (SL-03), and no other reversal of that part SHALL post. The part still held in `contract_liability`, `unapplied_credit` or `legacy_collections` SHALL be reversed under SL-05 against the bucket that holds it, recording the chargeback or return reason and the bank line, so that no receivable is raised against no charge line and no credit is left for money the patient has already taken back. Any fee SHALL post separately as `chargeback_fee` or `bank_fee` (AI-13). A bank debit for it SHALL clear under SL-13. Recording a chargeback or a returned item SHALL be done by a person at FD-5 tier 2, with a notification (design call CR-66, PROPOSED). A thread the payment had closed SHALL move forward again (TH-07).
+
+#### Scenario: A deposit check bounces
+- **WHEN** a 300.00 deposit check for a procedure not yet given is returned unpaid
+- **THEN** the 300.00 prepayment is reversed out of `contract_liability` under SL-05 with the return reason and the bank line, no patient receivable rises, and no credit remains to refund if the procedure is later cancelled
 
 #### Scenario: A returned check
 - **WHEN** a 60.00 check is returned unpaid with a 10.00 bank fee
