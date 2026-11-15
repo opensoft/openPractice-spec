@@ -1,0 +1,1164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:openpractice:contract:openpractice-clinical-handoff:1.0",
+  "title": "openpractice-clinical-handoff 1.0",
+  "description": "Canonical message schema for the clinical handoff contract from openPractice to openChart (or another linked EHR). Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required openChart-spec companion change. Reference-only (design call DC-2): exactly the routing id (handoff_id), the EB-01 link_id, the EHR patient triple, HealthLinc's request reference, the conversation source (healthlinc or medxfactory) and conversation reference, the reply-path reference, category, urgency, timestamps, the clock policy reference, the origin, an optional split-group reference, and the identity state cross. A priority or urgent item on a link in review is offered with that state, and one with no chart link is offered unlinked with only legal name, birth date and administrative sex from the openpractice-ehr-patient-link/1.0 snapshot. openChart fetches the conversation by reference from whichever system holds it, through openchart-conversation-retrieval/1.0 (owned by openChart; ruling 69). openChart also reports a clinician's coded clinical-need marker. No message body, question text, reply text or other clinical content crosses or is stored in openPractice. Every object is closed. message_id is the idempotency key and carries no PHI. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/handoffOffer"
+    },
+    {
+      "$ref": "#/$defs/handoffAck"
+    },
+    {
+      "$ref": "#/$defs/handoffUrgencyRaised"
+    },
+    {
+      "$ref": "#/$defs/handoffClinicianUrgencyRaised"
+    },
+    {
+      "$ref": "#/$defs/handoffStatus"
+    },
+    {
+      "$ref": "#/$defs/clinicalNeedMarker"
+    },
+    {
+      "$ref": "#/$defs/messageAck"
+    }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issuer": {
+      "description": "A deployment's configured, stable issuer identifier, unique across deployments and never derived from a host path (EB-02).",
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 255
+    },
+    "opaqueRef": {
+      "description": "Opaque reference. Carries no name, date of birth, contact detail, amount or clinical content.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9:_./-]{1,128}$"
+    },
+    "urgency": {
+      "description": "Applied or proposed urgency. Ordered routine < priority < urgent. openPractice never lowers an applied urgency (ER-03).",
+      "enum": [
+        "routine",
+        "priority",
+        "urgent"
+      ]
+    },
+    "patientRef": {
+      "description": "The EHR patient triple (EHR issuer, namespace, value) taken from the EB-01 link, compared as a triple (EB-02).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issuer",
+        "namespace",
+        "value"
+      ],
+      "properties": {
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{1,63}$"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "healthlincRef": {
+      "description": "HealthLinc's message reference: (HealthLinc issuer, healthlinc, value). openChart retrieves it through openchart-conversation-retrieval/1.0, which openChart owns in its change define-clinical-message-inbox and which HealthLinc and medXfactory implement (ruling 69).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issuer",
+        "namespace",
+        "value"
+      ],
+      "properties": {
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "namespace": {
+          "const": "healthlinc"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "rejectReason": {
+      "enum": [
+        "schema_invalid",
+        "unsupported_major_version",
+        "link_unknown",
+        "link_revoked",
+        "link_in_review",
+        "ehr_patient_mismatch",
+        "unauthorized",
+        "origin_not_verified"
+      ]
+    },
+    "conversationRef": {
+      "description": "Reference to the patient's conversation in the system that holds it: (issuer, healthlinc or medxfactory, value). Its namespace matches conversation_source. openChart retrieves it through openchart-conversation-retrieval/1.0, which openChart owns in its change define-clinical-message-inbox and which HealthLinc and medXfactory implement (ruling 69).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issuer",
+        "namespace",
+        "value"
+      ],
+      "properties": {
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "namespace": {
+          "enum": [
+            "healthlinc",
+            "medxfactory"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "legalName": {
+      "description": "Structured legal name, the same shape as the snapshot of openpractice-ehr-patient-link/1.0 (define-mvp-practice-foundation, SHA-256 76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802).",
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "family"
+          ]
+        },
+        {
+          "required": [
+            "given"
+          ]
+        }
+      ],
+      "properties": {
+        "family": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "given": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "suffix": {
+          "type": "string",
+          "maxLength": 32
+        }
+      }
+    },
+    "clinicianRef": {
+      "description": "openChart's opaque reference to the clinician who recorded a marker. Never a name.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9:_-]{1,128}$"
+    },
+    "handoffOffer": {
+      "description": "openPractice offers a routed clinical item to openChart (ER-04, ER-05, ER-06).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "handoff_id",
+        "payload"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-clinical-handoff"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "handoff_id": {
+          "description": "The openPractice routing id; names one handoff for its whole life.",
+          "$ref": "#/$defs/uuid"
+        },
+        "link_id": {
+          "description": "The openpractice-ehr-patient-link link_id (EB-01, EB-04). Present whenever the handoff has a link: required on an offer whose identity_state is linked or link_in_review, absent on an unlinked offer (ER-06).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "handoff.offer"
+        },
+        "payload": {
+          "description": "Reference-only payload. It has no free-text field, so no clinical content can cross (ER-05).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "identity_state",
+            "healthlinc_message_ref",
+            "conversation_source",
+            "conversation_ref",
+            "reply_path_ref",
+            "category",
+            "urgency",
+            "submitted_at",
+            "routed_at",
+            "ack_by",
+            "respond_by",
+            "clock_policy",
+            "origin"
+          ],
+          "properties": {
+            "identity_state": {
+              "description": "linked: an active EB-01 link not in review. link_in_review: the link is in identity review (EB-05) or under a demographic hold (EB-08), which neither side distinguishes. unlinked: no active chart link. link_in_review and unlinked are offered only for priority or urgent items, which openChart accepts as unfiled items with the uncertainty shown (ER-06).",
+              "enum": [
+                "linked",
+                "link_in_review",
+                "unlinked"
+              ]
+            },
+            "ehr_patient": {
+              "description": "Present when identity_state is linked or link_in_review.",
+              "$ref": "#/$defs/patientRef"
+            },
+            "unlinked_identity": {
+              "description": "Present only when identity_state is unlinked. A minimal subset of the openpractice-ehr-patient-link/1.0 snapshot (SHA-256 76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802): its legal_name, birth_date and administrative_sex, with the same shapes, and nothing else. openChart never files or links on it automatically (design call DC-39).",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "legal_name",
+                "birth_date",
+                "administrative_sex"
+              ],
+              "properties": {
+                "legal_name": {
+                  "$ref": "#/$defs/legalName"
+                },
+                "birth_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "administrative_sex": {
+                  "enum": [
+                    "female",
+                    "male",
+                    "other",
+                    "unknown"
+                  ]
+                }
+              }
+            },
+            "healthlinc_message_ref": {
+              "description": "HealthLinc's reference for the patient's request.",
+              "$ref": "#/$defs/healthlincRef"
+            },
+            "conversation_source": {
+              "description": "Where the conversation lives (ruling 51): healthlinc for a conversation HealthLinc holds (a coach conversation, a direct message to the doctor or an administrative thread), medxfactory for a medical-AI conversation.",
+              "enum": [
+                "healthlinc",
+                "medxfactory"
+              ]
+            },
+            "conversation_ref": {
+              "$ref": "#/$defs/conversationRef"
+            },
+            "reply_path_ref": {
+              "description": "Opaque HealthLinc reply-path reference, passed through unchanged. The clinician's reply goes from openChart to HealthLinc, never through openPractice.",
+              "$ref": "#/$defs/opaqueRef"
+            },
+            "category": {
+              "const": "clinical"
+            },
+            "urgency": {
+              "$ref": "#/$defs/urgency"
+            },
+            "submitted_at": {
+              "description": "When the patient submitted the message in HealthLinc.",
+              "$ref": "#/$defs/timestamp"
+            },
+            "routed_at": {
+              "description": "When openPractice applied the routing rules.",
+              "$ref": "#/$defs/timestamp"
+            },
+            "ack_by": {
+              "description": "openPractice alerts the office manager if no accepted handoff.ack arrives by this time (ER-07).",
+              "$ref": "#/$defs/timestamp"
+            },
+            "respond_by": {
+              "description": "openPractice's shadow of openChart's response clock, from the clock policy (ER-07, ER-08). openChart owns the actual clock.",
+              "$ref": "#/$defs/timestamp"
+            },
+            "clock_policy": {
+              "description": "The routing-clock policy version that set ack_by and respond_by.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "policy_id",
+                "version",
+                "approval"
+              ],
+              "properties": {
+                "policy_id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "approval": {
+                  "enum": [
+                    "approved",
+                    "fail_closed_default"
+                  ]
+                }
+              }
+            },
+            "origin": {
+              "enum": [
+                "intake",
+                "recategorized_from_administrative",
+                "split_from_mixed"
+              ]
+            },
+            "split_group_ref": {
+              "$ref": "#/$defs/opaqueRef"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "conversation_source": {
+                    "const": "healthlinc"
+                  }
+                },
+                "required": [
+                  "conversation_source"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "conversation_ref": {
+                    "properties": {
+                      "namespace": {
+                        "const": "healthlinc"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "conversation_source": {
+                    "const": "medxfactory"
+                  }
+                },
+                "required": [
+                  "conversation_source"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "conversation_ref": {
+                    "properties": {
+                      "namespace": {
+                        "const": "medxfactory"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "identity_state": {
+                    "enum": [
+                      "linked",
+                      "link_in_review"
+                    ]
+                  }
+                },
+                "required": [
+                  "identity_state"
+                ]
+              },
+              "then": {
+                "required": [
+                  "ehr_patient"
+                ],
+                "not": {
+                  "required": [
+                    "unlinked_identity"
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "identity_state": {
+                    "const": "unlinked"
+                  }
+                },
+                "required": [
+                  "identity_state"
+                ]
+              },
+              "then": {
+                "required": [
+                  "unlinked_identity"
+                ],
+                "not": {
+                  "required": [
+                    "ehr_patient"
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "identity_state": {
+                    "enum": [
+                      "link_in_review",
+                      "unlinked"
+                    ]
+                  }
+                },
+                "required": [
+                  "identity_state"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "urgency": {
+                    "enum": [
+                      "priority",
+                      "urgent"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "identity_state": {
+                    "enum": [
+                      "linked",
+                      "link_in_review"
+                    ]
+                  }
+                },
+                "required": [
+                  "identity_state"
+                ]
+              }
+            },
+            "required": [
+              "payload"
+            ]
+          },
+          "then": {
+            "required": [
+              "link_id"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "identity_state": {
+                    "const": "unlinked"
+                  }
+                },
+                "required": [
+                  "identity_state"
+                ]
+              }
+            },
+            "required": [
+              "payload"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "link_id"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handoffAck": {
+      "description": "openChart acknowledges each handoff (ruling 43).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "handoff_id",
+        "payload"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-clinical-handoff"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "handoff_id": {
+          "description": "The openPractice routing id; names one handoff for its whole life.",
+          "$ref": "#/$defs/uuid"
+        },
+        "link_id": {
+          "description": "The openpractice-ehr-patient-link link_id (EB-01, EB-04). Present whenever the handoff has a link: required on an offer whose identity_state is linked or link_in_review, absent on an unlinked offer (ER-06).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "handoff.ack"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "acked_message_id",
+            "result"
+          ],
+          "properties": {
+            "acked_message_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "result": {
+              "description": "accepted: openChart took the item into its clinical inbox and started its response clock.",
+              "enum": [
+                "accepted",
+                "rejected"
+              ]
+            },
+            "accepted_at": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "reject_reason": {
+              "$ref": "#/$defs/rejectReason"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "accepted"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "accepted_at"
+                ],
+                "not": {
+                  "required": [
+                    "reject_reason"
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "rejected"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "reject_reason"
+                ],
+                "not": {
+                  "required": [
+                    "accepted_at"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "handoffUrgencyRaised": {
+      "description": "openPractice tells openChart that an item's urgency was raised.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "handoff_id",
+        "payload"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-clinical-handoff"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "handoff_id": {
+          "description": "The openPractice routing id; names one handoff for its whole life.",
+          "$ref": "#/$defs/uuid"
+        },
+        "link_id": {
+          "description": "The openpractice-ehr-patient-link link_id (EB-01, EB-04). Present whenever the handoff has a link: required on an offer whose identity_state is linked or link_in_review, absent on an unlinked offer (ER-06).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "handoff.urgency_raised"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "urgency",
+            "raised_at",
+            "ack_by",
+            "respond_by",
+            "source"
+          ],
+          "properties": {
+            "urgency": {
+              "description": "Only a raise is possible; there is no message that lowers urgency (ER-03).",
+              "enum": [
+                "priority",
+                "urgent"
+              ]
+            },
+            "raised_at": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "ack_by": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "respond_by": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "source": {
+              "description": "coach_triage and medical_ai_triage replace the earlier healthlinc_triage, which ruling 51 split; 1.0 is unratified, so no published value is withdrawn. patient_checklist is a patient's raise through HealthLinc's red-flag checklist (ruling 71).",
+              "enum": [
+                "coach_triage",
+                "medical_ai_triage",
+                "patient_checklist",
+                "staff",
+                "agent_proposal",
+                "routing_rule"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "handoffClinicianUrgencyRaised": {
+      "description": "openChart tells openPractice that a clinician raised an item's urgency (ER-03). Carries link_id when the handoff has a link.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "handoff_id",
+        "payload"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-clinical-handoff"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "handoff_id": {
+          "description": "The openPractice routing id; names one handoff for its whole life.",
+          "$ref": "#/$defs/uuid"
+        },
+        "link_id": {
+          "description": "The openpractice-ehr-patient-link link_id (EB-01, EB-04). Present whenever the handoff has a link: required on an offer whose identity_state is linked or link_in_review, absent on an unlinked offer (ER-06).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "handoff.clinician_urgency_raised"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "urgency",
+            "raised_at",
+            "respond_by",
+            "raised_by"
+          ],
+          "properties": {
+            "urgency": {
+              "description": "A raise only; there is no message that lowers urgency (ER-03).",
+              "enum": [
+                "priority",
+                "urgent"
+              ]
+            },
+            "raised_at": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "respond_by": {
+              "description": "openChart's new response deadline. openPractice shadows it, never later than its current shadow deadline (ER-03).",
+              "$ref": "#/$defs/timestamp"
+            },
+            "raised_by": {
+              "$ref": "#/$defs/clinicianRef"
+            }
+          }
+        }
+      }
+    },
+    "handoffStatus": {
+      "description": "openChart reports handoff progress. Coded only; no reply content.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "handoff_id",
+        "payload"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-clinical-handoff"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "handoff_id": {
+          "description": "The openPractice routing id; names one handoff for its whole life.",
+          "$ref": "#/$defs/uuid"
+        },
+        "link_id": {
+          "description": "The openpractice-ehr-patient-link link_id (EB-01, EB-04). Present whenever the handoff has a link: required on an offer whose identity_state is linked or link_in_review, absent on an unlinked offer (ER-06).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "handoff.status"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "status_at"
+          ],
+          "properties": {
+            "status": {
+              "description": "responded: a clinician replied to HealthLinc over openChart's reply path. clock_expired: openChart's response clock ran out. returned_not_clinical: a clinician judged the item administrative. content_unavailable: openChart could not fetch the message from HealthLinc. closed: done.",
+              "enum": [
+                "responded",
+                "clock_expired",
+                "returned_not_clinical",
+                "content_unavailable",
+                "closed"
+              ]
+            },
+            "status_at": {
+              "$ref": "#/$defs/timestamp"
+            }
+          }
+        }
+      }
+    },
+    "clinicalNeedMarker": {
+      "description": "openChart reports a clinician's clinical-need marker to openPractice on the patient's EB-01 link (ER-18).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "link_id",
+        "payload"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-clinical-handoff"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "link_id": {
+          "description": "The openpractice-ehr-patient-link link_id (EB-01, EB-04). Present whenever the handoff has a link: required on an offer whose identity_state is linked or link_in_review, absent on an unlinked offer (ER-06).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "clinical_need.marker"
+        },
+        "payload": {
+          "description": "A coded, attributed, time-boxed clinical-need marker. It carries no reason, note or other clinical content (ER-18).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "need_id",
+            "action",
+            "kind",
+            "marked_by",
+            "marked_at"
+          ],
+          "properties": {
+            "need_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "action": {
+              "enum": [
+                "mark",
+                "withdraw"
+              ]
+            },
+            "kind": {
+              "description": "appointment_needed: a clinician judged an appointment clinically needed, so a payment hold never blocks it (PH-01). messaging_continuity: a clinician keeps clinical messaging and medical-AI consults open for continuity of care (PG-04, ruling 50).",
+              "enum": [
+                "appointment_needed",
+                "messaging_continuity"
+              ]
+            },
+            "marked_by": {
+              "$ref": "#/$defs/clinicianRef"
+            },
+            "marked_at": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "valid_until": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "origin": {
+              "enum": [
+                "clinician_judgment",
+                "urgent_escalation"
+              ]
+            },
+            "related_handoff_id": {
+              "description": "The routing id of the urgent handoff the need arose from. openPractice honors an urgent_escalation origin only when its own routing record shows that id as urgent on this link (ER-18).",
+              "$ref": "#/$defs/uuid"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "action": {
+                    "const": "mark"
+                  }
+                },
+                "required": [
+                  "action"
+                ]
+              },
+              "then": {
+                "required": [
+                  "valid_until",
+                  "origin"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "action": {
+                    "const": "withdraw"
+                  }
+                },
+                "required": [
+                  "action"
+                ]
+              },
+              "then": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "valid_until"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "origin"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "related_handoff_id"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "origin": {
+                    "const": "urgent_escalation"
+                  }
+                },
+                "required": [
+                  "origin"
+                ]
+              },
+              "then": {
+                "required": [
+                  "related_handoff_id"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "messageAck": {
+      "description": "Acknowledges handoff.urgency_raised, handoff.clinician_urgency_raised, handoff.status and clinical_need.marker. It names the handoff, the link, or both: a marker has no handoff, and an unlinked handoff has no link.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-clinical-handoff"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "handoff_id": {
+          "description": "The openPractice routing id; names one handoff for its whole life.",
+          "$ref": "#/$defs/uuid"
+        },
+        "link_id": {
+          "description": "The openpractice-ehr-patient-link link_id (EB-01, EB-04). Present whenever the handoff has a link: required on an offer whose identity_state is linked or link_in_review, absent on an unlinked offer (ER-06).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "message.ack"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "acked_message_id",
+            "result"
+          ],
+          "properties": {
+            "acked_message_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "result": {
+              "enum": [
+                "received",
+                "rejected"
+              ]
+            },
+            "reject_reason": {
+              "$ref": "#/$defs/rejectReason"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "result": {
+                    "const": "rejected"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              },
+              "then": {
+                "required": [
+                  "reject_reason"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "handoff_id"
+          ]
+        },
+        {
+          "required": [
+            "link_id"
+          ]
+        }
+      ]
+    }
+  }
+}
