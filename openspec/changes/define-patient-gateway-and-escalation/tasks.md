@@ -39,7 +39,7 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - `clinician_acknowledged`: recorded, acknowledged, passed to HealthLinc only while the item is open, a late one not forwarded, a nurse owner covered, and changing no alert, fallback, retry or clock;
   - a recategorization cancels every pending agent answer on the item;
   - Hermes never decides its own draft, and read-only answers follow change A's AH-05 exception 1;
-  - the link precondition, re-routing, splitting and text removal are tested, including a late split's continuation, accepted only for the same link with an open request or a clinical handoff and otherwise rejected with `routing_unknown`, its urgency without ER-09, the lane reminder and its alert, and the operator's deletion receipt, its interim channel and its deadline (ER-12);
+  - the link precondition, re-routing, splitting and text removal are tested, including a late split's continuation, accepted only for the same link, one per resubmission request or one per clinical handoff with no open request, and otherwise rejected with `routing_unknown`, the reminder the lane's owner may reopen, its ordering limit, its urgency without ER-09 while it stays administrative and with ER-07 to ER-09 once routed as clinical, the lane reminder and its alert, and the operator's deletion receipt, its interim channel and its deadline (ER-12);
   - the office manager's alert for an urgent item with no clinician acknowledgment in time is tested, and changes no routing, clock, fallback or retry (ER-20);
   - the pause switch sends administrative items to staff and leaves urgent routing untouched;
   - clinical routing cannot be enabled without full on-call cover (DC-27).
@@ -59,7 +59,7 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
 - [ ] 2.4 **Feature 4: mobile approver.** Owns MA-01 to MA-07. Gate: change A's work-inbox feature merged; Feature 2 merged before alerts are enabled. Acceptance evidence:
   - every action goes through the versioned API, with server-side checks;
   - notifications carry no PHI, and a deep link opens an item only after a face, fingerprint or passkey verification on an enrolled device, skipped within 60 seconds of the last one on the server's clock, and never after a typed password;
-  - enrolment and recovery never rest on a typed password alone, follow DC-60's three paths with notices and audit, and a person without a face or fingerprint check is sent to the workstation;
+  - enrolment and recovery never rest on a typed password alone, follow DC-60's paths, with a replacement or recovery waiting 24 hours behind a cancellable notice, a one-person first device needing two contact points and a code sent only to one at least 7 days old, and no access when no path exists; a person without a face or fingerprint check is sent to the workstation;
   - no PHI remains on the device after logoff, idle timeout or revocation;
   - lost-device revocation through AM-05;
   - sign-offs follow FD-5 and BAB-17, each with its own verification answering a single-use, two-minute challenge and an assertion bound to the item, the decision and the time, tier 4 human-only and D8 accountant-only;
@@ -94,7 +94,9 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - Open Question 20, the PROPOSED calls DC-46 to DC-53: block the features that build them until the owner dispositions them at ratification.
   - Open Question 21, per-audience identifiers: blocks nothing in 1.0 (DC-53).
   - Open Question 22, the on-call alert for a missing clinician acknowledgment: blocks nothing; ER-20 alerts the office manager only.
-  - Open Question 23, a split that openChart asks for: blocks nothing in openPractice; the lane reminder covers the splits openPractice asks for.
+  - Open Question 23, a split that openChart asks for: blocks nothing in openPractice; the lane reminder covers the splits openPractice asks for, and a split openChart asks for has none until a later handoff version reports it.
+  - Open Questions 24 and 25, synced passkeys and the phone's unlock code: block nothing; until the owner answers, only a face or fingerprint check on an enrolled device counts, so no passkey counts.
+  - Open Question 26, how strong workstation sign-in is: blocks nothing in this change; DC-60's enrolment rules are only as strong as that sign-in.
 
 ## 4. Acceptance and Closure
 

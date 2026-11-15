@@ -42,14 +42,16 @@ The physician's clinical work SHALL stay in openChart, on mobile or workstation 
 ### Requirement: MA-04 Notifications carry no PHI, and a deep link opens an item only after a fresh user verification
 Push notifications from the mobile approver MUST NOT contain PHI. Their text SHALL be generic, and they SHALL carry only an opaque item reference. On the mobile approver, re-authentication SHALL be a user verification by face, fingerprint or passkey, and never a typed password (ruling 105). Every verification SHALL take place on a device the person has enrolled. A deep link SHALL open the item only after such a verification, unless the last verification in that device session was within the last 60 seconds (ruling 105), measured on the server's clock (design call DC-59, PROPOSED). When the session is absent or expired, the deep link SHALL fail closed to the sign-in screen. The app SHALL log the user off automatically when idle (constitution Principle I).
 
-**Enrolment and recovery (design call DC-60, PROPOSED).** A typed password alone SHALL never enrol a device or recover access. Enrolling a device, or recovering access after losing every enrolled device, SHALL need one of these:
-- a verification on another device the person has already enrolled;
-- the confirmation of a second named person who holds the practice manager or office manager role, never the person themselves, given in a verified session;
-- where the practice has no such second person, ruling 107's one-person alternative: a single-use recovery code issued to the person at their first enrolment and kept offline. It takes effect only 24 hours after it is used, and the notice below lets the person cancel it in that time. Using it retires it, and a new code is issued.
+**Enrolment and recovery (design call DC-60, PROPOSED).** A typed password alone SHALL never enrol a device or recover access. A person's first device is the first device ever enrolled for their roster entry. Every later enrolment is a replacement, or, after the person has lost every enrolled device, a recovery. Each enrolment SHALL use one of these paths:
+- **Another enrolled device:** a verification on a device the person has already enrolled. It takes effect at once.
+- **A second named person:** the confirmation of a second named person who holds the practice manager or office manager role, never the person themselves, given in a verified session. A first device takes effect on the confirmation. A replacement or a recovery takes effect only 24 hours after the confirmation, and can be cancelled in that time as stated below.
+- **Ruling 107's one-person alternative, where the practice has no such second person:** for a recovery, a single-use recovery code issued to the person at their first enrolment and kept offline, which takes effect only 24 hours after it is used; using it retires it, and a new code is issued. For a first device, or for a recovery when the person has no usable recovery code: a one-time code, offered only when the person's roster entry holds at least two contact points (change `define-actors-agents-and-work-inbox` AM-01) and sent only to a contact point that was recorded when the roster entry was created or has been on it for at least 7 days; the enrolment takes effect only 24 hours after the code is used.
 
-A person's first device is enrolled through the second path. Where the practice has no such second person, it is enrolled with a one-time code sent to a contact point recorded on the person's roster entry before the request, and takes effect after the same 24-hour delay. Every enrolment and recovery SHALL send a notice with no PHI to the person's other enrolled devices and recorded contact points, and SHALL be audited (PR-10).
+Every enrolment, replacement and recovery SHALL send a notice with no PHI to every enrolled device of the person that is not revoked and to every contact point recorded on the roster entry, and SHALL be audited (PR-10). For an enrolment that waits 24 hours, each notice SHALL carry a link that can only cancel it, and any recipient MAY cancel it within the 24 hours; a cancelled enrolment never takes effect, and the cancellation is audited and notified in the same way.
 
-**What the ruling leaves open.** Whether a passkey that syncs between a person's devices is acceptable, or only one bound to an enrolled device, is Open Question 24. Whether the device's own unlock code or PIN may stand in when a face or fingerprint check is unavailable is Open Question 25. Until the owner answers, a verification counts only when it takes place on an enrolled device and its user check is a face or fingerprint check; a verification whose only check is an unlock code or PIN does not count. A person who cannot complete a face or fingerprint check still receives notifications, cannot open an item or sign on the mobile approver, and works at the workstation; a tracked alert they cannot acknowledge escalates under ER-09.
+Where no path is available, because the practice has no such second person, the person has no enrolled device and no usable recovery code, and no contact point qualifies yet, the person SHALL have no mobile approver access until one qualifies, and works at the workstation (fail closed). These rules are only as strong as the workstation sign-in, because whoever can sign in as the practice manager can edit the roster and its contact points; no requirement sets how strong that sign-in is (Open Question 26).
+
+**What the ruling leaves open.** Whether a passkey that syncs between a person's devices is acceptable, or only one bound to an enrolled device, is Open Question 24. Whether the device's own unlock code or PIN may stand in when a face or fingerprint check is unavailable is Open Question 25. Until the owner answers, a verification counts only when it takes place on an enrolled device and its user check is a face or fingerprint check; a verification whose only check is an unlock code or PIN does not count. A platform passkey reports only that the user was verified, not whether by face, fingerprint or the device's unlock code, so until the owner answers, the ruling's word "passkey" goes unused (Open Question 25). A person who cannot complete a face or fingerprint check still receives notifications, cannot open an item or sign on the mobile approver, and works at the workstation; a tracked alert they cannot acknowledge escalates under ER-09.
 
 #### Scenario: An approval is waiting
 - **WHEN** a work-inbox item needs a user's approval
@@ -61,11 +63,23 @@ A person's first device is enrolled through the second path. Where the practice 
 
 #### Scenario: A phished password
 - **WHEN** someone who has only a person's password tries to enrol a new phone in that person's name
-- **THEN** the enrolment is refused unless it is verified on one of the person's enrolled devices, confirmed by a second named person, or made through the delayed one-person path, and the person's devices and contact points are notified
+- **THEN** the enrolment is refused unless it is verified on one of the person's enrolled devices, confirmed by a second named person, or made through a one-person path; the person's enrolled devices and every contact point are notified, and an enrolment that waits 24 hours can be cancelled from any notice
 
 #### Scenario: Recovery in a one-person practice
 - **WHEN** a practice's only administrator loses their phone and uses their recovery code
-- **THEN** access returns only after 24 hours, notices go to their recorded contact points, and the code is retired
+- **THEN** access returns only after 24 hours; a notice with a link that can only cancel goes to every recorded contact point and to the lost phone unless it was revoked; any recipient may cancel within the 24 hours; and the code is retired and a new one issued
+
+#### Scenario: A contact point is swapped
+- **WHEN** someone with a stolen password signs in as a one-person practice's practice manager, replaces a contact point on that person's roster entry, and requests a one-time code the same day
+- **THEN** no code goes to the new contact point, because it has been on the roster entry for less than 7 days; the contact point it replaced and every other contact point recorded before the change are notified of the change; and any code goes only to a contact point that qualifies
+
+#### Scenario: A second person approves a replacement phone
+- **WHEN** a caller says a person lost their phone, and the office manager confirms a new phone for that person
+- **THEN** the new phone takes effect only after 24 hours, notices go to the person's other enrolled devices and every contact point, and any recipient may cancel
+
+#### Scenario: No enrolment path is available
+- **WHEN** a one-person practice's practice manager has no enrolled device, no usable recovery code and no contact point that qualifies
+- **THEN** they get no mobile approver access until a contact point qualifies, and work at the workstation
 
 #### Scenario: No working face or fingerprint check
 - **WHEN** a user's face and fingerprint checks fail and only the phone's unlock code is available

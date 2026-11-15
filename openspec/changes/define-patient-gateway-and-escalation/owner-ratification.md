@@ -60,7 +60,7 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
 - Ratification timestamp: _pending_
 - Handoff shape: _pending; must be exactly `A — ordered multi-feature handoff` or `B — split into per-capability changes` (design call DC-21 proposes `A`; no ruling states a shape)_
 - Design-call dispositions (DC-1 to DC-62, each accepted, changed or rejected; DC-39 is marked for the owner, DC-46 to DC-53 are PROPOSED by the 2026-11-15 follow-up and its review, and DC-54 to DC-62 are PROPOSED under rulings 101, 104, 105 and 106): _pending_
-- Open Questions 22 (the on-call alert for a missing clinician acknowledgment), 23 (a split that openChart asks for), 24 (passkeys that sync between devices) and 25 (the phone's unlock code) dispositioned: _pending_
+- Open Questions 22 (the on-call alert for a missing clinician acknowledgment), 23 (a split that openChart asks for), 24 (passkeys that sync between devices), 25 (the phone's unlock code, which also decides whether any passkey counts) and 26 (how strong workstation sign-in is) dispositioned: _pending_
 - Tension dispositions (T-1 to T-12; T-9, T-10 and T-12 are recorded as resolved by rulings 50, 52 and 71, and T-11 proposes a follow-up): _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 

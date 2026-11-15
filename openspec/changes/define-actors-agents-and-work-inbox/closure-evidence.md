@@ -8,6 +8,7 @@ This record collects acceptance evidence for OpenSpec change `define-actors-agen
 
 - Owner ratification reference: `owner-ratification.md` — _pending completion_
 - Approved grant sets for the remote VA, nurse, medical director, controller or office manager, and agent recipes: _pending_
+- Contact points on human roster entries used only for security notices and one-time codes, with no PHI, and every change audited and notified to the contact points recorded before it (D-33): _pending_
 - Per-feature Constitution Check and security review records: _pending_
 - Verified VA-company BAAs, and verified BAAs with each agent operator and model provider, with risk-analysis entries: _pending_
 - Each model provider's verified zero-data-retention arrangement for its exact endpoints and models, matched to each agent's declared model path (ruling 104, D-32), and counsel's recorded confirmation of ruling 97's answer (ruling 102), before any PHI reached a model provider: _pending_

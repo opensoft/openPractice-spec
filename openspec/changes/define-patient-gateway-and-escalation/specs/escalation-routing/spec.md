@@ -12,6 +12,8 @@ openPractice SHALL keep a routing record for every accepted inquiry, and that re
 - the split-group reference and, for a continuation, the routing id it continues (ER-12);
 - the handoff state, including the time openChart reported a clinician's acknowledgment (ER-19), and the clock policy version.
 
+The continuation reference only links two items. It SHALL NOT exempt either from any rule: an item routed as clinical is governed by ER-07 to ER-09 whether or not it continues another (ER-12).
+
 For a clinical item, the routing record SHALL be all that openPractice keeps. No question text, reply text or other clinical content SHALL be stored in openPractice, in line with constitution Principle IV. Administrative question and reply text is kept only under PG-10 and PG-11.
 
 #### Scenario: A clinical question is routed
@@ -333,15 +335,15 @@ When staff or an agent find that an administrative item is clinical, the rules S
 
 A mixed question SHALL be split so that no clinical part stays in openPractice. HealthLinc splits a mixed question at intake into parts, each with its own reference. When staff or an agent find a mixed item later, openPractice SHALL route the item's HealthLinc reference to openChart as clinical, cancel every pending agent answer on the item, remove the stored text, and ask HealthLinc, in one `inquiry.recategorized`, to resubmit only the administrative part. Its text is deleted from openPractice (ruling 106).
 
-**The administrative part comes back as the same question (ruling 106).** A resubmission that sets `recategorizes_routing_id` continues the item that routing id names; it is not a new question. It carries its own HealthLinc reference, so PG-10's same-reference rule gives it its own routing id, and it needs no message beyond `inquiry.submitted` and `inquiry.ack`. openPractice SHALL accept it as a continuation only when the routing id names an item on the same `gateway_link_id`, no continuation has yet been accepted for that item, and one of these holds (design call DC-54, PROPOSED):
-- openPractice asked HealthLinc to resubmit that item's administrative part, or to resubmit it as administrative after openChart returned it, and the request's reminder is open;
-- openPractice handed the item to openChart as clinical, so openChart may have asked HealthLinc to split it.
+**The administrative part comes back as the same question (ruling 106).** A resubmission that sets `recategorizes_routing_id` continues the item that routing id names; it is not a new question. It carries its own HealthLinc reference, so PG-10's same-reference rule gives it its own routing id, and it needs no message beyond `inquiry.submitted` and `inquiry.ack`. openPractice SHALL accept it as a continuation only when the routing id names an item on the same `gateway_link_id` and one of these holds (design call DC-54, PROPOSED):
+- openPractice asked HealthLinc to resubmit that item's administrative part, or to resubmit it as administrative after openChart returned it, and that request's reminder is open. Accepting the continuation closes the reminder, so each request admits one continuation;
+- openPractice handed the item to openChart as clinical, so openChart may have asked HealthLinc to split it, no resubmission request for the item is open, and no continuation has yet been accepted for the item under this case, which admits one continuation per item.
 
-Otherwise openPractice SHALL reject the inquiry with `routing_unknown`, link it to nothing and close no reminder. A retry of an accepted continuation, with the same `message_id` or HealthLinc reference, returns its routing id (PG-10). For an accepted continuation, openPractice SHALL:
+Otherwise openPractice SHALL reject the inquiry with `routing_unknown`, link it to nothing and close no reminder, and HealthLinc tells the patient that the part was not delivered and offers to send it as a new question (companion item). The lane's owner MAY reopen a reminder that a continuation closed, when the continuation did not carry the part that was asked for, with a coded reason; the reopening is audited (PR-10), and a reopened reminder admits one more continuation (design call DC-54, PROPOSED). A retry of an accepted continuation, with the same `message_id` or HealthLinc reference, returns its routing id (PG-10). For an accepted continuation, openPractice SHALL:
 - link the continuation to the original routing record by that routing id, and record the continuation's split-group reference on both records (ER-01);
-- order the continuation in its lane by the original item's submitted time, and report that time wherever the item's submission is shown, while the continuation's own response clock starts when it arrives (design call DC-54, PROPOSED);
+- order the continuation in its lane by the original item's submitted time, and report that time wherever the item's submission is shown, while the continuation's own response clock starts when it arrives (design call DC-54, PROPOSED). A continuation accepted under the second case keeps the original's submitted time only when it arrives while openChart's handoff of the original is open, or within 7 days after that handoff closed, a routing-clock policy value (ER-08; DC-54, PROPOSED). Arriving later, it is still accepted, and is ordered and shown by its own arrival time;
 - send the patient no notice for it. HealthLinc shows the continuation under the original question, with no second "question received" notice (companion item);
-- apply the urgency HealthLinc proposes for it, never lower (ER-02, ER-03). ER-07 to ER-09 govern clinical items handed to openChart and SHALL NOT apply to an administrative continuation: ER-09's urgent path, with its emergency guidance to the patient, never runs for it, and it is not refused for `clinical_routing_unavailable`. The clinical part keeps its urgency in openChart, and nothing lowers it (design call DC-61, PROPOSED).
+- apply the urgency HealthLinc proposes for it, never lower (ER-02, ER-03). ER-07 to ER-09 govern clinical items handed to openChart. While a continuation stays administrative they SHALL NOT apply to it: ER-09's urgent path, with its emergency guidance to the patient, does not run for it, and it is not refused for `clinical_routing_unavailable` (PG-10, ER-13). Once a continuation is itself routed as clinical under this requirement, ER-07 to ER-09 SHALL apply to it as to any clinical item, and its being a continuation exempts it from nothing (ER-01). The clinical part keeps its urgency in openChart, and nothing lowers it (design call DC-61, PROPOSED).
 
 The same applies to a resubmission after openChart returns an item as `returned_not_clinical`, and to one HealthLinc makes when openChart asks it to split an item, whose handoff id is the routing id.
 
@@ -369,13 +371,29 @@ openPractice staff cannot judge content they never see. A clinical item SHALL th
 - **WHEN** a resubmission on patient A's link sets `recategorizes_routing_id` to a routing id on patient B's link
 - **THEN** openPractice rejects it with `routing_unknown`, B's reminder stays open, and nothing is shown under B's question
 
-#### Scenario: A second continuation for the same item
-- **WHEN** a continuation was already accepted for an item, and another resubmission with a new HealthLinc reference names the same routing id
-- **THEN** openPractice rejects it with `routing_unknown` and links it to nothing
+#### Scenario: A second continuation for the same request
+- **WHEN** a continuation already answered an item's resubmission request and closed its reminder, and another resubmission with a new HealthLinc reference names the same routing id while no other request for the item is open
+- **THEN** openPractice rejects it with `routing_unknown` and links it to nothing, and HealthLinc tells the patient the part was not delivered and offers to send it as a new question
+
+#### Scenario: A split, then a return
+- **WHEN** openChart asks HealthLinc to split an item and its continuation C1 is accepted, and later openChart returns the rest as `returned_not_clinical`, and openPractice asks HealthLinc to resubmit it and opens a reminder
+- **THEN** the resubmission is accepted as a continuation of the same item, and accepting it closes that reminder
+
+#### Scenario: A wrong part closes the reminder
+- **WHEN** a continuation on the same link closes a reminder, but it does not carry the billing part that was asked for
+- **THEN** the lane's owner reopens the reminder with a coded reason, the reopening is audited, and the billing part is accepted when it arrives
+
+#### Scenario: A continuation of a long-closed handoff
+- **WHEN** a continuation names an item that was handed to openChart as clinical and whose handoff closed 30 days ago, and no request for the item is open
+- **THEN** it is accepted, and it is ordered and shown by its own arrival time, not the original's
 
 #### Scenario: The billing part of an urgent mixed item comes back
 - **WHEN** the administrative part of an urgent mixed item is resubmitted at `urgent`
 - **THEN** openPractice applies `urgent` to the continuation in its administrative lane, sends HealthLinc no emergency-guidance instruction for it, and the clinical part keeps its urgency in openChart
+
+#### Scenario: An urgent billing continuation turns out to be clinical
+- **WHEN** an urgent billing continuation turns out to describe chest pain, the biller flags it clinical, it is handed to openChart, and openChart does not acknowledge it within the urgent window
+- **THEN** ER-09's fallback runs as for any urgent clinical item: the office manager and the on-call clinician are alerted, HealthLinc is told to show its emergency guidance, and the handoff is retried
 
 #### Scenario: The administrative part does not come back
 - **WHEN** 48 hours pass after the request and no continuation has arrived
@@ -404,7 +422,7 @@ openPractice staff cannot judge content they never see. A clinical item SHALL th
 ### Requirement: ER-13 Items route at every hour, with on-call cover
 openPractice SHALL route items at every hour. Clinical items SHALL hand off to openChart at any hour; openChart owns after-hours clinical cover in its queue. openPractice SHALL keep a practice-hours calendar and an on-call roster. For every hour, the roster names the on-call clinician and the administrative cover (change A WI-05).
 
-ER-09's fallback SHALL send its tracked alert to the on-call clinician for the hour. When no on-call clinician is rostered for the hour, the fallback SHALL send the tracked alert to the medical director and alert the office manager instead, and SHALL still instruct HealthLinc to show emergency guidance (fail closed). Routine administrative items received after hours SHALL wait for the lane's next opening, and their clocks SHALL show that. Urgent administrative items SHALL go to the administrative cover at once. A practice SHALL NOT enable clinical routing until the on-call roster covers every hour or names the fallback (design call DC-27). Clinical and urgent inquiry intake SHALL NOT go live until clinical routing is enabled, and while it is missing or disabled PG-10's defensive refusal applies (design call DC-33).
+ER-09's fallback SHALL send its tracked alert to the on-call clinician for the hour. When no on-call clinician is rostered for the hour, the fallback SHALL send the tracked alert to the medical director and alert the office manager instead, and SHALL still instruct HealthLinc to show emergency guidance (fail closed). Routine administrative items received after hours SHALL wait for the lane's next opening, and their clocks SHALL show that. Urgent administrative items SHALL go to the administrative cover at once. A practice SHALL NOT enable clinical routing until the on-call roster covers every hour or names the fallback (design call DC-27). Clinical and urgent inquiry intake SHALL NOT go live until clinical routing is enabled, and while it is missing or disabled PG-10's defensive refusal applies (design call DC-33), except to an administrative continuation accepted under ER-12, which goes to its administrative lane and, when urgent, to the administrative cover at once (design call DC-61, PROPOSED).
 
 #### Scenario: An urgent message at night
 - **WHEN** an urgent clinical item arrives at 02:00 and openChart does not acknowledge it in time
@@ -471,11 +489,11 @@ The handoff boundary SHALL be covered by contract tests, written first (constitu
 - the clinical-need marker, its attribution and the urgent-origin check;
 - urgency raises, and the absence of any lowering;
 - the link precondition;
-- re-routing and splitting, with text removal; a continuation accepted only for an item on the same link with an open request or a clinical handoff, once per item, and otherwise rejected with `routing_unknown`; a continuation linked to the original, ordered by the original's submitted time, sending the patient no notice, and never running ER-09's urgent path; the lane reminder, its clock and alert; the operator's deletion confirmation, its deadline, and the zero-data-retention reference recorded for a model provider (ER-12);
+- re-routing and splitting, with text removal; a continuation accepted only for an item on the same link, one per resubmission request while its reminder is open, or one per item handed to openChart as clinical when no request is open, and otherwise rejected with `routing_unknown`; a reminder reopened by the lane's owner with a coded reason; a continuation linked to the original, ordered by the original's submitted time, or by its own arrival time once the original's handoff has been closed longer than the policy period, sending the patient no notice, not running ER-09's urgent path while it stays administrative, and governed by ER-07 to ER-09 once it is routed as clinical; an administrative continuation not refused for `clinical_routing_unavailable`; the lane reminder, its clock and alert; the operator's deletion confirmation, its deadline, and the zero-data-retention reference recorded for a model provider (ER-12);
 - paused agents;
 - no PHI in diagnostics;
 - `clinician_acknowledged`: an owner holding the `clinician` or the `nurse` role, recorded, acknowledged, reported to HealthLinc as `inquiry.status` only while the routing record shows the item open, recorded but not forwarded once it shows `responded`, `returned_not_clinical` or `closed`, and changing no alert, fallback, retry or clock (ER-19);
-- the office manager's alert when an urgent item has no `clinician_acknowledged` in time: raised once the window passes after `handoff.ack` `accepted`, or after the acknowledgment of a later raise to `urgent`, while the item is open, covered under WI-05, not raised after `clinician_acknowledged`, `responded`, `returned_not_clinical` or `closed`, never for a `priority` or `routine` item, carrying no clinical content, sending nothing to HealthLinc, and changing no routing, clock, fallback or retry (ER-20).
+- the office manager's alert when an urgent item has no `clinician_acknowledged` in time: raised once the window passes after `handoff.ack` `accepted`, or after the acknowledgment of a later raise to `urgent`, while the item is open, covered under WI-05, also sent to the hour's administrative cover outside the office manager's working hours, not raised after `clinician_acknowledged`, `responded`, `returned_not_clinical` or `closed`, never for a `priority` or `routine` item, carrying no clinical content, sending nothing to HealthLinc, and changing no routing, clock, fallback or retry (ER-20).
 
 The tests SHALL run against openChart and HealthLinc contract doubles, with synthetic data only.
 
@@ -547,7 +565,7 @@ Neither message carries clinical content, reply text, a note, or anyone's identi
 - **THEN** the message fails the canonical schema and is rejected
 
 ### Requirement: ER-20 openPractice alerts the office manager when an urgent item has no clinician acknowledgment in time, and the alert changes no clinical path
-When openChart has accepted an item whose applied urgency is, or is later raised to, `urgent` (`handoff.ack` `accepted`), and no `clinician_acknowledged` (ER-19) has arrived by the end of the acknowledgment-alert window while the routing record shows the item open, openPractice SHALL alert the office manager (ruling 101). The alert SHALL become work owned by the office manager (WI-02), covered under WI-05 when the office manager is absent, and SHALL reach the owner's mobile approver when one is registered (MA-02). It SHALL carry no clinical content: only the routing id, the urgency and a coded cause (ER-16). It SHALL send nothing to the patient or to HealthLinc, and SHALL change no routing, clock, fallback or retry (ruling 101): ER-07 to ER-09 run exactly as they would without it. No alert is raised when `clinician_acknowledged`, `responded`, `returned_not_clinical` or `closed` arrives before the window ends, and none for a `priority` or `routine` item. A `clinician_acknowledged` that arrives after the alert is recorded on the office manager's work item.
+When openChart has accepted an item whose applied urgency is, or is later raised to, `urgent` (`handoff.ack` `accepted`), and no `clinician_acknowledged` (ER-19) has arrived by the end of the acknowledgment-alert window while the routing record shows the item open, openPractice SHALL alert the office manager (ruling 101). The alert SHALL become work owned by the office manager (WI-02), covered under WI-05 when the office manager is absent, and SHALL reach the owner's mobile approver when one is registered (MA-02). Outside the office manager's working hours, the alert SHALL also reach that hour's administrative cover named by ER-13's roster, and the work item's owner does not change. The office manager's working hours are those the roster records for the office manager, or the practice hours of ER-13's calendar where it records none (design call DC-58, PROPOSED). It SHALL carry no clinical content: only the routing id, the urgency and a coded cause (ER-16). It SHALL send nothing to the patient or to HealthLinc, and SHALL change no routing, clock, fallback or retry (ruling 101): ER-07 to ER-09 run exactly as they would without it. No alert is raised when `clinician_acknowledged`, `responded`, `returned_not_clinical` or `closed` arrives before the window ends, and none for a `priority` or `routine` item. A `clinician_acknowledged` that arrives after the alert is recorded on the office manager's work item.
 
 The window is a policy value (design call DC-58, PROPOSED). It belongs to the routing-clock policy of ER-08, and the medical director approves it with that policy. It is counted from openChart's `handoff.ack` `accepted`, or, for an item raised to `urgent` after that acceptance, from openChart's `message.ack` of `handoff.urgency_raised`, or from openPractice's receipt of a clinician's `handoff.clinician_urgency_raised`. Until an approved version sets it, it equals that policy's urgent acknowledgment window, 5 minutes by the fail-closed default.
 
@@ -562,6 +580,10 @@ The window is a policy value (design call DC-58, PROPOSED). It belongs to the ro
 #### Scenario: An item is raised to urgent after acceptance
 - **WHEN** openChart accepted a `priority` item an hour ago, the item is raised to `urgent`, and openChart acknowledges `handoff.urgency_raised`
 - **THEN** ER-20's window starts at that acknowledgment, not at the original acceptance
+
+#### Scenario: An urgent item at 03:00
+- **WHEN** ER-20 raises an alert at 03:00, outside the office manager's working hours
+- **THEN** the alert goes to the office manager and also to that hour's administrative cover, the work item stays the office manager's, and no clinical path changes
 
 #### Scenario: The office manager is absent
 - **WHEN** ER-20 raises an alert while the office manager is marked absent with a named cover
