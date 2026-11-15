@@ -2,13 +2,13 @@
 
 Status: draft for the owner's review — not ratified
 Kind: decision-brief
-Summary: a second version of the eleven framing decisions that folds in the owner's rulings 1 to 111 wherever they bear on a framing decision. FD-1, FD-3, FD-5 and FD-10 are amended in place; the other seven carry version 1's text word for word; four new decisions, FD-12 to FD-15, record the agent operation, safety routing, clinical boundary and accounting boundary the rulings established. Every changed sentence cites its rulings, every remaining conflict is listed for the owner, and decision 80 is open. Drafted under ruling 108; version 1 stays as history.
+Summary: a second version of the eleven framing decisions that folds in the owner's rulings 1 to 151 wherever they bear on a framing decision. FD-1 to FD-5 and FD-10 are amended in place; the other five carry version 1's text word for word; four new decisions, FD-12 to FD-15, record the agent operation, safety routing, clinical boundary and accounting boundary the rulings established. Every changed sentence cites its rulings, and every remaining conflict is listed for the owner. Drafted under ruling 108; version 1 stays as history.
 Topics: openpractice-feat-review, framing-decisions, owner-rulings
 Captured: 2026-11-15
 
 **This is a draft for Brett Heap's review. Nothing in it is ratified.** It was drafted under ruling 108: "I draft a v2 for your review that folds in rulings 1–98 and adds an index of every ruling. Version 1 stays as history." Version 1, [Framing Decisions](openpractice-framing-decisions.md), with its ratification record of 2026-08-27 and its Amendments (2026-11-14), is unchanged. Until the owner completes the pending block at the end of this document, version 1's ratified text stands, and every difference here is a proposal.
 
-Ruling 108 says "1–98" because that was the count when it was put to the owner. Rulings 99 to 111 were accepted in the same answer of 2026-11-15, so this draft folds in those of them that bear on a framing decision too. **Decision 80 is open**: a question about a ratified rule in a private repository. This draft states no position on it.
+Ruling 108 says "1–98" because that was the count when it was put to the owner. Rulings 99 to 111 were accepted in the same answer of 2026-11-15, and rulings 112 to 151 later that day, so this draft folds in those of them that bear on a framing decision too. Decision 80, open when this draft was first written, was ruled the same day (ruling 80), and ruling 151 adds to its clause 12. Both govern additions to a patient's chart, in openChart and the companion systems; this draft cites them under FD-14, and the index reproduces ruling 80's approved wording in its public form.
 
 **Built on 2026-11-15** from the tables at the revisions the index lists under "Revisions read". Whatever this draft says about a change or pull request being merged, open or in draft describes that date. Version 1's Amendments (2026-11-14) say the two changes carrying rulings 36 and 38 are "on their own branches, not yet on main"; by 2026-11-15 both were merged on `main` as unratified drafts (`opensoft/openPractice-spec#5` and `#6`). Version 1 stays untouched, so that line is left as written.
 
@@ -21,8 +21,9 @@ Each ruling has one row in the [Owner Rulings Index](openpractice-owner-rulings-
 - **Changed from v1** says what differs from version 1 and which ruling made the difference, so each change can be checked against its ruling.
 - **Rulings that bear on it** lists rulings that touch a decision without changing its text.
 - **Open tensions** points to the list near the end. Where two rulings, or a ruling and version 1, still pull against each other, this draft does not resolve them.
+- Where a ruling says "in version 1" or "not in version 1", it means the first version of what that ruling governs, not version 1 of these framing decisions; this draft quotes those words.
 
-**Form chosen.** A ruling that changes a decision version 1 already makes is folded into that decision, beside the text it changes: FD-1, FD-3, FD-5 and FD-10 are amended in place. A position the rulings established that version 1 has no decision for becomes a new numbered decision after FD-11: FD-12 (agent operation), FD-13 (safety routing), FD-14 (the clinical boundary) and FD-15 (the billing and accounting boundary). This keeps version 1's numbering stable and ties every ruling to the exact sentences it supports. The three positions named in item D.2 of the critique of 2026-11-15 land here:
+**Form chosen.** A ruling that changes a decision version 1 already makes is folded into that decision, beside the text it changes: FD-1, FD-2, FD-3, FD-4, FD-5 and FD-10 are amended in place. A position the rulings established that version 1 has no decision for becomes a new numbered decision after FD-11: FD-12 (agent operation), FD-13 (safety routing), FD-14 (the clinical boundary) and FD-15 (the billing and accounting boundary). This keeps version 1's numbering stable and ties every ruling to the exact sentences it supports. The three positions named in item D.2 of the critique of 2026-11-15 land here:
 
 - **The agent-operated frame:** FD-1, amended by ruling 38, and FD-12.
 - **Safety routing:** FD-13. No ruling says the routing rules are fixed; see OT-1.
@@ -67,7 +68,7 @@ Each ruling has one row in the [Owner Rulings Index](openpractice-owner-rulings-
 - New: one person may hold several roles, and each sign-off records the role used (ruling 107).
 - Unchanged: the external biller, the watch-out and the "Why". Ruling 38 changes the frame and says nothing about the "Why"'s "no routing engines, no approval ladders, no RBAC matrix", which pulls against rulings 34, 37, 44 and 51 (OT-1, OT-2). The actors change reads ruling 38 the same way (its T-1 and T-6).
 
-**Rulings that bear on it:** 35 (the openPractice app covers administrative work and approvals; FD-14) and 37 (the agent ladder; FD-12).
+**Rulings that bear on it:** 35 (the openPractice app covers administrative work and approvals; FD-14), 37 (the agent ladder; FD-12), 141 (the Roster gains an outside-accountant entry; FD-5) and 145 (the practice's owners are recorded; FD-5).
 
 **Open tensions:** OT-1, OT-2.
 
@@ -75,7 +76,15 @@ Each ruling has one row in the [Owner Rulings Index](openpractice-owner-rulings-
 
 ## FD-2. Expectation source (learned vs. contract)
 
-**v2 status:** unchanged. Version 1's text, word for word:
+**v2 status:** amended by rulings 123 and 126.
+
+**Decision as it now stands.**
+
+- Version 1's decision, carried below word for word, stands, except for the part of its "Changes" line that says "the expectation engine leaves the beta's critical path" (v1).
+- Payer expectations come from the estimator, not loaded fee schedules (ruling 126).
+- The revenue-estimate record is built in full now, with a simple first method that the practice's accountant approves before accounting goes live (ruling 123). An estimator, in that simple first form, is therefore on the beta's critical path, for the reasons OT-8 gives (rulings 30, 123).
+
+**Carried from v1, word for word.**
 
 > **Decision:** Where does "what should this payer pay us" come from?
 >
@@ -100,11 +109,14 @@ Each ruling has one row in the [Owner Rulings Index](openpractice-owner-rulings-
 > promise memory; the "governed reimbursement terms" feat demotes to an optional
 > arbiter import; the expectation engine leaves the beta's critical path.
 
-**Rulings that bear on it:** 22, superseded, would have valued accruals from "the payer's observed history (FD-2)". Ruling 30, which supersedes it, sets the revenue-recognition basis for accounting postings (FD-15): net revenue is estimated at the date of service, and the practice's accountant approves the estimator before go-live. Neither changes FD-2's text, but ruling 30 pulls against its "the expectation engine leaves the beta's critical path" (OT-8).
+**Rulings that bear on it:** 22, superseded, would have valued accruals from "the payer's observed history (FD-2)". Ruling 30, which supersedes it, sets the revenue-recognition basis for accounting postings (FD-15): net revenue is estimated at the date of service, and the practice's accountant approves the estimator before go-live. Ruling 30 pulled against FD-2's "the expectation engine leaves the beta's critical path" (OT-8), which rulings 123 and 126 now answer.
 
-**Changed from v1:** nothing.
+**Changed from v1.**
 
-**Open tensions:** OT-8.
+- v1's "Changes" line says "the expectation engine leaves the beta's critical path". Ruling 123 puts the estimate record, with a simple first method the accountant approves, before accounting goes live, and ruling 126 makes the estimator the source of payer expectations. This answers OT-8.
+- Unchanged: the learned baseline as primary, the contract as arbiter, the "Why" and the cold-start watch-out. No ruling says whether the estimator's later methods are FD-2's learned baseline. `define-revenue-cycle-core` proposes accountant-set ratios as the first method and a learned method as a later version (its T-5); that is the change's design, not a ruling.
+
+**Open tensions:** OT-8, answered by rulings 123 and 126.
 
 ---
 
@@ -137,13 +149,25 @@ Each ruling has one row in the [Owner Rulings Index](openpractice-owner-rulings-
 - New: the GL-date rule (ruling 4). The rule for payments, refunds and deposits is the scope note in ruling 4's table row, stated in fix round 3, not the owner's words.
 - New: revenue re-estimates and true-ups are dated entries, never edits, with the dating of a close re-estimate (ruling 30).
 
+**Rulings that bear on it:** 130 puts the deposit slip in the self-pay slice and the drawer count and close sheet in a later change; 124 makes every ledger entry move money between two fixed buckets, so it always balances (FD-15). Neither changes FD-3's text.
+
 **Open tensions:** OT-6.
 
 ---
 
 ## FD-4. Estimates and GFE
 
-**v2 status:** unchanged. Version 1's text, word for word:
+**v2 status:** amended by rulings 113, 114, 121, 122, 126 and 130.
+
+**Decision as it now stands.**
+
+- Version 1's decision, carried below word for word, stands: one self-pay / time-of-service money path, with the GFE register riding the same path (v1).
+- Self-pay comes first, then Medicare Part B as primary. Commercial and secondary claims come later; the data shape allows both from the start (ruling 113). The self-pay visit is the first slice built: it fixes every data shape and needs no payer, clearinghouse or processor (ruling 114).
+- Good Faith Estimates are single-provider estimates for scheduled self-pay care: issue, replace, deliver with proof, retain, watch the variance, handle a dispute (ruling 121).
+- Desk payments, receipts, allocations and credits are recorded. Refunds stay human-only. Statements are printable. The payment processor and the pay link come later (ruling 122). The deposit slip is in the self-pay slice; the drawer count and close sheet come in a later change (ruling 130).
+- One practice price list and one self-pay discount (ruling 126).
+
+**Carried from v1, word for word.**
 
 > **Decision:** Do estimates, self-pay, and the Good Faith Estimate enter the beta?
 >
@@ -168,24 +192,28 @@ Each ruling has one row in the [Owner Rulings Index](openpractice-owner-rulings-
 
 **Rulings that bear on it:** 24 and 25 treat self-pay and "direct healthcare charges under FD-4" as medical-billing guarantor accounts, whose customer records reach the books only in `customer-detail` mode (FD-15). Rulings 41 and 52 define the payment hold, which never blocks billing contact (FD-13).
 
-**Changed from v1:** nothing.
+**Changed from v1.**
+
+- v1 put the self-pay path "in an early slice". The self-pay visit is now the first slice built (ruling 114), and self-pay comes before Medicare Part B (ruling 113).
+- New: the scope of the Good Faith Estimate (ruling 121), of payments and statements (ruling 122), of prices (ruling 126) and of the deposit slip (ruling 130).
+- Unchanged: the money path, the GFE register, the "Why" and the watch-out.
 
 ---
 
 ## FD-5. Governance primitive
 
-**v2 status:** amended by rulings 9, 12, 33 and 37; rulings 30, 41, 105 and 107 added.
+**v2 status:** amended by rulings 9, 12, 33, 37, 119, 120, 129 and 150; rulings 30, 41, 105, 107, 116, 123, 128, 134 to 137, 139 to 142 and 144 to 149 added.
 
 **Decision as it now stands.**
 
 Replace approval with **reversibility, visibility, and delay**, shipped as four fixed tiers (no tier authoring) (v1). FD-5 governs: each action's tier decides whether it needs an approval, a notification or a delay-and-cancel release, including the deadline escapes (ruling 33).
 
 1. **Do + undo** — reversible, silent, undoable from the record (v1).
-2. **Do + notify** — reversible, surfaced in Today/close (v1). The EHR-link action `link_existing` and identity-review resolution are tier 2 (ruling 12). What tier 2 requires for them is open (OT-4).
-3. **Delay + cancel window** — outbound actions (claim batches, statements, outreach) execute after a visible countdown unless cancelled (v1).
-4. **Hard stop** — true approval, reserved for the constitutionally irreversible few: refunds leaving the practice, material adjustments, record merges (v1). Also hard delete of a record created in error, and enabling `customer-detail` mode (rulings 9, 12, 33); these two are a conscious FD-5 exception (ruling 12). Tier 4 stays human-only (rulings 33, 37).
+2. **Do + notify** — reversible, surfaced in Today/close (v1). The EHR-link action `link_existing` and identity-review resolution are tier 2 (ruling 12). What tier 2 requires for them is open (OT-4). Exactly matched remittance lines post and notify, undoable; anything not exact is a proposal for a human (ruling 120).
+3. **Delay + cancel window** — outbound actions (claim batches, statements, outreach) execute after a visible countdown unless cancelled (v1). Claim batches need an explicit release by a named signer, keeping the escape near a filing deadline (ruling 119).
+4. **Hard stop** — true approval, reserved for the constitutionally irreversible few: refunds leaving the practice, material adjustments, record merges (v1). Also hard delete of a record created in error, and enabling `customer-detail` mode (rulings 9, 12, 33); these two are a conscious FD-5 exception (ruling 12). Tier 4 stays human-only (rulings 33, 37). What makes a write-off material is an amount each practice sets at setup, confirmed by its accountant: below it is do-and-notify, and everything else is human-only (ruling 129). Record merges stay on the list, but when two records turn out to be the same person they are linked, not merged, "in version 1": the link is reversible, and a full merge, with its undo, would be its own later change (ruling 150).
 
-**Every gate carries a deadline escape:** a gate that would stall a claim past timely filing auto-releases at tier 3 with notification, because the gate otherwise destroys what it protects (v1). The deadline escape is stated for gates (ruling 12).
+**Every gate carries a deadline escape:** a gate that would stall a claim past timely filing auto-releases at tier 3 with notification, because the gate otherwise destroys what it protects (v1). The deadline escape is stated for gates (ruling 12). Ruling 128 holds a claim when the provider is not enrolled with the payer (hold, never reject, and release in one action once enrolled) and says nothing about the escape; `define-revenue-cycle-core` proposes narrowing the escape there (its T-10), which is a design call, not a ruling.
 
 **Who signs.** Where a tier calls for an approval, release decision or attestation, the signer may be a named human or a named AI agent identified by an openWallet ID. Agent signing is opt-in per action type and never on by default. Every sign-off records the signer's identity, including an agent's openWallet ID, with provenance (ruling 33), and the role the signer used (ruling 107). Tier 4 stays human-only (rulings 33, 37).
 
@@ -193,9 +221,15 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 
 **One person, several roles.** One person may hold several roles (ruling 107). A rule that needs two people names a one-person alternative, as ruling 98 does. Accountant and counsel sign-offs cannot be self-approved. The readiness checklist and starter policies go in a new change (ruling 107).
 
-**Signing on a phone.** The mobile approver signs in with face, fingerprint or passkey for both steps, never a typed password. Opening skips the prompt if the user verified in the last 60 seconds. Every sign-off still needs its own (ruling 105).
+- **The accountant.** The accountant sign-off is given by someone engaged from outside the practice who is neither an owner nor an employee; an employed accountant cannot, "in version 1" (ruling 139). That accountant is a licensed CPA, checked against the state board's public record, who attests in their own name (ruling 140). The Roster gains an outside-accountant entry that can read the books and approve accounting policy, estimator versions and the write-off threshold, and nothing else (ruling 141).
+- **Counsel.** Counsel needs no sign-in (ruling 141). A named counsel is checked against the state bar's public record and matched against the practice's staff and owners (ruling 149).
+- **Owners and roles.** The practice's owners are recorded as dated links from the practice to each owner (ruling 145). Where a rule says "an authorized person" records or verifies an agreement, that is the practice manager unless the rule names another role, and each record keeps the role used (ruling 142). Assigning the medical director role in openPractice carries ruling 98's licence check (ruling 146).
+- **Nobody else.** Where the practice has nobody else, a sole staff member may act on their own record even though a proposal is never decided by its proposer: both roles are recorded and the outside accountant is notified, and without an outside accountant on the Roster the act waits (ruling 144). An agent's sponsor does not alone sign that agent's daily digest; a sponsor granting their own agent more scope notifies the other managers; and one person gives two sign-offs only when nobody else can. Each of these applies only where a second eligible person exists (ruling 148).
+- **Starter policies.** They are drafted for the practice and reviewed by counsel, an accountant and a physician before release, and each practice's own authority still has to adopt each one (ruling 147).
 
-**Approvals that rulings require outside the tier list.** The practice's accountant approves the reporting basis, estimator, classification, materiality and reopening policy before go-live (ruling 30). The medical director approves the payment-hold policy, and the exact policy needs the practice's counsel (ruling 41). See OT-5.
+**Signing in and signing off.** The mobile approver signs in with face, fingerprint or passkey for both steps, never a typed password. Opening skips the prompt if the user verified in the last 60 seconds. Every sign-off still needs its own (ruling 105). A passkey that syncs across a person's devices counts, but only on a device the person has enrolled in openPractice (ruling 134). When face or fingerprint is unavailable, the phone's own unlock code may stand in (ruling 135). At the workstation everyone signs in with two steps, a passkey or a password plus a second step, and each sign-off needs its own fresh check, as on the phone (ruling 136). An approval phone is enrolled when a colleague with their own enrolled phone vouches: a first phone works at once, and a replacement waits 24 hours and can be cancelled. With no colleague, codes go to two contact details on file, at least one of them on file for 7 days, with the same wait (ruling 137).
+
+**Approvals that rulings require outside the tier list.** The practice's accountant approves the reporting basis, estimator, classification, materiality and reopening policy before go-live (ruling 30). The medical director approves the payment-hold policy, and the exact policy needs the practice's counsel (ruling 41). The EHR supplies coded facts and a named human biller confirms them (ruling 116). Claim batches need an explicit release by a named signer (ruling 119). The first estimating method is approved by the accountant before accounting goes live (ruling 123). The amount that makes a write-off material is set by each practice at setup and confirmed by its accountant (ruling 129). See OT-5.
 
 **Carried from v1, word for word.**
 
@@ -217,7 +251,13 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 - New: the agent ladder, capped by the FD-5 tier (ruling 37; FD-12).
 - New: how a sign-off is verified on a phone (ruling 105).
 - New: two approvals outside the tier list, by the accountant (ruling 30) and by the medical director (ruling 41).
-- Unchanged: the four fixed tiers, the deadline escape, the "Why" and the "Changes". The "Why"'s "The second human does not exist; approval queues rot within a month" pulls against rulings 30, 37, 41 and 107 (OT-3, OT-5).
+- Tier 3: claim batches need an explicit release by a named signer, keeping the escape near a filing deadline (ruling 119), not a countdown alone. `define-revenue-cycle-core` records this as a conscious exception (its T-4).
+- Tier 2: exactly matched remittance lines post and notify, undoable (ruling 120).
+- Tier 4: what makes a write-off material is an amount the practice sets at setup and its accountant confirms (ruling 129); two records of the same person are linked, not merged, "in version 1" (ruling 150).
+- New: synced passkeys, the phone's unlock code, workstation sign-in and phone enrolment (rulings 134 to 137).
+- New: who gives the accountant and counsel sign-offs and how each is checked, the outside-accountant roster entry and the record of owners (rulings 139 to 141, 145 and 149); "an authorized person" (ruling 142); the medical director's licence check in openPractice (ruling 146); the case where the practice has nobody else (rulings 144 and 148); and how starter policies are written (ruling 147).
+- New approvals outside the tier list: the biller's confirmation of coded facts (ruling 116) and the first estimating method and write-off threshold (rulings 123 and 129).
+- Unchanged: the four fixed tiers, the deadline escape, the "Why" and the "Changes". The "Why"'s "The second human does not exist; approval queues rot within a month" pulls against rulings 30, 37, 41, 107, 116, 119, 139, 141 and 144 (OT-3, OT-5).
 
 **Open tensions:** OT-3, OT-4, OT-5, OT-7.
 
@@ -299,7 +339,7 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 > **Changes:** scope-and-sequencing's acceptance criteria are rewritten; the
 > implementation-lifecycle atomic gains "enrollment as first threads."
 
-**Rulings that bear on it:** 5 has openPractice reconcile deposits only, reading revenue bank lines from the accounting destination (FD-15). 8 says that, for the ERPNext integration, the remote topology alone satisfies MVP acceptance. Neither changes FD-8's text.
+**Rulings that bear on it:** 5 has openPractice reconcile deposits only, reading revenue bank lines from the accounting destination (FD-15). 8 says that, for the ERPNext integration, the remote topology alone satisfies MVP acceptance. 118 submits claims at first through a simulated payer, plus a manual path that records a claim sent outside the system, with the live clearinghouse as a later feature; it says nothing about beta acceptance. None changes FD-8's text.
 
 **Changed from v1:** nothing.
 
@@ -329,7 +369,7 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 > room, config promotion, and policy simulation; gains progressive activation and
 > the six "firsts"; the Thread contract gains the migrated-balance type.
 
-**Rulings that bear on it:** none.
+**Rulings that bear on it:** 131 defines the record type for balances carried over from an old system now, and builds the import before the first practice that needs it. It does not change FD-9's text.
 
 **Changed from v1:** nothing.
 
@@ -361,7 +401,7 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 - v1's (b) said "The companion app stays deferred". The HealthLinc integration contract and escalation routing now come into the MVP, and HealthLinc's own app features stay on HealthLinc's roadmap (ruling 36). This repeats the amendment v1 already records under "Amendments (2026-11-14)".
 - Unchanged: half (a), the patient money view, the "Why" and the "Changes".
 
-**Rulings that bear on it:** 34, 39, 41, 50, 51, 52 and 71 govern how patients reach the practice through HealthLinc (FD-13, FD-14).
+**Rulings that bear on it:** 34, 39, 41, 50, 51, 52 and 71 govern how patients reach the practice through HealthLinc (FD-13, FD-14). 122 brings the payment processor and the pay link later; it says nothing about beta scope, so half (b)'s text stands.
 
 ---
 
@@ -407,7 +447,7 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 
 ## FD-12. Agent operation (new)
 
-**v2 status:** new. Rulings 33, 34, 37, 45, 46, 68, 93, 97, 99, 100, 102 and 104.
+**v2 status:** new. Rulings 33, 34, 37, 45, 46, 68, 93, 97, 99, 100, 102, 104, 132, 133, 138 and 148.
 
 **Decision.**
 
@@ -415,10 +455,12 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 - Hermes may reply to a patient without a human only with read-only answers. Such an answer changes nothing and tells the signed-in patient only their own administrative information (appointment time, balance, coverage on file) or practice-approved information (hours, policies). During a conversation the agent can read only that one patient's data; each answer type is switched on by the practice; no clinical content, and anything uncertain goes to staff; the patient can always ask for a human. Anything that changes something stays a proposal or follows the ladder (ruling 45).
 - Hermes may read the administrative question it is answering, because it cannot answer what it cannot read. Clinical text and documents stay refused (ruling 99).
 - Autonomy ladder per action type: observe → propose → act with notice → act after a delay. Every action type starts at propose, and the practice opts each one up. Tier 4 stays human-only. The ladder reconciles with FD-5 and BAB-17, and an agent never acts with less friction than the action's FD-5 tier requires (ruling 37). Where a tier calls for a sign-off, an opted-in named agent identified by an openWallet ID may sign (ruling 33).
+- In the revenue-cycle core everything also starts at propose, and a practice may opt up as far as: act with notice for booking, rescheduling, drafting charges, allocating payments and building claims; act after a delay for sending statements; and propose only for cancelling, finalizing charges, issuing estimates, releasing claims, write-offs, refunds and estimator versions (ruling 132).
+- An agent's sponsor does not alone sign that agent's daily digest, and a sponsor granting their own agent more scope notifies the other managers, where a second eligible person exists (ruling 148).
 - On a request mode below the rung the practice set for an agent: "Not in version 1. Lower the rung in openPractice instead." (ruling 100)
 - Hermes's administrative patient messages are separated from clinical ones in medXfactory's local policy. Administrative messages follow ruling 45's guardrails with no clinical review. Consent and data-sharing conditions still apply (ruling 68).
 - Hermes needs no per-patient consent before a model provider processes administrative data: the provider agreement is enough for practice operations. Consent applies to AI answering the patient directly (ruling 97). The follow-up to openPractice's merged drafts carries the consent check (ruling 93). Design rests on ruling 97's answer now, and counsel's confirmation is a go-live condition (ruling 102).
-- Model providers keep nothing: zero data retention, verified the way the BAA is. Deletion with a receipt applies to the agent operator only (ruling 104).
+- Model providers keep nothing: zero data retention, verified the way the BAA is. Deletion with a receipt applies to the agent operator only (ruling 104). A provider may hold a short-lived in-memory cache that is never written to disk or logs, with a short stated limit (ruling 133). Counsel's confirmation of that is a go-live condition, as in ruling 102: no patient data goes to a caching model path until it is recorded (ruling 138).
 
 **Changed from v1.** New. Version 1 has no decision on agents. FD-1's frame names the agent-operated practice (ruling 38), and FD-5 caps every agent by the action's tier (ruling 37). FD-6 still deletes "the AI-specific decision ledger"; no ruling restores it.
 
@@ -428,7 +470,7 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 
 ## FD-13. Safety routing (new)
 
-**v2 status:** new. Rulings 34, 41, 42, 43, 44, 50, 51, 52, 71, 101 and 106.
+**v2 status:** new. Rulings 34, 41, 42, 43, 44, 50, 51, 52, 71, 101, 106 and 143.
 
 **Decision.**
 
@@ -439,6 +481,7 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 - openChart owns the queue and the response clock for routed clinical questions. openPractice gets an acknowledgment for each handoff, and alerts the office manager if openChart does not acknowledge or the clock runs out (ruling 43). When an urgent item has no clinician acknowledgment in time, openPractice alerts the office manager; this changes no clinical path (ruling 101).
 - A payment hold blocks non-urgent clinical messaging and new non-urgent scheduling only (ruling 41), and may withhold non-urgent medical-AI consults with the same safeguards (ruling 52). It never blocks urgent escalations, billing contact, or access to the patient's own records (ruling 41), and urgent is never withheld (ruling 52). Placing or lifting a hold is a logged, tiered action, and the patient is told. The medical director approves the hold policy, and the exact policy needs the practice's counsel (ruling 41).
 - Cut-offs other than a payment hold get safeguards too. If the access check is unavailable, routine clinical messages still route to openChart. A lapsed membership or a deactivation stops messaging only after the patient is told and a policy-set grace period has passed. A clinician can keep access open for continuity of care (ruling 50).
+- In a one-clinician practice an unanswered urgent question may have nobody to escalate to. Naming a covering clinician is not required "in version 1": the escalation that reached no second person is recorded, the readiness checklist warns, and the medical director may name cover in their policy (ruling 143).
 
 **Not stated by any ruling.** Whether the routing rules are fixed or authored by the practice. The gateway change ships them as a fixed, versioned set, with practices configuring only lanes, hours and the on-call roster; that is its design call DC-17, not a ruling. The critique's phrase "fixed safety routing" rests on that design call (OT-1).
 
@@ -450,17 +493,19 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 
 ## FD-14. The clinical boundary (new)
 
-**v2 status:** new. Rulings 10, 11, 17, 21, 27, 29, 31, 34, 35, 39, 51, 52, 53, 54, 69, 70, 87 and 88.
+**v2 status:** new. Rulings 10, 11, 17, 21, 27, 29, 31, 34, 35, 39, 51, 52, 53, 54, 69, 70, 87, 88, 115 and 116.
 
 **Decision.**
 
 - openPractice keeps only a routing record, with no clinical content (ruling 34). It also receives billable facts from a linked EHR (rulings 21, 87 and 88, below). What "no clinical content" means once those facts arrive is open (OT-9). For now the physician uses openChart, on mobile or workstation; the openPractice app, on workstation and mobile, covers administrative work and approvals. This is a current-phase decision and can be revisited (ruling 35).
 - There is no master patient identity across HealthLinc, openPractice and openChart. HealthLinc links to each backend through that backend's own link contract (ruling 39).
 - openPractice is the source for administrative demographics and publishes them to a linked EHR; each system owns its own record (ruling 29). openChart refuses direct edits to a linked patient's projected fields and routes them to openPractice as correction requests, intake flows included (ruling 17). Sex assigned at birth and sexual orientation stay out of openPractice's registry (clinical; owned by openChart) (ruling 11). Confidential-communication instructions are in the registry and carried in the link snapshot, and openChart, and anything it drives (for example HealthLinc), must honor them for every patient communication it originates (rulings 10, 27).
-- openPractice is the system of record for the administrative appointment. The EHR owns the encounter and keeps an appointment reference if needed. The 1.0 contracts carry no appointment operations; appointment events are a future MINOR version (ruling 31).
-- openChart publishes only confirmed diagnoses to openPractice as billable facts; if a published diagnosis is later refuted, a retraction is sent (ruling 87). After a patient link is revoked or superseded, retractions of facts already published under it are delivered, as pointers only; no new facts and no reads are served (ruling 88). While an EHR reports no billable-facts capability, manual charge entry is allowed for a linked patient, marked manual, with provenance (ruling 21).
+- openPractice is the system of record for the administrative appointment. The EHR owns the encounter and keeps an appointment reference if needed. The 1.0 contracts carry no appointment operations; appointment events are a future MINOR version (ruling 31). In the MVP openPractice books appointments minimally: book, reschedule, cancel, no-show and walk-in, with no reminders, waitlist or self-scheduling (ruling 115).
+- openChart publishes only confirmed diagnoses to openPractice as billable facts; if a published diagnosis is later refuted, a retraction is sent (ruling 87). After a patient link is revoked or superseded, retractions of facts already published under it are delivered, as pointers only; no new facts and no reads are served (ruling 88). While an EHR reports no billable-facts capability, manual charge entry is allowed for a linked patient, marked manual, with provenance (ruling 21). The EHR supplies coded facts and a named human biller confirms them; staff enter codes when there are none, and openPractice never infers codes (ruling 116).
 - HealthLinc's in-app AI is a coach, not a doctor; clinical AI doctors live in medXfactory (ruling 51). The coach gives general information only, and anything individualized is handed to medXfactory's medical AI or to the doctor (ruling 54). The coach is HealthLinc's own and is never gated by the practice, while non-urgent medical-AI consults sit behind the practice's access check (ruling 52).
 - The medical AI's exchanges with a patient are recorded in the chart through medXfactory's own governed path (ruling 53). Its records reach openChart through MedxEHR, which relays them with receipts; medXfactory does not write to openChart directly, and openPractice is never in that path (rulings 53, 70). openChart owns one neutral conversation-retrieval contract, which HealthLinc and medXfactory implement (ruling 69).
+
+**Rulings that bear on it:** 80 sets who and what may add to a patient's chart, what each addition records, and when an addition counts as a decision; 151 has the practitioner sign off any medical decision as a logged-in user, with openWallet and openSig signing and validating the entry. Both govern the chart, in openChart and the companion systems, and neither says anything about openPractice's routing record or billable facts. The index reproduces ruling 80's approved wording in its public form.
 
 **Changed from v1.** New. Version 1 has no decision on openPractice's boundary with the clinical systems.
 
@@ -470,21 +515,23 @@ Replace approval with **reversibility, visibility, and delay**, shipped as four 
 
 ## FD-15. The billing and accounting boundary (new)
 
-**v2 status:** new. Rulings 2, 5, 6, 7, 8, 23, 24, 25, 26, 28, 30 and 32.
+**v2 status:** new. Rulings 2, 5, 6, 7, 8, 23, 24, 25, 26, 28, 30, 32, 123, 124, 125, 129, 139 to 141 and 150.
 
 **Decision.**
 
 - The accounting contract of `define-mvp-practice-foundation` owns the posting mechanics: posting identity and idempotency, batches and their freeze, release, retries, the reconciliation report, the posting modes and the BAA gate. Change `define-customer-financial-data-boundaries` owns customer and party roles, routing by offering, obligation ownership and purpose-bound business views. Membership and retail obligations are owned by that change's routes, and the accounting contract never creates a second collectible balance for them (ruling 26; ruling 24 as revised by ruling 26).
 - The MVP default and recommended setup is `summary-journal`: summarized, balanced postings to payer-class control accounts, with patient-level receivable detail kept in openPractice. `customer-detail` is a per-destination opt-in, enabled only after that destination's BAA gate and only before its first release. openPractice's subledger total equals the destination's control account, per payer class (ruling 28). After the first release any mode change is refused until the owner ratifies a continuity procedure, and a BAA lapse halts delivery with no silent conversion (ruling 7). A practice-operated destination satisfies the BAA gate with an attestation naming the operator (ruling 6).
 - `summary-journal` carries no customer records or names. In `customer-detail` mode only, the accounting customers are the guarantor account and each payer (rulings 2, 28), and a medical-billing customer may carry its name and billing address or contact once the destination's BAA gate is satisfied. Chart notes, diagnoses, medications, results, full claim payloads, EHR medical-record numbers and service-revealing reason categories are always excluded (ruling 25).
-- One Party with roles. "Customer" is a party role only for membership and retail buyers; a medical-billing accounting customer is derived from the guarantor or payer role (ruling 32).
+- One Party with roles. "Customer" is a party role only for membership and retail buyers; a medical-billing accounting customer is derived from the guarantor or payer role (ruling 32). When two records turn out to be the same person, they are linked, not merged, "in version 1": the link is reversible, and a full merge, with its undo, would be its own later change (ruling 150).
+- Patient balances belong to the guarantor account. Every ledger entry moves money between two fixed buckets, so it always balances (ruling 124). Reason codes are a fixed list openPractice ships, on two axes, kind of money movement and service category; a service-category field is added to the accounting contract if the gap is confirmed (ruling 125).
 - openPractice reconciles deposits only, reading revenue bank lines from the destination with statement upload as fallback; the accounting system owns bank balances and the full reconciliation (ruling 5). Full bank account and routing numbers are stored encrypted, visible only to owner and billing-admin roles, masked elsewhere, every view audited, and never in logs, errors, exports, postings or keys (ruling 23).
-- Net revenue is the constrained expected entitlement, estimated at the date of service and re-estimated at each close; the gross charge is a memo or gross line carried with its deduction. Billing, adjudication, cash and disputes are evidence events that update the estimate, not revenue triggers. A payer with no history gets a conservative constrained estimate, with no gross-then-adjust fallback. The practice's accountant approves the reporting basis, estimator, classification, materiality and reopening policy before go-live (ruling 30, which supersedes ruling 22).
+- Net revenue is the constrained expected entitlement, estimated at the date of service and re-estimated at each close; the gross charge is a memo or gross line carried with its deduction. Billing, adjudication, cash and disputes are evidence events that update the estimate, not revenue triggers. A payer with no history gets a conservative constrained estimate, with no gross-then-adjust fallback. The practice's accountant approves the reporting basis, estimator, classification, materiality and reopening policy before go-live (ruling 30, which supersedes ruling 22). The full estimate record is built now, with a simple first method the accountant approves before accounting goes live (ruling 123).
+- That accountant is engaged from outside the practice, is neither an owner nor an employee, and is a licensed CPA checked against the state board's public record, with an outside-accountant entry on the Roster (rulings 139 to 141; FD-5). What makes a write-off material is an amount each practice sets at setup, confirmed by its accountant (ruling 129).
 - The MVP calls ERPNext only through its REST API, same-site or remote, with no in-process calls; in-process use stays conditional on counsel (ruling 8).
 
 **Changed from v1.** New. Version 1 touches the books only in FD-2 (where expected payment comes from) and FD-3 (period close and export-batch freeze).
 
-**Open tensions:** OT-5, OT-6 and OT-8 touch ruling 30.
+**Open tensions:** OT-5, OT-6 and OT-8 touch rulings 30 and 123; rulings 123 and 126 answer OT-8.
 
 ---
 
@@ -498,21 +545,20 @@ Each item names both sources. This draft does not resolve any of them. Where a c
 | OT-2 | **FD-1 "Why":** "no approval ladders, no RBAC matrix". | **Ruling 37:** an autonomy ladder per action type, opted up by the practice, with per-agent grants. | `define-actors-agents-and-work-inbox` T-6 ("Owner to confirm at ratification") |
 | OT-3 | **FD-5:** "Replace approval with reversibility, visibility, and delay"; "The second human does not exist; approval queues rot within a month." | **Ruling 37:** "Every action type starts at propose", so agent work waits for a person until the practice opts the action type up. | `define-actors-agents-and-work-inbox` T-3 (conscious exception) |
 | OT-4 | **FD-5 tier 2:** "Do + notify — reversible, surfaced in Today/close." | **Ruling 12:** `link_existing` and identity-review resolution are tier 2, read with **ruling 33**'s "where a tier calls for an approval, release decision or attestation". The changes treat these, and the gateway's link and proposal confirmations, as explicit human confirmations. No ruling says whether tier 2 here means do-and-notify or an explicit confirmation; the critique (D.2) asks this version to establish "tier-2 human confirmations". | `define-mvp-practice-foundation` T-17 (conscious exception, citing ruling 12); `define-patient-gateway-and-escalation` T-4 (conscious exception proposed) |
-| OT-5 | **FD-5:** tier 4 is "true approval, reserved for the constitutionally irreversible few"; "The second human does not exist." | **Ruling 30** (the accountant approves the policy items before go-live), **ruling 41** (the medical director approves the hold policy) and **ruling 107** (two-person rules with one-person alternatives, as ruling 98 does; no self-approval of accountant or counsel sign-offs). | `define-patient-gateway-and-escalation` T-4, for the hold policy (conscious exception proposed) |
+| OT-5 | **FD-5:** tier 4 is "true approval, reserved for the constitutionally irreversible few"; "The second human does not exist." | **Ruling 30** (the accountant approves the policy items before go-live), **ruling 41** (the medical director approves the hold policy) **ruling 107** (two-person rules with one-person alternatives, as ruling 98 does; no self-approval of accountant or counsel sign-offs), **ruling 116** (a named biller confirms coded facts), **ruling 119** (a named signer releases each claim batch), **rulings 139 and 141** (the accountant sign-off needs an outside accountant on the Roster) and **ruling 144** (without an outside accountant, a sole staff member's act on their own record waits). | `define-patient-gateway-and-escalation` T-4, for the hold policy (conscious exception proposed); `define-revenue-cycle-core` T-4 for ruling 119 and T-6 for ruling 116 (conscious exceptions) |
 | OT-6 | **FD-3:** "Month-end is printing, not a procedure"; "the practice never sees a lock." | **Ruling 30:** revenue "re-estimated at each close", with a "reopening policy" the accountant approves; **ruling 4:** postings move to the first open date when a period is closed. `define-mvp-practice-foundation` makes the close re-estimate automatic with no sign-off (its governance tiers); no ruling says whether that satisfies FD-3. | `define-mvp-practice-foundation`, "Verification dispositions (fix round 4)", finding M-B "close-snapshot approval versus FD-3", disposed by AI-12: close re-estimates post automatically, and only estimator versions and D8 items need approval. The disposition is the change's, not a ruling. |
-| OT-7 | **Ruling 33:** "Automation stays propose-only." | **Ruling 37** (an opted-in agent may act with notice or after a delay) and **ruling 45** (Hermes answers patients without a human). Ruling 37 says its ladder reconciles with FD-5 and BAB-17, the requirement that carries ruling 33, and `define-actors-agents-and-work-inbox` makes raising a rung the same act as ruling 33's agent-signing opt-in (its design call D-5). No ruling says that ruling 33's "propose-only" is read that way. | Not recorded as a tension; `define-actors-agents-and-work-inbox` D-5 is that change's reconciliation |
-| OT-8 | **FD-2 "Changes":** "the expectation engine leaves the beta's critical path." | **Ruling 30:** net revenue is the constrained expected entitlement, estimated at the date of service, and the practice's accountant approves the estimator before go-live. Accounting is a beta slice (Slice 4 of scope-and-sequencing; Feature 3 of `define-mvp-practice-foundation`), and that change's AI-08 proves that the gross-to-net allowance equals the sum of openPractice's current estimates, so an estimator is on the beta's critical path. No ruling says whether that estimator is the expectation engine FD-2 took off it. | Not recorded as a tension in any change |
-| OT-9 | **Ruling 53**, in its table row: the medical AI's exchanges "never pass through openPractice, which holds no clinical content." | **Rulings 21, 87 and 88:** billable facts reach openPractice from a linked EHR, confirmed diagnoses among them (ruling 87); retractions of published facts are still delivered after a link ends (ruling 88); and charges are entered manually while an EHR reports no billable-facts capability (ruling 21). `define-mvp-practice-foundation` treats billable facts as references and as copies of claims as submitted, with codings that carry a system and a code only (its ownership matrix, its Constitution Check for Principle IV, and its Decision 5); that is the change's own design, not a ruling. The question for the owner is what "no clinical content" means once coded billable facts arrive. It matters now: ruling 110 puts the revenue-cycle core next, and claims carry diagnosis codes. | Not recorded as a tension in any change |
+| OT-7 | **Ruling 33:** "Automation stays propose-only." | **Ruling 37** (an opted-in agent may act with notice or after a delay), **ruling 45** (Hermes answers patients without a human) and **ruling 120** (exactly matched remittance lines post by themselves, with notice and undo). Ruling 37 says its ladder reconciles with FD-5 and BAB-17, the requirement that carries ruling 33, and `define-actors-agents-and-work-inbox` makes raising a rung the same act as ruling 33's agent-signing opt-in (its design call D-5). No ruling says that ruling 33's "propose-only" is read that way. | For rulings 37 and 45, not recorded as a tension (`define-actors-agents-and-work-inbox` D-5 is that change's reconciliation). For ruling 120, `define-revenue-cycle-core` T-3 (recorded: ruling 120 is the later and more specific ruling) |
+| OT-8 | **FD-2 "Changes":** "the expectation engine leaves the beta's critical path." | **Ruling 30:** net revenue is the constrained expected entitlement, estimated at the date of service, and the practice's accountant approves the estimator before go-live. Accounting is a beta slice (Slice 4 of scope-and-sequencing; Feature 3 of `define-mvp-practice-foundation`), and that change's AI-08 proves that the gross-to-net allowance equals the sum of openPractice's current estimates, so an estimator is on the beta's critical path. No ruling said whether that estimator is the expectation engine FD-2 took off it. **Answered by rulings 123 and 126**, for the owner to confirm at ratification: the estimate record is built now, with a simple first method the accountant approves before accounting goes live (ruling 123), and payer expectations come from the estimator, not loaded fee schedules (ruling 126). | `define-revenue-cycle-core` T-5 (resolved for the first method by ruling 126) |
+| OT-9 | **Ruling 53**, in its table row: the medical AI's exchanges "never pass through openPractice, which holds no clinical content." | **Rulings 21, 87 and 88:** billable facts reach openPractice from a linked EHR, confirmed diagnoses among them (ruling 87); retractions of published facts are still delivered after a link ends (ruling 88); and charges are entered manually while an EHR reports no billable-facts capability (ruling 21). Ruling 116 adds that the EHR supplies coded facts, a named human biller confirms them, staff enter codes when there are none, and openPractice never infers codes. `define-mvp-practice-foundation` treats billable facts as references and as copies of claims as submitted, with codings that carry a system and a code only (its ownership matrix, its Constitution Check for Principle IV, and its Decision 5); that is the change's own design, not a ruling. The question for the owner is what "no clinical content" means once coded billable facts arrive. It matters now: ruling 110 puts the revenue-cycle core next, ruling 116 sets how codes reach it, and claims carry diagnosis codes. | Not recorded as a tension in any change |
 
 ## Rulings not folded into a decision
 
 Each is in the [Owner Rulings Index](openpractice-owner-rulings-index.md).
 
 - **Superseded:** 3 (by 25) and 22 (by 30).
-- **Packaging and process:** 1, 40, 47, 48, 49, 64, 72, 75, 85, 89 and 93 (its consent check is cited in FD-12); 108 (this draft and the index), 109 (see "Ratification" below), 110 (write the revenue-cycle core next and pause perimeter work; its scope and decisions will follow as their own list) and 111.
-- **Contract detail:** 13, 14, 15, 16, 18, 19, 20 and 103 (one money format for every contract).
-- **Other systems only** (openChart, medXfactory, MedxEHR or HealthLinc): 55, 56, 57, 58, 59, 60, 61, 62, 63, 65, 66, 67, 73, 74, 76, 77, 78 (also noted under FD-11), 79, 81, 82, 83, 84, 86, 90, 91, 92, 94, 95, 96 and 98 (cited through ruling 107 in FD-5).
-- **Open:** 80.
+- **Packaging and process:** 1, 40, 47, 48, 49, 64, 72, 75, 85, 89 and 93 (its consent check is cited in FD-12); 108 (this draft and the index), 109 (see "Ratification" below), 110 (write the revenue-cycle core next and pause perimeter work; its scope and decisions will follow as their own list), 111 and 112 (the revenue-cycle core is one change with its own ordered multi-feature hand-off).
+- **Contract detail:** 13, 14, 15, 16, 18, 19, 20, 103 (one money format for every contract), 117 (one Frappe app with a module per area; adapters as separate packages) and 127 (eligibility and prior authorization recorded by hand as evidence; electronic checks arrive with the clearinghouse).
+- **Other systems only** (openChart, medXfactory, MedxEHR or HealthLinc): 55, 56, 57, 58, 59, 60, 61, 62, 63, 65, 66, 67, 73, 74, 76, 77, 78 (also noted under FD-11), 79, 81, 82, 83, 84, 86, 90, 91, 92, 94, 95, 96 and 98 (cited through rulings 107 and 146 in FD-5), and 80 and 151 (additions to a patient's chart; noted under FD-14, with ruling 80's public wording in the index).
 
 ## Relationships
 
@@ -525,10 +571,10 @@ Version 2 of [Framing Decisions](openpractice-framing-decisions.md), which stays
 | # | Decision | v2 status | Owner's ruling |
 |---|---|---|---|
 | FD-1 | Staff-count frame | amended (rulings 38, 107) | pending |
-| FD-2 | Expectation source | unchanged | pending |
+| FD-2 | Expectation source | amended (rulings 123, 126) | pending |
 | FD-3 | Period close | amended (rulings 4, 8, 26, 30) | pending |
-| FD-4 | Estimates and GFE | unchanged | pending |
-| FD-5 | Governance primitive | amended (rulings 9, 12, 33, 37, 105, 107; with 30, 41) | pending |
+| FD-4 | Estimates and GFE | amended (rulings 113, 114, 121, 122, 126, 130) | pending |
+| FD-5 | Governance primitive | amended (rulings 9, 12, 33, 37, 119, 120, 129, 150; with 30, 41, 105, 107, 116, 123, 128, 134 to 137, 139 to 142, 144 to 149) | pending |
 | FD-6 | Differentiator statement | unchanged | pending |
 | FD-7 | Spine ownership | unchanged | pending |
 | FD-8 | First external milestone | unchanged | pending |
@@ -539,7 +585,7 @@ Version 2 of [Framing Decisions](openpractice-framing-decisions.md), which stays
 | FD-13 | Safety routing | new | pending |
 | FD-14 | The clinical boundary | new | pending |
 | FD-15 | The billing and accounting boundary | new | pending |
-| OT-1 to OT-9 | Open tensions | for the owner's disposition | pending |
+| OT-1 to OT-9 | Open tensions (OT-8 answered by rulings 123 and 126, for confirmation) | for the owner's disposition | pending |
 
 - Ratified by: pending
 - Date: pending
