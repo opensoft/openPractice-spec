@@ -22,7 +22,7 @@ The 20 design calls in `design.md` under "Design calls for owner review" have no
 - Draft PR opensoft/openPractice-spec#7 (`change/follow-up-ruling-93-contract-gaps`) merged, with revision: _pending_
 - The corrections change stacked on it, draft PR opensoft/openPractice-spec#8 (`change/critique-2026-11-15-corrections`), merged, with revision: _pending_
 - Every requirement ID this change cites exists at those revisions (cross-reference check): _pending_
-- Rows RI-46, RI-47, RI-49, RI-50, RI-53 to RI-59 and RI-60 traced to AH-01, AH-02, AH-06, AI-20, AM-01, AM-02, AM-04, AM-07, MA-04 and PR-15 as merged from the corrections change, and the ER-12 lapse on RI-17, RI-18 and RI-46: _pending_
+- Rows RI-46, RI-47, RI-49, RI-50, RI-53 to RI-59, RI-60 and RI-61 traced to AH-01, AH-02, AH-06, AI-20, AM-01, AM-02, AM-04, AM-07, MA-04 and PR-15 as merged from the corrections change, and the ER-12 lapse on RI-17, RI-18 and RI-46: _pending_
 
 ## Required Amendment Dispositions
 
@@ -38,7 +38,7 @@ Each amendment belongs to the owning change. Its disposition is recorded here; t
 - Handoff shape: _pending owner confirmation; design call RD-15 proposes exactly one Speckit feature, with SR-02 and SR-04 built into the shared sign-off record before any sign-off is recorded in production_
 - Design-call dispositions (RD-1 to RD-20, each accepted, changed or rejected): _pending_
 - Tension dispositions (T-1 to T-10): _pending_
-- Rulings 136 to 150, as recorded in `design.md`'s Owner rulings table, checked word for word against the questions and recommendations as they were put to the owner: _pending_
+- Rulings 136 to 150, and 161, 164, 165, 184, 185 and 191 to 193, as recorded in `design.md`'s Owner rulings table, checked word for word against the questions and recommendations as they were put to the owner: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
 Required owner statement:
