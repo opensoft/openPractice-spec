@@ -76,11 +76,15 @@ openPractice SHALL be the source of administrative demographic changes for linke
 - provenance made of an opaque actor reference, a source, and a reason from the schema's coded list. Free-text reasons MUST NOT be sent;
 - a full snapshot: legal and preferred name, date of birth, administrative sex, gender identity, pronouns, preferred language, telecom, addresses, confidential-communication instructions, and administrative status.
 
-The snapshot's confidential-communication instructions SHALL stay in the snapshot, and the receiving EHR SHALL honor them for every patient communication it originates, including communications from any system it drives (ruling 27; openChart PL-16). The message MUST NOT include guarantor, coverage, financial, deactivation-reason or internal-note content. Coverage is excluded from contract version 1.0 and may be added only as a later MINOR version.
+The snapshot's confidential-communication instructions SHALL stay in the snapshot, and the receiving EHR SHALL honor them for every patient communication it originates, including communications from any system it drives (ruling 27; openChart PL-16). Where the record's party belongs to a same-person group (PR-15), the snapshot's restrictions SHALL include every restriction that crosses to that party, as restriction flags only and never another party's channels, and openPractice SHALL publish the next version when a link of the group is recorded or ended (design call F-6, PROPOSED). The message MUST NOT include guarantor, coverage, financial, deactivation-reason or internal-note content. Coverage is excluded from contract version 1.0 and may be added only as a later MINOR version.
 
 #### Scenario: A patient's address changes
 - **WHEN** staff change a linked patient's home address
 - **THEN** openPractice publishes the next demographic version, with `address` in the changed fields and the full snapshot
+
+#### Scenario: A restriction crosses a same-person link
+- **WHEN** a record carrying `no_home_mail` is retired as a duplicate of a record linked to the EHR, and their parties stay linked
+- **THEN** the linked record's snapshot carries `no_home_mail` but not the other party's alternate address, so the EHR mails nothing to the home address
 
 #### Scenario: A patient is deactivated
 - **WHEN** a linked patient is deactivated in openPractice
