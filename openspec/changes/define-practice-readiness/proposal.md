@@ -62,8 +62,8 @@ Ruling 107 authorizes the change, and the owner made rulings 139, 140, 147 and 1
   - ruling 193: a recorded owner grants nothing, and the practice's owner in any requirement means the practice manager recipe holder (design call F-13's details PROPOSED);
   - AI-20's per-destination record of who books explained bank debits, which the practice manager records and the practice's accountant confirms, taking effect only once confirmed (design call F-18, PROPOSED under rulings 125 and 164), ruling 164's go-live bar, and ruling 165's claim-acceptance treatment.
 
-  This change cites those requirement IDs and describes them, never quoting or citing line numbers, and should merge after PR #8. It reconciles against PR #8 at `c90b9a6`.
-- **Draft PR opensoft/openPractice-spec#11** (`define-revenue-cycle-core`, read at `9658a71`), not a dependency: its PS-11 and RE-09 define the amount at which a write-off becomes material (ruling 129), which ruling 141 calls the write-off threshold. When it lands, that confirmation comes under SR-04.
+  This change cites those requirement IDs and describes them, never quoting or citing line numbers, and should merge after PR #8. It reconciles against PR #8 at `ad6f4be`.
+- **Draft PR opensoft/openPractice-spec#11** (`define-revenue-cycle-core`, read at `44b7d6b`), not a dependency: its PS-11 and RE-09 define the amount at which a write-off becomes material (ruling 129), which ruling 141 calls the write-off threshold. When it lands, that confirmation comes under SR-04.
 
 ## Non-goals
 
@@ -98,5 +98,5 @@ None. This change depends on, and does not modify, the changes named under Depen
 - **PHI exposure:** none. The checklist holds no PHI (RC-07). Uses whose subject is a patient-side record are only counted, and only readers authorized to see that PHI see the count (RC-06).
 - **Amendments for other owners**, all listed in `design.md`:
   - **required:** RA-1 to RA-4 and RA-6 are adopted in PR #8; RA-5a to RA-5c are there as an extension of design call F-7, PROPOSED; RA-5d is covered by F-7;
-  - **conforming (ten):** CA-1 to CA-4, CA-9 and CA-10 are applied in PR #8, checked at `c90b9a6`, including the fields ruling 149's counsel check needs; CA-5 to CA-8 apply only if their owners come to record counsel's part.
+  - **conforming (ten):** CA-1 to CA-4, CA-9 and CA-10 are applied in PR #8, checked at `ad6f4be`, including the fields ruling 149's counsel check needs; CA-5 to CA-8 apply only if their owners come to record counsel's part.
 - **Runtime:** no runtime code, dependencies or vendor claims are added.
