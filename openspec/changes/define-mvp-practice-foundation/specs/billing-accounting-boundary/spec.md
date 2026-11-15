@@ -182,14 +182,14 @@ Every action this change defines SHALL follow its FD-5 tier (ruling 33). Its tie
 - **THEN** the release is recorded with the agent's name, its openWallet ID, the time and the provenance
 
 ### Requirement: BAB-18 Every openPractice contract carries money in one format
-Every `openpractice-*` contract SHALL carry an amount as decimal text plus a currency code (ruling 103): a JSON string holding a decimal number with exactly the currency's minor-unit digits and an explicit leading minus sign when negative, never a JSON number, together with the amount's ISO 4217 alphabetic currency code, which travels on the object that holds the amount or on the object that holds its lines. This is the form `openpractice-accounting-integration/1.0` uses (AI-02). openPractice SHALL store every amount as a whole number of the currency's minor units: whole cents for USD (ruling 103).
+Every `openpractice-*` contract SHALL carry an amount as decimal text plus a currency code, as `openpractice-accounting-integration/1.0` already does (AI-02): a JSON string with an explicit leading minus sign when negative, never a JSON number, together with the amount's ISO 4217 alphabetic currency code, which travels on the object that holds the amount or on the object that holds its lines. openPractice SHALL store amounts in whole cents (ruling 103).
 
 These rules are design calls under ruling 103 (F-8 to F-10, PROPOSED):
-- version 1.0 of every contract supports USD only, so every 1.0 amount has exactly two decimal places. Supporting another currency needs a governed MINOR version that states its minor-unit digits from ISO 4217; a currency with no minor unit carries no decimal point (F-8);
-- each contract states its rounding rule once. openPractice rounds an amount only when it computes one, such as an estimate or an allocation, and rounds it once, to the minor unit; every total is the sum of amounts already rounded, so a batch balances exactly (F-9);
+- an amount carries exactly its currency's minor-unit digits, and is stored as a whole number of that currency's minor units. Version 1.0 of every contract supports USD only, so two decimal places and whole cents, and a 1.0 message in any other currency is refused. Supporting another currency needs a governed version change under AI-01, which states its minor-unit digits from ISO 4217; a currency with no minor unit carries no decimal point (F-8);
+- openPractice has one rounding rule, and each contract states that it uses it. An amount is rounded only when openPractice computes it, such as an estimate or an allocation, and only once, at computation, to the minor unit, half away from zero. When a fixed amount, such as a deposit, a payment or a bank line, is split into parts, each part is rounded that way and the last part in the split's stated order takes the difference, so the parts always equal the whole. A fixed amount is never recomputed from rounded parts, and every other total is the sum of amounts already rounded (F-9);
 - a batch, and every message that holds several amounts, carries one currency, and a batch with a second currency is refused at release (F-10).
 
-A future contract that carries money, such as a claim, remittance or payment contract, SHALL meet this requirement and state its own rounding rule.
+A future contract that carries money, such as a claim, remittance or payment contract, SHALL meet this requirement and state that it uses the rounding rule of F-9.
 
 #### Scenario: An amount is sent as a number
 - **WHEN** a message carries an amount as the JSON number 123.45
@@ -201,4 +201,12 @@ A future contract that carries money, such as a claim, remittance or payment con
 
 #### Scenario: An estimate has a fraction of a cent
 - **WHEN** openPractice computes an estimated amount of 33.335 USD
-- **THEN** it rounds it once, to 33.34 under the accounting contract's rule, stores 3334 cents, and adds the rounded amount into every total
+- **THEN** it rounds it once, half away from zero, to 33.34, stores 3334 cents, and adds the rounded amount into every total
+
+#### Scenario: A fixed amount is split three ways
+- **WHEN** a deposit of 100.00 USD is split into three equal parts
+- **THEN** the parts are 33.33, 33.33 and 33.34, they add to 100.00, and the deposit is still 100.00 against its bank line
+
+#### Scenario: A batch in another currency
+- **WHEN** a 1.0 batch or bank-lines result carries a currency other than USD
+- **THEN** it fails the canonical schema, and release or reading is refused

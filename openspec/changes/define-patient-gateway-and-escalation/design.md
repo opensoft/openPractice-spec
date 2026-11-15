@@ -523,7 +523,7 @@ On 2026-11-15 the owner asked for the owner-supplied spec critique dated 2026-11
 
 **Critique items answered elsewhere.**
 - **A** (the revenue-cycle core, including the scheduling block PH-01 defers): ruling 110, "Yes. Its scope and decisions will follow as their own list." It is new work, not drafted here.
-- **C.1** (readiness, including the counsel, medical-director and controller sign-offs this change requires): ruling 107. Its readiness checklist and starter policies go in a new change, `define-practice-readiness`, by another author.
+- **C.1** (readiness, including the counsel, medical-director and controller sign-offs this change requires): ruling 107. Its readiness checklist and starter policies are in `define-practice-readiness`, a draft in this repository (pull request #10).
 - **D.1**, second half, and **D.2**: ruling 108, the owner drafts a framing-decisions v2 that folds in rulings 1 to 98 with an index of every ruling, and version 1 stays as history; T-1 to T-12 here stay as they are until then. Ruling 109: nothing is promoted to canonical specs before building; the owner ratifies first, and each change is archived after its feature lands.
 - **B.1** and **B.2** are answered in `define-mvp-practice-foundation`, and the model-provider half of **B.3** in change A's AH-02.
 

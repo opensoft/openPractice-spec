@@ -13,7 +13,7 @@
     "uuid": { "type": "string", "format": "uuid" },
     "destinationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
     "money": { "description": "Decimal amount as a string, never a JSON number, with exactly two decimal places because 1.0 supports USD only; sign carried explicitly. It always travels with an ISO 4217 currency code (BAB-18, ruling 103).", "type": "string", "pattern": "^-?[0-9]{1,13}\\.[0-9]{2}$" },
-    "currency": { "description": "ISO 4217 alphabetic code. 1.0 supports USD only, and a batch carries one currency (BAB-18).", "type": "string", "pattern": "^[A-Z]{3}$" },
+    "currency": { "description": "ISO 4217 alphabetic code. 1.0 supports USD only, so any other code is refused; a batch carries one currency (BAB-18).", "type": "string", "const": "USD" },
     "date": { "type": "string", "format": "date" },
     "neutralLabel": {
       "description": "Fixed neutral financial labels. They never reveal the type of service, a diagnosis or a procedure. patient_services_revenue is the gross line; gross_to_net_deduction and gross_to_net_true_up bring it to the constrained expected entitlement (AI-12, ruling 30); credit_loss is an expense, never a revenue deduction. other_route_share is the part of an explained deposit that funds balances owned by another route (for example membership or retail obligations); it posts to the account mapped for it per destination and mode, and openPractice remains the single deposit poster.",

@@ -13,7 +13,7 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - the PHI safeguard plan, security review and risk-analysis update are recorded;
   - the tamper-evident audit and its redaction mechanism (T-14) are chosen and tested;
   - fixtures are synthetic only;
-  - one party per person (PR-15): roles and links instead of second person records, search before create showing parties that hold other roles, no automatic merge, and a staff member's own record decided by another roster entry or under the recorded one-person alternative.
+  - one party per person (PR-15): roles and links instead of second person records; search before create showing parties that hold other roles, including those with no date of birth, and verified matching evidence before an existing party gains the patient role; confidential-communication instructions honored for every role; review work for every other role after a death; a hard delete that keeps shared facts and says so; no automatic merge, and a merge that keeps one party; and money, coverage and sign-off actions on a staff member's own record decided by another human roster entry, or an agent the staff member does not sponsor, or under the recorded one-person alternative with its notice to the accountant.
 - [ ] 2.2 **Feature 2: EHR patient link and demographic publication, openPractice side (Slice 0).** Owns EB-01 to EB-12, EB-19 and EB-20. Gate: task 1.2, and Feature 1 merged. Acceptance evidence:
   - contract tests validate every message against the patient-link canonical schema at its recorded digest;
   - the suspension, correction-request and single-resolver paths are covered;
@@ -32,7 +32,7 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - openPractice is the single poster of each deposit it explains, other-route shares post as `other_route_share`, refund disbursements are matched, and charge finalization checks the offering route, with tier-3 release at the filing threshold (BAB-14, BAB-16, AI-17);
   - summary-journal minimum group size and roll-up (AI-15), and automatic close re-estimates (AI-12);
   - sign-offs per BAB-17: agent sign-off refused when not opted in and at tier 4, and recorded with its openWallet ID when allowed;
-  - money per BAB-18: every amount a decimal string with two places and a currency code, never a JSON number, USD only in 1.0, one currency per batch and per bank-lines result, the rounding rule of AI-02, and whole cents in storage.
+  - money per BAB-18: every amount a decimal string with two places and a currency code, never a JSON number, USD only in 1.0, one currency per batch and per bank-lines result, BAB-18's one rounding rule, with split amounts whose parts equal the whole, and whole cents in storage.
 - [ ] 2.4 **Feature 4: clinical-fact consumption for charge capture (Slice 3).** Owns EB-13 to EB-18. It consumes the Thread, because waiting on clinical documentation and the deadline escape are thread conditions. Gate: task 1.2, Feature 2 merged, and the FD-7 Thread contract versioned. The owner may fold this feature into the Slice 3 charge-capture feature, provided ownership is recorded. Acceptance evidence:
   - contract tests run against the clinical-facts canonical schema at its recorded digest;
   - manual entry is marked manual while the capability result is false;

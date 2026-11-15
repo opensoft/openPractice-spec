@@ -233,7 +233,7 @@ On 2026-11-15 the owner asked for the owner-supplied spec critique dated 2026-11
 | # | Correction | Source | Where | What stays open |
 |---|---|---|---|---|
 | SC-1 | Cross-branch caveats made true: `define-mvp-practice-foundation`, `define-customer-financial-data-boundaries` and the framing-decision amendments are cited as merged on `main` | Critique D.1 | "Context" and ruling 42's row above; T-1; `proposal.md`; `tasks.md` 1.1 | Nothing |
-| SC-2 | A human roster entry references exactly one party, an agent or integration none, and a person who is both staff and patient holds one roster entry for the staff role | Critique B.1; ruling 32 | AM-01; the rule itself is `define-mvp-practice-foundation` PR-15 | PROPOSED with PR-15 |
+| SC-2 | A human roster entry references exactly one party, an agent or integration none, and a person who is both staff and a patient, guarantor or representative holds one roster entry, for the staff role only, and never acts in that other role through it | Critique B.1; ruling 32 | AM-01; the rule itself is `define-mvp-practice-foundation` PR-15 | PROPOSED with PR-15 |
 | SC-4 | Model providers keep nothing (ruling 104): zero data retention, recorded and verified like the BAA, part of the AH-01 gate; what a provider retains is nothing with content, and the operator's retention follows its agreement and the sibling change's deletion duty | Critique B.3 | AH-02, AH-01, AH-04 | D-30 (PROPOSED). The operator's deletion deadline is the sibling change's DC-57 |
 | — | Ruling 102: the design rests on ruling 97's answer now, and counsel's recorded confirmation of it is a go-live condition for PHI reaching any model provider | Ruling 102 | AH-06, AH-01 | D-31 (PROPOSED) |
 | — | Rulings 99 and 100 close Open Questions 7 and 6: `work_item.read_text` stands as drafted, and version 1 has no request mode below the rung | Rulings 99, 100 | D-18; Open Questions 6 and 7; `proposal.md`; `owner-ratification.md` | Nothing |
@@ -242,7 +242,7 @@ On 2026-11-15 the owner asked for the owner-supplied spec critique dated 2026-11
 
 **Critique items answered elsewhere.**
 - **A** (the revenue-cycle core): ruling 110, "Yes. Its scope and decisions will follow as their own list." It is new work, not drafted here.
-- **C.1** (readiness and one person holding several authorities, including the controller's digest sign-off of AO-10): ruling 107. Its readiness checklist and starter policies go in a new change, `define-practice-readiness`, by another author.
+- **C.1** (readiness and one person holding several authorities, including the controller's digest sign-off of AO-10): ruling 107. Its readiness checklist and starter policies are in `define-practice-readiness`, a draft in this repository (pull request #10).
 - **D.1**, second half, and **D.2**: ruling 108, the owner drafts a framing-decisions v2 that folds in rulings 1 to 98 with an index of every ruling, and version 1 stays as history; T-1 to T-7 here stay as they are until then. Ruling 109: nothing is promoted to canonical specs before building; the owner ratifies first, and each change is archived after its feature lands.
 - **B.1** and **B.2** are answered in `define-mvp-practice-foundation`, and **B.3**'s deletion duty, **C.2** and **C.3** in `define-patient-gateway-and-escalation`.
 
