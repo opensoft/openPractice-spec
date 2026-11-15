@@ -1,0 +1,329 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:openpractice:contract:openpractice-thread:1.0",
+  "title": "openpractice-thread 1.0",
+  "description": "Canonical schema of the openPractice thread contract (change define-revenue-cycle-core, TH-11; FD-7). It defines a thread record, which is a derived snapshot, and a transition, which is the only way a thread changes. References are opaque identifiers; no record carries a name, a date of birth, contact details, a member identifier or clinical content (TH-14, TH-15). The legality of a move is checked against the table of TH-04, not by this schema. Amounts follow BAB-18 (ruling 103): decimal text with two places and an ISO 4217 code, USD only in 1.0.",
+  "oneOf": [
+    { "$ref": "#/$defs/threadRecord" },
+    { "$ref": "#/$defs/transition" }
+  ],
+  "$defs": {
+    "contractVersion": {
+      "description": "Same-MAJOR compatibility: a 1.x reader reads every 1.x record (TH-11).",
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "opaqueRef": {
+      "description": "Opaque identifier of an openPractice record or roster entry. It carries no personal or account data.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9:_-]{1,128}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "money": {
+      "description": "Decimal amount as a string, never a JSON number, with exactly two decimal places; sign carried explicitly (BAB-18).",
+      "type": "string",
+      "pattern": "^-?[0-9]{1,13}\\.[0-9]{2}$"
+    },
+    "currency": {
+      "description": "ISO 4217 alphabetic code. 1.0 supports USD only (BAB-18).",
+      "type": "string",
+      "const": "USD"
+    },
+    "threadType": {
+      "description": "A visit thread or one of the enumerated non-visit case types (TH-01, TH-08). The reserved names unmatched_inbound_page, inbound_page_not_ours and payer_records_request are deliberately absent, so they are refused until a governed MINOR version adds them.",
+      "enum": ["visit", "credit_balance", "gfe_dispute", "recoupment", "enrollment_case", "old_system_balance"]
+    },
+    "station": {
+      "description": "One of the ten stations of TH-04. booked, ready, arrived and seen are used by visit threads only.",
+      "enum": ["intent", "booked", "ready", "arrived", "seen", "charged", "claimed", "remitted", "banked", "closed"]
+    },
+    "condition": {
+      "description": "TH-05. stuck is only ever derived, never written by a transition.",
+      "enum": ["moving", "held", "stuck", "disputed"]
+    },
+    "writableCondition": {
+      "description": "The conditions a transition may set. stuck is excluded because it is derived (TH-05).",
+      "enum": ["moving", "held", "disputed"]
+    },
+    "holdReason": {
+      "description": "The closed list of TH-06.",
+      "enum": [
+        "participation_not_effective",
+        "waiting_on_clinical_documentation",
+        "clinical_fact_retracted",
+        "identity_review",
+        "offering_route_unresolved",
+        "waiting_on_authorization",
+        "open_dispute_or_appeal",
+        "tier3_window_running"
+      ]
+    },
+    "releaseCondition": {
+      "description": "A structured release condition that a query can evaluate (TH-06). Its parameters are opaque references, coded values or dates, never free text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "parameters"],
+      "properties": {
+        "reason": { "$ref": "#/$defs/holdReason" },
+        "parameters": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9:._-]{1,128}$"
+          }
+        }
+      }
+    },
+    "linkType": {
+      "description": "TH-09. merged_into is used only to re-point threads after a tier-4 party merge.",
+      "enum": ["spawned_from", "replaces", "recoups", "offsets", "held_by", "merged_into"]
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["link_type", "target_thread_id"],
+      "properties": {
+        "link_type": { "$ref": "#/$defs/linkType" },
+        "target_thread_id": { "$ref": "#/$defs/opaqueRef" }
+      }
+    },
+    "mintingEvent": {
+      "description": "The only events that mint a thread (TH-02, TH-08).",
+      "enum": ["booking", "walk_in", "clinical_facts_unmatched", "manual_charge_unmatched", "case_event", "old_system_import"]
+    },
+    "fd5Tier": {
+      "description": "The FD-5 tier that governed a transition (TH-07). sign_off marks a gate decided by an explicit sign-off below tier 4.",
+      "enum": ["tier_1", "tier_2", "tier_3", "tier_4", "sign_off"]
+    },
+    "actorType": {
+      "description": "Actor types follow AM-01; an integration acts as a named integration identity.",
+      "enum": ["human", "agent", "integration", "shipped_rule"]
+    },
+    "factKind": {
+      "description": "The kind of dated fact that justified a transition (TH-07).",
+      "enum": [
+        "booking",
+        "arrival",
+        "disposition",
+        "readiness_result",
+        "clinical_facts",
+        "manual_charge",
+        "charge_finalization",
+        "claim_submission",
+        "claim_status",
+        "remittance",
+        "payment",
+        "coverage_change",
+        "participation_record",
+        "dispute",
+        "chargeback_or_return",
+        "case_event",
+        "person_decision",
+        "reversal"
+      ]
+    },
+    "counterpartyKind": {
+      "description": "SL-06. The counterparty is identified only by an opaque reference.",
+      "enum": ["guarantor_account", "payer_coverage", "unidentified", "practice"]
+    },
+    "amountAtRisk": {
+      "description": "Derived from ledger entries by the rule for the thread's station (TH-03); never stored as a balance.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount", "currency", "counterparty_kind"],
+      "properties": {
+        "amount": { "$ref": "#/$defs/money" },
+        "currency": { "$ref": "#/$defs/currency" },
+        "counterparty_kind": { "$ref": "#/$defs/counterpartyKind" },
+        "counterparty_ref": { "$ref": "#/$defs/opaqueRef" }
+      }
+    },
+    "clockKind": {
+      "description": "The deadline that sets a thread's clock (TH-03). Each is derived from dates and rules openPractice holds, never typed.",
+      "enum": [
+        "filing_deadline",
+        "authorization_expiry",
+        "gfe_issuance_deadline",
+        "gfe_dispute_window",
+        "statement_due",
+        "refund_obligation",
+        "payer_decide_by",
+        "legacy_limit",
+        "acknowledgment_window"
+      ]
+    },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "due_at"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/clockKind" },
+        "due_at": { "$ref": "#/$defs/timestamp" },
+        "next_kind": { "$ref": "#/$defs/clockKind" },
+        "next_due_at": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "threadRecord": {
+      "description": "A derived snapshot of one thread at a moment (TH-03).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_kind",
+        "contract",
+        "contract_version",
+        "thread_id",
+        "thread_type",
+        "minted_under",
+        "minted_at",
+        "minting_event",
+        "station",
+        "condition",
+        "station_entered_at",
+        "owner_ref",
+        "as_of"
+      ],
+      "properties": {
+        "record_kind": { "const": "thread" },
+        "contract": { "const": "openpractice-thread" },
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "thread_id": { "$ref": "#/$defs/opaqueRef" },
+        "thread_type": { "$ref": "#/$defs/threadType" },
+        "minted_under": {
+          "description": "The contract version stamped at minting; it never changes (TH-11).",
+          "$ref": "#/$defs/contractVersion"
+        },
+        "minted_at": { "$ref": "#/$defs/timestamp" },
+        "minting_event": { "$ref": "#/$defs/mintingEvent" },
+        "station": { "$ref": "#/$defs/station" },
+        "condition": { "$ref": "#/$defs/condition" },
+        "station_entered_at": { "$ref": "#/$defs/timestamp" },
+        "hold": { "$ref": "#/$defs/releaseCondition" },
+        "dispute_counterparty_kind": { "$ref": "#/$defs/counterpartyKind" },
+        "clock": { "$ref": "#/$defs/clock" },
+        "amount_at_risk": { "$ref": "#/$defs/amountAtRisk" },
+        "owner_ref": {
+          "description": "The roster entry who must act next (AM-06); never a payer, a patient or the system.",
+          "$ref": "#/$defs/opaqueRef"
+        },
+        "links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/link" }
+        },
+        "as_of": { "$ref": "#/$defs/timestamp" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "condition": { "const": "held" } }, "required": ["condition"] },
+          "then": { "required": ["hold"] }
+        },
+        {
+          "if": { "properties": { "condition": { "const": "disputed" } }, "required": ["condition"] },
+          "then": { "required": ["dispute_counterparty_kind"] }
+        },
+        {
+          "if": { "properties": { "thread_type": { "not": { "const": "visit" } } }, "required": ["thread_type"] },
+          "then": { "properties": { "station": { "not": { "enum": ["booked", "ready", "arrived", "seen"] } } } }
+        }
+      ]
+    },
+    "transition": {
+      "description": "The only way a thread changes (TH-07). It is appended, never edited; an undo is a new transition that names the one it reverses.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_kind",
+        "contract",
+        "contract_version",
+        "transition_id",
+        "thread_id",
+        "to_station",
+        "to_condition",
+        "effective_at",
+        "recorded_at",
+        "actor_ref",
+        "actor_type",
+        "justifying_fact",
+        "fd5_tier",
+        "left_building"
+      ],
+      "properties": {
+        "record_kind": { "const": "transition" },
+        "contract": { "const": "openpractice-thread" },
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "transition_id": { "$ref": "#/$defs/opaqueRef" },
+        "thread_id": { "$ref": "#/$defs/opaqueRef" },
+        "minting_event": {
+          "description": "Present only on the transition that mints the thread, which has no from_station.",
+          "$ref": "#/$defs/mintingEvent"
+        },
+        "from_station": { "$ref": "#/$defs/station" },
+        "to_station": { "$ref": "#/$defs/station" },
+        "from_condition": { "$ref": "#/$defs/condition" },
+        "to_condition": { "$ref": "#/$defs/writableCondition" },
+        "hold": { "$ref": "#/$defs/releaseCondition" },
+        "effective_at": { "$ref": "#/$defs/timestamp" },
+        "recorded_at": { "$ref": "#/$defs/timestamp" },
+        "actor_ref": { "$ref": "#/$defs/opaqueRef" },
+        "actor_type": { "$ref": "#/$defs/actorType" },
+        "principal_ref": { "$ref": "#/$defs/opaqueRef" },
+        "signer_role": {
+          "description": "The role under which a sign-off was given (define-practice-readiness SR-02), as a coded value.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "justifying_fact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "ref"],
+          "properties": {
+            "kind": { "$ref": "#/$defs/factKind" },
+            "ref": { "$ref": "#/$defs/opaqueRef" }
+          }
+        },
+        "fd5_tier": { "$ref": "#/$defs/fd5Tier" },
+        "left_building": {
+          "description": "Whether the effect left the building; after it has, the only correction is a replacement or a void (TH-07).",
+          "type": "boolean"
+        },
+        "reverses": {
+          "description": "The transition this one reverses, for an undo (TH-07).",
+          "$ref": "#/$defs/opaqueRef"
+        },
+        "matched_keys": {
+          "description": "For a re-association, the key names that matched (TH-10); names only, never values.",
+          "type": "array",
+          "items": {
+            "enum": ["patient_link", "registry_identity", "payer", "member_coverage", "date_of_service", "rendering_provider", "billed_amount", "encounter_ref", "payer_claim_control_number"]
+          },
+          "uniqueItems": true
+        },
+        "link": { "$ref": "#/$defs/link" }
+      },
+      "allOf": [
+        {
+          "if": { "not": { "required": ["from_station"] } },
+          "then": { "required": ["minting_event"] },
+          "else": { "not": { "required": ["minting_event"] } }
+        },
+        {
+          "if": { "properties": { "to_condition": { "const": "held" } }, "required": ["to_condition"] },
+          "then": { "required": ["hold"] },
+          "else": { "not": { "required": ["hold"] } }
+        },
+        {
+          "if": { "properties": { "fd5_tier": { "const": "sign_off" } }, "required": ["fd5_tier"] },
+          "then": { "required": ["signer_role"] }
+        }
+      ]
+    }
+  }
+}
