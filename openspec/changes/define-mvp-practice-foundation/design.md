@@ -449,7 +449,7 @@ This change was merged to `main` as an unratified draft. On 2026-11-15 the owner
 
 | What changed | Why | Where |
 |---|---|---|
-| `retraction_reason` on `clinical_fact.entered_in_error`: `entered_in_error` or `withdrawn` | The publisher used "entered in error" for retractions that were not entered in error (openChart-spec `define-clinical-acts-foundation`, tension CT-16); ruling 89. The two codes are the smallest list the publisher's PB-03 needs without revealing a restricted act (its CD-36) | EB-15, clinical-facts schema |
+| `retraction_reason` on `clinical_fact.entered_in_error`: an open code with two defined values, `entered_in_error` and `withdrawn` | The publisher used "entered in error" for retractions that were not entered in error (openChart-spec `define-clinical-acts-foundation`, tension CT-16); ruling 89. The two codes are the smallest list the publisher's PB-03 needs without revealing a restricted act (its CD-36) | EB-15, clinical-facts schema |
 | Confirmed diagnoses only, and refuted ones retracted | Ruling 87; nothing here said otherwise, so the wording is aligned | EB-13, schema `condition` |
 | Retractions accepted after a link ends | Ruling 88; the `link_id` note and EB-13's limit to linked patients could be read to refuse them | EB-15, EB-13, schema `link_id` note |
 
