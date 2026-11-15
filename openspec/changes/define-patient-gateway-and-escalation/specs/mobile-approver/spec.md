@@ -40,9 +40,16 @@ The physician's clinical work SHALL stay in openChart, on mobile or workstation 
 - **THEN** the app offers no reply path, because clinical replies belong to openChart
 
 ### Requirement: MA-04 Notifications carry no PHI, and a deep link opens an item only after a fresh user verification
-Push notifications from the mobile approver MUST NOT contain PHI. Their text SHALL be generic, and they SHALL carry only an opaque item reference. On the mobile approver, re-authentication SHALL be a user verification by face, fingerprint or passkey, through an OS-backed, phishing-resistant authenticator bound to the device, and never a typed password (ruling 105). A deep link SHALL open the item only after such a verification, unless the session's last verification was within the last 60 seconds (ruling 105). When the session is absent or expired, the deep link SHALL fail closed to the sign-in screen. The app SHALL log the user off automatically when idle (constitution Principle I).
+Push notifications from the mobile approver MUST NOT contain PHI. Their text SHALL be generic, and they SHALL carry only an opaque item reference. On the mobile approver, re-authentication SHALL be a user verification by face, fingerprint or passkey, and never a typed password (ruling 105). Every verification SHALL take place on a device the person has enrolled. A deep link SHALL open the item only after such a verification, unless the last verification in that device session was within the last 60 seconds (ruling 105), measured on the server's clock (design call DC-59, PROPOSED). When the session is absent or expired, the deep link SHALL fail closed to the sign-in screen. The app SHALL log the user off automatically when idle (constitution Principle I).
 
-These are design calls under ruling 105 (DC-59, PROPOSED): a typed password is used only to enrol a device and its authenticator and to recover access, and never to open an item or to sign; where the face or fingerprint check is unavailable or fails, the device PIN of the same OS-backed authenticator is the fallback.
+**Enrolment and recovery (design call DC-60, PROPOSED).** A typed password alone SHALL never enrol a device or recover access. Enrolling a device, or recovering access after losing every enrolled device, SHALL need one of these:
+- a verification on another device the person has already enrolled;
+- the confirmation of a second named person who holds the practice manager or office manager role, never the person themselves, given in a verified session;
+- where the practice has no such second person, ruling 107's one-person alternative: a single-use recovery code issued to the person at their first enrolment and kept offline. It takes effect only 24 hours after it is used, and the notice below lets the person cancel it in that time. Using it retires it, and a new code is issued.
+
+A person's first device is enrolled through the second path. Where the practice has no such second person, it is enrolled with a one-time code sent to a contact point recorded on the person's roster entry before the request, and takes effect after the same 24-hour delay. Every enrolment and recovery SHALL send a notice with no PHI to the person's other enrolled devices and recorded contact points, and SHALL be audited (PR-10).
+
+**What the ruling leaves open.** Whether a passkey that syncs between a person's devices is acceptable, or only one bound to an enrolled device, is Open Question 24. Whether the device's own unlock code or PIN may stand in when a face or fingerprint check is unavailable is Open Question 25. Until the owner answers, a verification counts only when it takes place on an enrolled device and its user check is a face or fingerprint check; a verification whose only check is an unlock code or PIN does not count. A person who cannot complete a face or fingerprint check still receives notifications, cannot open an item or sign on the mobile approver, and works at the workstation; a tracked alert they cannot acknowledge escalates under ER-09.
 
 #### Scenario: An approval is waiting
 - **WHEN** a work-inbox item needs a user's approval
@@ -51,6 +58,18 @@ These are design calls under ruling 105 (DC-59, PROPOSED): a typed password is u
 #### Scenario: A second item within a minute
 - **WHEN** a user verified 30 seconds ago and opens another deep link
 - **THEN** the item opens without a new prompt
+
+#### Scenario: A phished password
+- **WHEN** someone who has only a person's password tries to enrol a new phone in that person's name
+- **THEN** the enrolment is refused unless it is verified on one of the person's enrolled devices, confirmed by a second named person, or made through the delayed one-person path, and the person's devices and contact points are notified
+
+#### Scenario: Recovery in a one-person practice
+- **WHEN** a practice's only administrator loses their phone and uses their recovery code
+- **THEN** access returns only after 24 hours, notices go to their recorded contact points, and the code is retired
+
+#### Scenario: No working face or fingerprint check
+- **WHEN** a user's face and fingerprint checks fail and only the phone's unlock code is available
+- **THEN** the item does not open on the mobile approver, and the user works it at the workstation
 
 #### Scenario: A typed password is offered to open an item
 - **WHEN** a user tries to open an item by typing a password
@@ -83,11 +102,15 @@ Each device session SHALL be revocable. The user, the office manager, or same-da
 - **THEN** the request is refused and no data is returned
 
 ### Requirement: MA-07 Sign-offs on mobile follow the FD-5 tiers and BAB-17, each with its own user verification at signing
-A sign-off on the mobile approver SHALL follow the action's FD-5 tier and BAB-17, exactly as on the workstation. Tier-4 actions SHALL be signed by a named human only. The D8 approval and estimator-version approvals SHALL be given by the practice's accountant only. Each mobile sign-off SHALL require its own user verification at the moment of signing, by face, fingerprint or passkey and never a typed password, and a verification made to open the item SHALL NOT stand in for it, however recent (ruling 105). The sign-off's verification SHALL produce an assertion bound to the item, the decision and the time, which the server verifies and records with the sign-off (design call DC-59, PROPOSED). The sign-off SHALL record the signer, the time, the device-session reference, that assertion and the provenance. The server SHALL refuse a sign-off that the user's role does not allow.
+A sign-off on the mobile approver SHALL follow the action's FD-5 tier and BAB-17, exactly as on the workstation. Tier-4 actions SHALL be signed by a named human only. The D8 approval and estimator-version approvals SHALL be given by the practice's accountant only. Each mobile sign-off SHALL require its own user verification at the moment of signing, by face, fingerprint or passkey and never a typed password, and a verification made to open the item SHALL NOT stand in for it, however recent (ruling 105). The sign-off's verification SHALL answer a single-use challenge that the server issues for that item and decision, valid for 2 minutes, and SHALL produce an assertion bound to the item, the decision and the time. The server verifies the assertion, records it with the sign-off, and refuses one that is replayed, expired, or made for another item or decision (design calls DC-59 and DC-62, PROPOSED). The sign-off SHALL record the signer, the time, the device-session reference, that assertion and the provenance. The server SHALL refuse a sign-off that the user's role does not allow.
 
 #### Scenario: A practice manager approves a refund on a phone
 - **WHEN** a named human with the authority approves a refund leaving the practice on the mobile approver
 - **THEN** they verify with face, fingerprint or passkey for the sign-off itself, and the tier-4 sign-off is recorded with their identity, the time, the device-session reference and the assertion bound to that refund, the approval and the time
+
+#### Scenario: A sign-off assertion is replayed
+- **WHEN** an assertion from one approved refund is sent again to sign another item
+- **THEN** the server refuses it, because its challenge was used and names another item
 
 #### Scenario: A sign-off right after opening the item
 - **WHEN** a user opens an item with a fingerprint check and approves it ten seconds later

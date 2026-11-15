@@ -9,7 +9,7 @@
 
 - [ ] 2.1 Fold the actor model, recipes, offboarding and the work inbox into the registry feature (Feature 1 of `define-mvp-practice-foundation`), or into one feature immediately after it, as the owner decides at ratification. Acceptance evidence: the feature's traceability matrix covers AM-01 to AM-06 and WI-01 to WI-07.
 - [ ] 2.2 AI data handling (AH-01 to AH-05). It comes before the agent operations contract in 2.3. Gate: before any agent grant at any rung, `observe` included. Acceptance evidence:
-  - verified BAAs with the agent operator and with each model provider, each model provider's verified zero-data-retention arrangement for its exact endpoints and models, counsel's recorded confirmation of ruling 97's answer (ruling 102), and a recipient profile for each;
+  - verified BAAs with the agent operator and with each model provider, each model provider's verified zero-data-retention arrangement for its exact endpoints and models, each agent's declared model path (D-32), counsel's recorded confirmation of ruling 97's answer (ruling 102), and a recipient profile for each;
   - the suspension of all agent PHI access when a control lapses, and its lifting only by a named human;
   - the server-side untrusted determination, including a false-flag fixture;
   - prompt-injection test fixtures (synthetic) showing the `propose` cap, and every condition of AH-05 exception 1;

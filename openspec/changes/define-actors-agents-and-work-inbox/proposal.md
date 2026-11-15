@@ -45,7 +45,7 @@ Paths are relative to the root of `opensoft/openPractice-spec`. This change and 
 - **`remote-va-safeguards`** (VA-01 to VA-05): a verified BAA with the VA company first; own queue only; no export; masked fields; device, session and location rules; access that expires; per-VA accountability.
 - **`ai-data-handling`** (AI data handling, AH-01 to AH-06). These rules gate every agent grant at any rung, and a lapse suspends all agent PHI access:
   - verified BAAs with the agent operator and with each model provider, and each model provider's verified zero-data-retention arrangement (ruling 104);
-  - counsel's recorded confirmation of ruling 97's answer before PHI reaches any model provider for practice operations (ruling 102);
+  - counsel's recorded confirmation of ruling 97's answer before any PHI reaches any model provider (ruling 102); each agent's model path declared by its operator and verified (design call D-32);
   - minimum-necessary PHI through AI-23 recipient profiles;
   - no PHI in agent logs;
   - untrusted content treated as data, never instructions, with untrusted contribution derived by openPractice from provenance. This is the prompt-injection defence;

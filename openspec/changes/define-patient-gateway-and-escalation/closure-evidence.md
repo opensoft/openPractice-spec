@@ -53,7 +53,7 @@ This record collects acceptance evidence for OpenSpec change `define-patient-gat
 - Re-routing and splitting with stored-text removal and a PHI-free removal event; a late split's administrative part coming back as the same question, and the lane reminder until it does (ER-12, ruling 106): _pending_
 - Pause switch and Hermes unavailability send administrative items to staff with no loss: _pending_
 - Payment hold: only three capabilities withheld; scheduling clause only with a ratified scheduling change; clinician marker and verified urgent origin honored; policy gate; tiers and agent ceilings; patient notice before effect; disputed amounts and GFE windows excluded; no claim stalled; automatic lift: _pending_
-- Mobile approver: versioned API only; no PHI in notifications or on the device; a face, fingerprint or passkey verification for opening and for every sign-off, never a typed password, with the 60-second opening window (ruling 105); lost-device revocation; tier 4 human-only and D8 accountant-only: _pending_
+- Mobile approver: versioned API only; no PHI in notifications or on the device; a face, fingerprint or passkey verification for opening and for every sign-off, never a typed password, with the 60-second opening window on the server's clock, enrolment and recovery never on a typed password alone, and single-use sign-off challenges (ruling 105; DC-59, DC-60, DC-62); lost-device revocation; tier 4 human-only and D8 accountant-only: _pending_
 - No PHI in logs, errors, alerts, push text, idempotency keys or diagnostics: _pending_
 
 ## Boundary and Merge Evidence

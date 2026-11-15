@@ -2104,7 +2104,7 @@
               }
             },
             "recategorizes_routing_id": {
-              "description": "Set when HealthLinc resubmits after inquiry.recategorized, or after openChart asks it to split an item, whose handoff id is the routing id. The resubmission continues the item this routing id names, as the same question (ER-12, ruling 106): it carries its own inquiry_ref and so gets its own routing id, it carries the original's split group_ref when the original had one, and openPractice orders it by the original's submitted time and sends the patient no notice for it.",
+              "description": "Set when HealthLinc resubmits after inquiry.recategorized, or after openChart asks it to split an item, whose handoff id is the routing id. openPractice accepts it only for an item on the same gateway link that it asked to be resubmitted or handed to openChart as clinical, once per item, and otherwise rejects the inquiry with routing_unknown and closes nothing. The resubmission continues the item this routing id names, as the same question (ER-12, ruling 106): it carries its own inquiry_ref and so gets its own routing id, it carries the original's split group_ref when the original had one, and openPractice orders it by the original's submitted time and sends the patient no notice for it.",
               "$ref": "#/$defs/uuid"
             }
           },

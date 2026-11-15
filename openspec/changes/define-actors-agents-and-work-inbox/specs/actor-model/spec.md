@@ -52,7 +52,8 @@ Each AI agent SHALL be a roster entry with:
 - an openWallet ID (opensoft/openWallet);
 - a sponsoring human who is an active roster entry and accountable for it;
 - the agent recipe, and no other recipe;
-- start and end dates.
+- start and end dates;
+- the model path its operator declares under AH-02: the model provider, endpoint and model (design call D-32, PROPOSED).
 
 An agent SHALL hold only the agent recipe. No other recipe SHALL be assigned to an agent, and an agent's authority SHALL come only from the agent recipe and the grants a named human makes under AO-03. How an openWallet ID is verified SHALL be decided in planning. An agent SHALL own work like any roster entry, but SHALL NOT decide its own proposals (WI-03). When its sponsor is offboarded or inactive, the agent SHALL stop acting, drop to `observe`, and hand its open work to a named human until a new sponsor is recorded. An agent SHALL NOT sponsor another agent.
 

@@ -80,15 +80,19 @@ The highest rung SHALL be capped so that an agent never acts with less friction 
 - **THEN** it starts at `propose`
 
 ### Requirement: AO-05 Every operation supports a dry run
-Every state-changing operation SHALL accept a dry-run mode. A dry run returns the effect the operation would have, its FD-5 tier, the rung that would apply and any sign-off it would need, and changes nothing. A dry run that reads PHI SHALL be audited as a read (PR-10).
+Every state-changing operation SHALL accept a dry-run mode. A dry run returns the effect the operation would have, its FD-5 tier, the rung that would apply and any sign-off it would need, and changes nothing. A dry run that reads PHI SHALL be audited as a read (PR-10). A dry run whose operation would be refused SHALL answer `refused`, with the refusal reason the live request would get, and changes nothing; `dry_run_result` carries no `refusal_reason`, and no `executes_at` for an action that would be scheduled (AO-07; the schema's response rules).
 
 #### Scenario: A dry run of a deactivation
 - **WHEN** an agent dry-runs a patient deactivation
 - **THEN** it receives the effect, tier 2 and the rung, and the patient stays active
 
-#### Scenario: A dry run that would be refused
+#### Scenario: A dry run of a tier-4 action
 - **WHEN** an agent dry-runs a hard delete
 - **THEN** the result states that a named human must sign at tier 4, and nothing changes
+
+#### Scenario: A dry run that would be refused
+- **WHEN** an agent dry-runs an action type for which it holds no grant
+- **THEN** the response is `refused` with `no_grant`, as the live request would be, and nothing changes
 
 ### Requirement: AO-06 Every state-changing request carries an idempotency key free of PHI
 Every state-changing request SHALL carry an idempotency key. The same key with the same payload SHALL produce the same single effect. The same key with a different payload SHALL be refused. Keys MUST NOT contain names, dates of birth, contact details, account numbers, member identifiers or any other per-person data.

@@ -6,7 +6,7 @@ This record is the mandatory, durable owner gate for OpenSpec change `define-pat
 
 The rulings this change encodes (34 to 54, with 68 to 71) were made by Brett Heap on 2026-11-14, and rulings 93 and 97, which govern this change's follow-up, on 2026-11-15, followed the same day by rulings 101, 102 and 104 to 106, which govern its corrections. They are recorded in `design.md` under "Owner rulings (2026-11-14)", the follow-up's edits under "Follow-up of 2026-11-15", and the corrections under "Corrections from the 2026-11-15 spec critique". Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
 
-The 59 design calls in `design.md` under "Design calls for owner review" have not been ruled; DC-46 to DC-53 come from the 2026-11-15 follow-up and its review, and DC-54 to DC-59 are design calls under rulings 101, 104, 105 and 106. Ratification records the owner's disposition of each.
+The 62 design calls in `design.md` under "Design calls for owner review" have not been ruled; DC-46 to DC-53 come from the 2026-11-15 follow-up and its review, and DC-54 to DC-62 are design calls under rulings 101, 104, 105 and 106. Ratification records the owner's disposition of each.
 
 ## Required Validation Evidence
 
@@ -59,8 +59,8 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending; must be exactly `A — ordered multi-feature handoff` or `B — split into per-capability changes` (design call DC-21 proposes `A`; no ruling states a shape)_
-- Design-call dispositions (DC-1 to DC-59, each accepted, changed or rejected; DC-39 is marked for the owner, DC-46 to DC-53 are PROPOSED by the 2026-11-15 follow-up and its review, and DC-54 to DC-59 are PROPOSED under rulings 101, 104, 105 and 106): _pending_
-- Open Questions 22 (the on-call alert for a missing clinician acknowledgment) and 23 (a split that openChart asks for) dispositioned: _pending_
+- Design-call dispositions (DC-1 to DC-62, each accepted, changed or rejected; DC-39 is marked for the owner, DC-46 to DC-53 are PROPOSED by the 2026-11-15 follow-up and its review, and DC-54 to DC-62 are PROPOSED under rulings 101, 104, 105 and 106): _pending_
+- Open Questions 22 (the on-call alert for a missing clinician acknowledgment), 23 (a split that openChart asks for), 24 (passkeys that sync between devices) and 25 (the phone's unlock code) dispositioned: _pending_
 - Tension dispositions (T-1 to T-12; T-9, T-10 and T-12 are recorded as resolved by rulings 50, 52 and 71, and T-11 proposes a follow-up): _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 

@@ -41,9 +41,12 @@ Where a model provider serves the operator rather than the practice, the record 
 
 **Zero data retention at every model provider (ruling 104).** A model provider keeps nothing: besides its BAA, each model provider on a path that carries PHI SHALL be used only under a zero-data-retention arrangement, recorded and verified the way the BAA is (ruling 104). What the arrangement covers, and how it is kept current, are design calls under ruling 104 (D-30, PROPOSED):
 - *zero data retention* means that the provider keeps no prompt, no completion and no content derived from them, such as embeddings, caches, transcripts or copies for human review, once the request ends, for any purpose, abuse monitoring and model training included;
-- it does not forbid operational metadata that carries no content: request identifiers, timestamps, token counts, the model and endpoint used, latency, error codes and billing records;
+- it does not forbid operational metadata that carries no content: request identifiers, timestamps, token counts, the model and endpoint used, latency, error codes and billing records. Any identifier, tag or label the caller supplies and the provider keeps SHALL be opaque and carry no PHI (AO-12), and a retained error record SHALL carry no content;
+- a cache of prompt or completion content at the provider, however short-lived, is retention under this definition and fails it. Whether a volatile cache that is never written to durable storage or logs, and lives no longer than a stated short time, may be allowed is Open Question 10;
 - an authorized person records and verifies it on the pattern above: the provider, the party it is made with (the practice or the operator), the endpoints and models it covers, its effective and expiry dates, an owner-local document reference, and the verifying person and time;
 - it is re-verified before PHI goes to a different provider, endpoint or model, and when the provider changes its terms. A path whose exact provider, endpoint and model have no verified arrangement gets no PHI (AH-01).
+
+**The declared path (design call D-32, PROPOSED).** The agent operator SHALL declare on each agent's roster record (AM-04) the model provider, endpoint and model the agent uses, and SHALL declare again before any change. Its agreement SHALL forbid failing over to an endpoint or model it has not declared. openPractice SHALL send no PHI to an agent whose declared path lacks a verified BAA or a verified zero-data-retention arrangement for that exact provider, endpoint and model, and change `define-patient-gateway-and-escalation` ER-12 records the declared path.
 
 The system MUST NOT assume that any provider offers zero data retention. Deletion with a receipt applies to the agent operator only (ruling 104; change `define-patient-gateway-and-escalation` ER-12).
 
@@ -62,6 +65,10 @@ The system MUST NOT assume that any provider offers zero data retention. Deletio
 #### Scenario: A provider endpoint without zero data retention
 - **WHEN** a provider's BAA is verified, but no zero-data-retention arrangement is verified for the endpoint and model an agent is configured on
 - **THEN** no PHI is sent to that endpoint, and no grant can be made to an agent on that path (AH-01)
+
+#### Scenario: The operator wants to move an agent to another endpoint
+- **WHEN** the operator plans to move an agent to an endpoint it has not declared
+- **THEN** it declares the new path first, openPractice sends that agent no PHI until the new path is verified, and a failover without a declaration breaks the operator's agreement
 
 #### Scenario: The operator switches models
 - **WHEN** the operator moves an agent to another model of the same provider
@@ -171,7 +178,7 @@ The relay of an agent answer and the recording of a withdrawal SHALL be serializ
 
 **What it does not gate (ruling 97).** This consent governs only AI answers that reach the patient directly. It does not gate an agent's processing of administrative data with a model provider for practice operations: the verified agreements with the agent operator and each model provider (AH-02) are enough for that. This design rests on ruling 97's answer now (ruling 102). Every other control of AH-01 to AH-05 still applies. This change asserts no legal rule; counsel confirms the consent's form and wording.
 
-**Counsel's confirmation is a go-live condition (ruling 102).** Before any PHI reaches a model provider for practice operations on the strength of the provider agreement alone, an authorized person SHALL record counsel's confirmation of ruling 97's answer, on the pattern of AH-02 and `define-mvp-practice-foundation` AI-14: the confirming counsel, the date, the scope (the processing for practice operations it covers, naming the agent operators and model providers by their AH-02 records), an owner-local document reference, and the recording person and time (design call D-31, PROPOSED). Until it is recorded, AH-01's gate is not met for any path that uses a model provider: no PHI reaches a model provider, and no grant is made to an agent on such a path (fail closed). When counsel withdraws or narrows the confirmation, the recorded change is a lapse under AH-01.
+**Counsel's confirmation is a go-live condition (ruling 102).** Before any PHI reaches any model provider, an authorized person SHALL record counsel's confirmation of ruling 97's answer, on the pattern of AH-02 and `define-mvp-practice-foundation` AI-14: the confirming counsel, the date, the scope (the processing for practice operations it covers, naming the agent operators and model providers by their AH-02 records), an owner-local document reference, and the recording person and time (design call D-31, PROPOSED). Until it is recorded, AH-01's gate is not met for any path that uses a model provider: no PHI reaches a model provider, and no grant is made to an agent on such a path (fail closed). When counsel withdraws or narrows the confirmation, the recorded change is a lapse under AH-01.
 
 #### Scenario: No consent is recorded
 - **WHEN** an agent selects an eligible read-only answer type for a patient who has no recorded grant
