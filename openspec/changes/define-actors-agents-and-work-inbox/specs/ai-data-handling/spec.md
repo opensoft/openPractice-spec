@@ -80,7 +80,7 @@ openPractice SHALL decide on the server whether untrusted content contributed to
 An action that untrusted content contributed to SHALL NOT exceed `propose` unless a human signer decides it, whatever its action type's rung. The only exception is exception 1 below. This is the prompt-injection defence.
 
 **Exception 1: read-only answers to the signed-in patient (rulings 34, 45 and 46).** An agent MAY answer a patient without a human signer only with a read-only answer, and only when every one of these conditions holds:
-1. **Read-only.** The answer changes nothing in any system. It tells the signed-in patient only their own administrative information, such as an appointment time, a balance or the coverage on file, or practice-approved information, such as hours or policies. It carries no clinical content.
+1. **Read-only.** The answer changes nothing in any system. It tells the signed-in patient only their own administrative information, such as an appointment time, a balance or the coverage on file, or practice-approved information, such as hours or policies. It carries no clinical content. The allowlisted fields of the `patient_answer.coverage_on_file` answer type SHALL name only non-identifying coverage facts, such as the payer or plan name and whether the coverage is on file, and SHALL exclude the member ID, the group ID or number, and every other identifier. An answer-type version whose allowlist names an identifier SHALL NOT be approved.
 2. **Selection only.** The untrusted text only selects among the practice-approved answer types. It never changes the recipient, the target patient, the content template or the rung.
 3. **Assembled on the server.** openPractice assembles the reply on the server from an approved, versioned template and allowlisted fields of the bound patient's own record. The agent writes no free text.
 4. **Eligible items only.** All of these hold: the applied category is administrative; the applied urgency is `routine`; no source has marked any part clinical; the item is not part of a split question; the topic is on the practice's allowlist; and the patient asked on the patient's own link, not through a representative (design call D-14). Records requests, disputes and anything identity-revealing, such as identifiers, contact details or addresses, are excluded.
@@ -112,6 +112,10 @@ When no single answer type fits, or the data an answer type needs is missing, th
 #### Scenario: Text tries to steer a read-only answer
 - **WHEN** a patient message asks for the balance of a different account, or tells the agent to change its wording
 - **THEN** no read-only answer is sent, the other account is not read, and the item goes to staff
+
+#### Scenario: A coverage answer type that would reveal an identifier
+- **WHEN** a version of the coverage-on-file answer type is submitted for approval with the member ID or the group number among its allowlisted fields
+- **THEN** the version is not approved, no answer is assembled from it, and coverage questions go to staff until an allowlist without identifiers is approved
 
 #### Scenario: An ineligible item
 - **WHEN** an administrative item has applied urgency `priority`, any source has marked a part clinical, or a representative asked it
