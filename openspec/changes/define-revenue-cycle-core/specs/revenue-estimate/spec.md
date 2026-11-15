@@ -31,14 +31,14 @@ An estimator version SHALL apply only after the practice's accountant approves i
 
 ### Requirement: RE-03 The first method is simple and the accountant sets its numbers
 The first estimator method SHALL be (ruling 123; design call CR-17, PROPOSED):
-- **self-pay:** the price less the self-pay discount, less a collectibility constraint for the self-pay cohort. When the charge is paid in full by the time it is finalized, the constraint SHALL be zero;
+- **self-pay:** the price less the self-pay discount, less a collectibility constraint for the self-pay cohort. For a charge paid in full by the time it is finalized, the constraint SHALL be the one the approved version states for that case. The shipped starting value is zero; the accountant decides whether exposure that remains after payment, such as a Good Faith Estimate dispute that could force a refund, needs a constraint;
 - **insured:** the gross charge multiplied by an expected-allowed ratio for the payer class and service category, less a constraint for denials and short payments.
 
 The accountant SHALL set every ratio and constraint in the version they approve. No loaded payer fee schedule SHALL be an input (ruling 126). Each computed amount SHALL be rounded once, half away from zero, to the cent (BAB-18). Later methods, such as one learned from the practice's own remittances (FD-2), SHALL each be a new version under RE-02.
 
 #### Scenario: A self-pay visit paid at checkout
-- **WHEN** a self-pay visit priced 200.00 with a 60.00 discount is paid in full at checkout
-- **THEN** its expected entitlement is 140.00 with no collectibility constraint
+- **WHEN** a self-pay visit priced 200.00 with a 60.00 discount is paid in full at checkout, under a version that keeps the shipped paid-in-full constraint of zero
+- **THEN** its expected entitlement is 140.00
 
 #### Scenario: An insured estimate rounds
 - **WHEN** the version's ratios produce an expected entitlement of 101.235 for a charge
@@ -52,18 +52,18 @@ A payer or cohort with no adjudication history SHALL receive the conservative ra
 - **THEN** the estimate uses the version's conservative ratio, and the gross charge is never booked as net revenue
 
 ### Requirement: RE-05 New evidence makes a new true-up record, never an edit
-Each evidence event SHALL be able to change the estimate: an adjudication (RM-07), a denial or an appeal outcome, a payment, a dispute opening or closing (RE-07), a write-off decision, or a coverage change. Each change SHALL be a new true-up record that references the estimate it changes and the evidence behind it, and SHALL post as `estimate_increase` or `estimate_decrease` (RT-02). No estimate record SHALL be edited (FD-3). Billing, cash and adjudication SHALL be evidence that updates the estimate and never a trigger that creates revenue by itself (AI-12).
+Each evidence event SHALL be able to change the estimate: an adjudication (RM-07), a denial or an appeal outcome, a payment, a dispute opening or closing (RE-07), a write-off decision, or a coverage change. Each change SHALL be a new true-up record that references the estimate it changes and the evidence behind it, and SHALL post as `estimate_increase` or `estimate_decrease` (RT-02). No estimate record SHALL be edited (FD-3). Billing, cash and adjudication SHALL be evidence that updates the estimate and never a trigger that creates revenue by itself (AI-12). A true-up SHALL count only the part of the new evidence that the allowance did not already hold back. A patient write-off SHALL produce no true-up, because RT-09 posts it against what the estimate held back and its excess directly as a deduction; and a credit loss SHALL never change the estimate (RT-10). Counting either again would reduce revenue twice.
 
 #### Scenario: Adjudication confirms the estimate
 - **WHEN** an estimate expected exactly 120.00, with nothing held back, and the payer allows 120.00 and denies nothing
 - **THEN** the contractual adjustment is realized against the allowance, and no true-up is recorded
 
 #### Scenario: A denial lowers the estimate
-- **WHEN** a payer denies 12.00 of a claim estimated at 114.00 and the practice disputes it
-- **THEN** a true-up record lowers the expected entitlement by 6.00 to hold the disputed amount out, and the original estimate is unchanged
+- **WHEN** a payer denies 12.00 of a claim estimated at 114.00, whose version had already held back 6.00 for denials and short payments, and the practice disputes it
+- **THEN** a true-up record lowers the expected entitlement by the other 6.00, so all 12.00 is held out of the recognized amount, and the original estimate is unchanged
 
 ### Requirement: RE-06 Close re-estimates run by themselves and leave a snapshot
-At the end of each accounting period of each live destination, openPractice SHALL re-estimate every open balance with the approved estimator version, post each difference as a true-up dated under AI-11, and store a reproducible snapshot of the balances, estimates, versions and evidence references (ruling 30, AI-12). There SHALL be no approval step at close (FD-3), and openPractice SHALL NOT lock a period (BAB-04).
+At the end of each accounting period of each live destination, openPractice SHALL re-estimate every open balance with the approved estimator version, post each difference as a true-up dated under AI-11, and store a reproducible snapshot of the balances, estimates, versions and evidence references (ruling 30, AI-12). Where the policy record's credit-loss method is the allowance method, the close SHALL also post the change in expected credit losses as `credit_loss_provision`, or its reversal, from the version's rates (RT-10). There SHALL be no approval step at close (FD-3), and openPractice SHALL NOT lock a period (BAB-04).
 
 #### Scenario: A period closes before settlement
 - **WHEN** a period closes while 40 claims are unpaid and the approved version now expects less on 3 of them
@@ -84,7 +84,7 @@ At each close, openPractice SHALL compare each cohort's estimates with the final
 - **THEN** a work item is raised and the accountant is notified, and no estimate changes until a new version is approved
 
 ### Requirement: RE-09 The accountant's policy record gates accounting go-live
-openPractice SHALL keep one record of the practice's revenue-recognition policy, approved by the practice's accountant under the same rules as RE-02: the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (D8, ruling 30), together with the classification of price concessions, credit losses and charity care (RT-07) and the material write-off amount (PS-11, ruling 129). No accounting destination SHALL go live until it is recorded (AI-20). A new version of the record SHALL apply from its effective date forward.
+openPractice SHALL keep one record of the practice's revenue-recognition policy, approved by the practice's accountant under the same rules as RE-02: the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (D8, ruling 30), together with the classification of price concessions, credit losses and charity care, including whether charity care is presented as a deduction from revenue (RT-07); the credit-loss method (RT-10); and the material write-off amount and the rule that tests it (PS-11, ruling 129). No accounting destination SHALL go live until it is recorded (AI-20). A new version of the record SHALL apply from its effective date forward.
 
 #### Scenario: Accounting is otherwise ready
 - **WHEN** an accounting destination passes every check except that no approved policy record exists

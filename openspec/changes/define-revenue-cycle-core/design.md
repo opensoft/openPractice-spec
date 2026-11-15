@@ -163,7 +163,20 @@ Each entry debits one bucket and credits another by one amount (SL-01), so the l
 | Patient pays at the desk (PY-01) | `patient_payment` | `cash_clearing` | `patient_receivable` | 24.00 |
 | Deposits explained (BAB-14) | `deposit_explained` | `deposited` | `cash_clearing` | 120.00 |
 
-Every receivable and the allowance end at zero, `gross_service_revenue` less `revenue_deduction` is 120.00 (200.00 less 86.00 plus 6.00), and the money deposited is 120.00. A self-pay visit at the same price with a 30 percent discount, paid at checkout, posts `service_self_pay` 200.00, `self_pay_discount` 60.00 and `patient_payment` 140.00. Its estimate posts no further deduction: the `self_pay_discount` entry already brings net revenue to 140.00, and a charge paid in full carries no collectibility constraint (RE-01, RE-03).
+Every receivable and the allowance end at zero, `gross_service_revenue` less `revenue_deduction` is 120.00 (200.00 less 86.00 plus 6.00), and the money deposited is 120.00. A self-pay visit at the same price with a 30 percent discount, paid at checkout, posts `service_self_pay` 200.00, `self_pay_discount` 60.00 and `patient_payment` 140.00. Its estimate posts no further deduction: the `self_pay_discount` entry already brings net revenue to 140.00, and under the shipped starting value a charge paid in full carries no collectibility constraint (RE-01, RE-03; CR-17).
+
+**Worked example for the accountant: a write-off after a partial payment (synthetic; RT-09, CR-61).** A self-pay procedure is priced 200.00 with a 60.00 discount, and the approved version holds back a 20.00 collectibility constraint. The patient pays 100.00 and the practice writes off the other 40.00 as a price concession.
+
+| Event | Kind | Debit | Credit | Amount |
+|---|---|---|---|---|
+| Charge finalized (CG-09) | `service_self_pay` | `patient_receivable` | `gross_service_revenue` | 200.00 |
+| | `self_pay_discount` | `revenue_deduction` | `patient_receivable` | 60.00 |
+| Estimate (RE-01) | `gross_to_net_estimate` | `revenue_deduction` | `gross_to_net_allowance` | 20.00 |
+| Patient pays (PY-01) | `patient_payment` | `cash_clearing` | `patient_receivable` | 100.00 |
+| Write-off, up to the remaining allowance (RT-09) | `patient_write_off_against_allowance` | `gross_to_net_allowance` | `patient_receivable` | 20.00 |
+| Write-off, the excess | `price_concession_write_off` | `revenue_deduction` | `patient_receivable` | 20.00 |
+
+The receivable and the allowance end at zero, deductions total 100.00 (60.00 + 20.00 + 20.00), and net revenue is 100.00, equal to the cash collected. No `estimate_decrease` posts for the write-off (RE-05). Had the whole 40.00 gone to `revenue_deduction`, and a true-up then lowered the estimate for it as well, net revenue would have fallen to 80.00 and then 60.00 against 100.00 collected. That is the double count RT-09 prevents.
 
 ### 4. Claims: Medicare Part B first, a simulated payer and a manual path (rulings 113, 118, 119)
 
@@ -175,7 +188,7 @@ The self-pay visit is the first buildable slice. It exercises booking, the catal
 
 ### 6. The first estimator (ruling 123)
 
-Every final charge line gets an estimate record now (RE-01). The first method multiplies the gross by an accountant-set ratio per payer class and service category, less an accountant-set constraint. Self-pay is price less discount less a collectibility constraint, which is zero when the charge is paid in full at finalization (RE-03, CR-17). Nothing approves an estimator version except the practice's accountant, and the roster cannot yet hold one (`define-practice-readiness` I-1, RI-51). Until that is settled, estimates wait and accounting cannot go live (RE-02, T-16).
+Every final charge line gets an estimate record now (RE-01). The first method multiplies the gross by an accountant-set ratio per payer class and service category, less an accountant-set constraint. Self-pay is price less discount less a collectibility constraint. For a charge paid in full, the constraint is whatever the approved version states, with a shipped starting value of zero (RE-03, CR-17). Nothing approves an estimator version except the practice's accountant, and the roster cannot yet hold one (`define-practice-readiness` I-1, RI-51). Until that is settled, estimates wait and accounting cannot go live (RE-02, T-16).
 
 ### 7. Deployment (ruling 117)
 
@@ -183,7 +196,7 @@ One Frappe app, `open_practice`, with a module per area, and every adapter as a 
 
 ## Governance tiers (FD-5) for actions this change adds
 
-The tier column states only what a requirement states. Where no requirement sets a tier, the column says so: each feature's plan proposes one, and agents stay at `propose` meanwhile (TH-13).
+The tier column states only what a requirement states, and names the design call where the tier is PROPOSED rather than ruled. Where no requirement sets a tier, the column says so: each feature's plan proposes one, and agents stay at `propose` meanwhile (TH-13).
 
 | Action | Tier (requirement) | Signer | Agent ceiling (ruling 132, TH-13) |
 |---|---|---|---|
@@ -196,17 +209,31 @@ The tier column states only what a requirement states. Where no requirement sets
 | Finalize a charge set | Sign-off (CG-04; T-6) | Named human biller | `propose` |
 | Issue or replace a Good Faith Estimate | 2 (GF-12) | Named human only | `propose` |
 | Record a payment, with its receipt and allocation | 1 (PY-01, PY-02, PY-04) | The person who took it | `act_with_notice` for allocation; `propose` otherwise |
+| Reallocate a payment (within one guarantor account) | 2 (SL-07; CR-65, CR-66) | A person; notification | `propose` |
+| Move a prepayment that will not be applied to unapplied credit | 2 (PY-03; CR-56) | A person; notification | `propose` |
+| Transfer a balance between guarantor accounts | 2 at least (PS-12; CR-57) | Named human only | `propose` |
+| Record a chargeback or a returned item | 2 (PY-09; CR-66) | A person; notification | `propose` |
+| Identify the owner of an unidentified receipt | 2 (PY-06; CR-66) | A person; notification | `propose` |
+| Move a patient credit to refund liability | 2 (PY-07; CR-66) | A person; notification | `propose` |
 | Build a claim | None needed; building sends nothing (CL-03, CL-05) | No sign-off | `act_with_notice` |
 | Release a claim batch | Sign-off (CL-05; T-4) | Named human | `propose` |
 | Deadline escape of an unreleased claim | 3 (CL-06) | No sign-off; notification and cancel window | Not an agent action |
 | Release held claims after enrollment | 2 (EG-04; TH-06) | No sign-off; notification | Not an agent action |
 | Post an exactly matched remittance | 2 (RM-04) | Shipped rule; notification; undoable | Not an agent action |
 | Post a remittance that is not exactly matched | Approval of a proposal (RM-05) | Named human | `propose` |
+| Undo an automatic remittance posting | 2 (RM-04; CR-53, CR-66) | A person; notification | `propose` |
+| Classify an adjustment code the table does not cover | 2 (RT-05; CR-66) | A person; notification | `propose` |
+| Identify a payer overpayment | 2 (RM-09; CR-66) | A person; notification | `propose` |
+| Appeal a recoupment | 2 (RM-09; CR-66) | A person; notification | `propose` |
+| Agree to a recoupment, letting money leave by offset | 4 (RM-09; CR-66) | Named human only | `propose` |
+| Print a statement and record it as issued | 1 (PS-04; CR-66) | A person | `propose` |
+| Set or change statement terms | 2 (PS-05; CR-66) | A person; notification | `propose` |
+| Import a batch of old-system balances | Sign-off (SL-11; CR-66) | Named human, after reviewing count and memo total | `propose` |
 | Send statements from openPractice | 3 (PS-10) | No sign-off; cancel window | `act_after_delay` |
-| Write-off below the material amount | 2 (PS-11) | No sign-off; notification | `propose` |
-| Write-off at or above the material amount, or before one is set | 4 (PS-11) | Named human only | `propose` |
+| Write-off whose 30-day total on the guarantor account is below the material amount | 2 (PS-11; CR-64) | No sign-off; notification | `propose` |
+| Write-off whose 30-day total is at or above the material amount, or any write-off before one is set | 4 (PS-11; CR-39, CR-64) | Named human only | `propose` |
 | Refund leaving the practice | 4 (PY-07) | Named human only | `propose` |
-| Approve an estimator version or the policy record | Approval (RE-02, RE-09; D8) | The practice's accountant only, never self-approved | `propose` (a draft only) |
+| Approve an estimator version or the policy record, including the credit-loss method | Approval (RE-02, RE-09, RT-10; D8) | The practice's accountant only, never self-approved | `propose` (a draft only) |
 | Record counsel's verification of a Good Faith Estimate parameter set | Approval (GF-03) | An authorized person naming counsel, never self-approved | Not an agent action |
 | Re-estimate at close | Automatic (RE-06; FD-3) | No sign-off | Not an agent action |
 
@@ -240,12 +267,12 @@ Every call below goes beyond rulings 112 to 132. Each is PROPOSED, and each is a
 | CR-9 | **PROPOSED.** The eighteen buckets | SL-02 |
 | CR-10 | **PROPOSED.** What every ledger entry carries, including four dates | SL-03 |
 | CR-11 | **PROPOSED.** Money before the service is a contract liability; money after it, not yet applied, is an unapplied credit | PY-03 |
-| CR-12 | **PROPOSED.** The initial 38 kinds with their bucket pairs and neutral labels; the accountant confirms classifications | RT-02 |
+| CR-12 | **PROPOSED.** The initial 48 kinds with their bucket pairs and neutral labels; the accountant confirms classifications | RT-02 |
 | CR-13 | **PROPOSED.** The eight shipped service categories | RT-03 |
 | CR-14 | **PROPOSED.** Until the accounting contract carries a service-category field (PA-1), no summary-journal batch with revenue lines from this change is released, and nothing folds the category into `reason_category` | RT-04 |
-| CR-15 | **PROPOSED.** The receivable moves from unbilled to billed when a claim is accepted, not when it is sent; a rejection posts nothing | CL-12, RT-02 |
+| CR-15 | **PROPOSED.** The receivable moves from unbilled to billed when a claim is accepted, not when it is sent; a rejection posts nothing. AI-15 says submission, so conforming amendment PA-7 is proposed | CL-12, RT-02; PA-7, T-18 |
 | CR-16 | **PROPOSED.** One estimate per charge line; a charge finalizes even before an estimator is approved, and its deduction waits | RE-01 |
-| CR-17 | **PROPOSED.** The first method: accountant-set ratios and constraints per payer class and service category; zero constraint for a charge paid in full | RE-03 |
+| CR-17 | **PROPOSED.** The first method: accountant-set ratios and constraints per payer class and service category. The constraint for a charge paid in full is the version's, with a shipped starting value of zero; the accountant decides whether exposure such as a Good Faith Estimate dispute that could force a refund needs one | RE-03 |
 | CR-18 | **PROPOSED.** A cohort whose estimates miss by more than the version's threshold raises work and notifies the accountant | RE-08 |
 | CR-19 | **PROPOSED.** The CPT overlay import records the practice's attestation; counsel's answer on CPT licensing is a go-live condition for CPT-coded items, as ruling 102 did for Hermes | SC-02 |
 | CR-20 | **PROPOSED.** An estimate that a later price change makes stale raises work before the patient is billed | SC-03 |
@@ -280,28 +307,47 @@ Every call below goes beyond rulings 112 to 132. Each is PROPOSED, and each is a
 | CR-49 | **PROPOSED.** No acknowledgment within the adapter's declared window raises work | CL-09 |
 | CR-50 | **PROPOSED.** A payer with no recorded filing window uses the shortest window recorded for any payer | CL-10 |
 | CR-51 | **PROPOSED.** The simulated payer refuses any payer identity not marked synthetic | CP-03 |
-| CR-52 | **PROPOSED.** The five conditions that make a claim payment "exactly matched" | RM-04 |
+| CR-52 | **PROPOSED.** The eight conditions that make a claim payment "exactly matched", including a current claim version, lines matched one to one, and no answer from the payer already posted for the claim version by claim control number and trace | RM-04 |
 | CR-53 | **PROPOSED.** An automatic posting can be undone until its payment is explained in a deposit; after that a correction needs a person's reason | RM-04 |
 | CR-54 | **PROPOSED.** Where a later coverage position exists, the patient's share waits for a person to decide whether a later payer is billed first | RM-07 |
 | CR-55 | **PROPOSED.** A denied amount is never written off automatically; a person appeals it or writes it off | RM-07 |
+| CR-56 | **PROPOSED.** A prepayment that will not be applied moves to unapplied credit by a person at tier 2 (`prepayment_to_credit`); a charge reduced below what was paid on it moves the excess to unapplied credit with the correction that reduced it (`patient_overpayment_to_credit`). Neither reverses or re-records the payment | PY-03, RT-02 |
+| CR-57 | **PROPOSED.** A balance moves between guarantor accounts only as `guarantor_transfer`, by a named human, never below tier 2, with agents at `propose` only, and under PR-15's own-record rule | PS-12, SL-01, RT-02 |
+| CR-58 | **PROPOSED.** Money that arrived before its remittance moves from unidentified receipts to the payer receivable (`unidentified_receipt_to_payer`) | RM-01, PY-06 |
+| CR-59 | **PROPOSED.** A payer's forwarding balance is carried in `refund_liability` and cleared when a later remittance recovers it; a recovery that matches nothing, or a forwarding balance in the practice's favor, is work | RM-08 |
+| CR-60 | **PROPOSED.** A bank debit matched to money paid out posts `bank_debit_explained`, so `cash_clearing` returns to zero; it needs the new label `bank_debit_clearing_release` (PA-1) | SL-13; T-19 |
+| CR-61 | **PROPOSED.** A patient write-off that reduces revenue first uses the charge line's remaining allowance (`patient_write_off_against_allowance`), only the excess reaches `revenue_deduction`, and no true-up counts it again. Both write-offs against the allowance carry the new label `write_off_against_allowance` (PA-1) | RT-09, RE-05, RT-02 |
+| CR-62 | **PROPOSED.** The credit-loss method, a provision at close or a direct write-off to expense, is a field of the accountant's policy record, and no credit-loss entry posts until the accountant has chosen | RT-10, RE-06, RE-09 |
+| CR-63 | **PROPOSED.** A takeback that recovers an overpayment already posted clears `refund_liability` (`overpayment_recovered_by_takeback`) and is recorded as settled by offset, not as a refund the practice issued | RM-09 |
+| CR-64 | **PROPOSED.** The material test adds the write-off to every other write-off on the same guarantor account in the trailing 30 days | PS-11 |
+| CR-65 | **PROPOSED.** Every entry an allocation posts names the same counterparty account on each side that carries one | SL-07, PY-04 |
+| CR-66 | **PROPOSED.** Human tiers for recording and correcting actions no ruling tiered: a chargeback or returned item 2; identifying a payer overpayment 2; moving a credit to refund liability 2; classifying an unknown adjustment code 2; identifying an unidentified receipt 2; undoing an automatic posting 2; appealing a recoupment 2 and agreeing to one 4; printing a statement 1; reallocating a payment 2; each old-system import batch by a named human's sign-off; setting statement terms 2 | PY-09, RM-09, PY-07, RT-05, PY-06, RM-04, PS-04, SL-07, SL-11, PS-05 |
+| CR-67 | **PROPOSED.** No real practice's money passes through openPractice in features 1 to 3. They are accepted and used with synthetic data only, because refunds, credit-balance cases and chargebacks arrive in feature 4 | `tasks.md` §2 |
+| CR-68 | **PROPOSED.** The shipped write-off kinds are a starting classification for the accountant: price concessions, small balances and charity care reduce revenue after RT-09, and credit losses go to expense under RT-10. Whether charity care may be shown as a deduction from revenue or must be kept out of revenue altogether is the accountant's decision | RT-07, RE-09 |
 
 ## Proposed amendments (for each owning change's owner; this change edits none)
 
-Each amendment takes effect only when the owning change adopts it. Until then the owning text stands. PA-1 is required by ruling 125, and this change fails closed until it lands (CR-14). PA-2 to PA-6 are conforming: this change's requirements already bind without them.
+Each amendment takes effect only when the owning change adopts it. Until then the owning text stands. PA-1 is required by ruling 125, and this change fails closed until it lands (CR-14). PA-2 to PA-7 are conforming: this change's requirements already bind without them.
 
-**PA-1. `define-mvp-practice-foundation`: a service-category field in `openpractice-accounting-integration/1.0` (ruling 125). The gap is confirmed.** AI-15 says summary-journal mode posts totals "summarized by period, payer class, benign service category and account", and its roll-up groups "for a payer class and category". The canonical schema, both on `main` (digest `353492ce…`) and as PR #8 amends it at `050bdfd` (digest `b15c4a19…`, unchanged since `4bce39a`), has no service-category field anywhere: `summaryLine` carries `reason_category`, `label` and `payer_class` but not a service category, and its `additionalProperties: false` refuses one. A destination therefore cannot receive the category axis AI-15 requires, except by folding it into `reason_category`, which ruling 125's two-axis list rules out. The amendment, on top of PR #8's schema:
+**PA-1. `define-mvp-practice-foundation`: a service-category field, and two labels, in `openpractice-accounting-integration/1.0` (ruling 125). The gap is confirmed.** AI-15 says summary-journal mode posts totals "summarized by period, payer class, benign service category and account", and its roll-up groups "for a payer class and category". The canonical schema has no service-category field anywhere: not on `main` (digest `353492ce…`), and not as PR #8 amends it (digest `b15c4a19…`, unchanged from `4bce39a` to `f96ee1b`). `summaryLine` carries `reason_category`, `label` and `payer_class` but not a service category, and its `additionalProperties: false` refuses one. A destination therefore cannot receive the category axis AI-15 requires, except by folding it into `reason_category`, which ruling 125's two-axis list rules out. Two kinds this change ships also need labels the contract does not list: `write_off_against_allowance`, for a write-off that realizes what the allowance already held back and so has no revenue effect (RT-09), and `bank_debit_clearing_release`, for clearing a bank debit matched to money paid out (SL-13). The amendment applies on top of PR #8's schema. It was built from that schema at `f96ee1b`, checked against the JSON Schema 2020-12 meta-schema, and tested with synthetic summary lines: a revenue line with a category, and a payment line or a write-off against the allowance without one, pass; a revenue line or a revenue-reducing write-off without a category fails, as does a payment line or an allowance write-off that carries one.
 
 | Part | Current | Proposed |
 |---|---|---|
-| Schema `$defs.summaryLine.properties` | No such property | Add `"service_category": { "description": "Benign service category of a revenue or deduction line, from the practice's versioned service-category mapping (define-revenue-cycle-core RT-03). Never present in customer-detail postings (AI-16).", "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" }` |
-| Schema `$defs.summaryLine.then.required` | `["estimate_ref", "payer_class", "group_level"]` | `["estimate_ref", "payer_class", "group_level", "service_category"]`, so every line whose label is in `revenueLabel` carries it |
-| Schema `$defs.summaryBatch` | No such property | Add `"service_category_map_version": { "type": "integer", "minimum": 1 }` to the second `allOf` member's `properties`, and add it to that member's `required` |
-| Schema `$defs.line` (customer-detail) | `additionalProperties: false`, no category | Unchanged, so a customer-detail line can never carry a category (AI-16) |
-| AI-15 | "Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference, and SHALL carry a payer class where it touches a receivable or revenue." | "Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference, SHALL carry a payer class where it touches a receivable or revenue, and SHALL carry its benign service category where it is a revenue or deduction line; each batch SHALL record the version of the service-category mapping it used." |
-| AI-08 | "The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category, and in customer-detail mode also by customer." | "The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category, in summary-journal mode also by service category on revenue and deduction lines, and in customer-detail mode also by customer." |
-| BAB-06 | "Each destination SHALL map reason categories to its existing accounts through an account mapping that is versioned per destination and per posting mode." | "Each destination SHALL map reason categories, and for summary-journal revenue and deduction lines each pair of reason category and service category, to its existing accounts through an account mapping that is versioned per destination and per posting mode." |
-| AI-21 | Bullet "- summary-journal control-account reconciliation by payer class;" | Add a bullet after it: "- the service category on every summary-journal revenue and deduction line, its mapping version on the batch, and its absence from every customer-detail posting;" |
-| `contracts/SHA256SUMS` and the digest citations in that change's design | `353492ce…` on `main`, or `b15c4a19…` as PR #8 amends it | The new digest |
+| Schema `$defs.summaryLine.properties` | No such property | Add `"service_category": { "description": "Benign service category of a line that is revenue or a deduction from revenue, from the practice's versioned service-category mapping (define-revenue-cycle-core RT-03). Absent from every other line, and never present in customer-detail postings (AI-16).", "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" }` |
+| Schema `$defs` | No such definition | Add `"revenueOrDeductionLabel": { "description": "Labels of lines that are revenue or a deduction from revenue. Each such line carries a service category.", "enum": ["patient_services_revenue", "gross_to_net_deduction", "gross_to_net_true_up", "write_off"] }` |
+| Schema `$defs.summaryLine` | One `if`/`then` on `revenueLabel`, requiring `estimate_ref`, `payer_class` and `group_level` | Keep that `if`/`then` unchanged, and add `"allOf": [ { "if": { "properties": { "label": { "$ref": "#/$defs/revenueOrDeductionLabel" } }, "required": ["label"] }, "then": { "required": ["service_category"] }, "else": { "properties": { "service_category": false } } } ]`, so every line that is revenue or a deduction from revenue carries a category and every other line carries none |
+| Schema `$defs.neutralLabel.enum` | 28 labels, ending `"deposit_clearing_release"` | Append `"write_off_against_allowance"` and `"bank_debit_clearing_release"` |
+| Schema `$defs.neutralLabel.description` | Ends "…and openPractice remains the single deposit poster." | Append: " write_off is a write-off that reduces revenue; write_off_against_allowance realizes an amount the gross-to-net allowance already held back and has no revenue effect. bank_debit_clearing_release releases cash clearing against an explained bank debit line, such as a refund disbursement, a chargeback or a payer takeback taken from the bank." |
+| Schema `$defs.summaryBatch` | Second `allOf` member requires `["summary_lines"]` | Add `"service_category_map_version": { "type": "integer", "minimum": 1 }` to that member's `properties`, and make its `required` `["summary_lines", "service_category_map_version"]` |
+| Schema `$defs.line` (customer-detail) | `additionalProperties: false`, no category | Unchanged, so a customer-detail line can never carry a category (AI-16). Its `label` refers to `neutralLabel`, so the two new labels become available to it |
+| AI-15 | "Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference, and SHALL carry a payer class where it touches a receivable or revenue." | "Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference; SHALL carry a payer class where it touches a receivable or revenue; and SHALL carry its benign service category where it is revenue or a deduction from revenue, and on no other line. Each batch SHALL record the version of the service-category mapping it used." |
+| AI-08 | "The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category, and in customer-detail mode also by customer." | "The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category; in summary-journal mode also by service category, on lines that are revenue or a deduction from revenue; and in customer-detail mode also by customer." |
+| BAB-06 | "Each destination SHALL map reason categories to its existing accounts through an account mapping that is versioned per destination and per posting mode." | "Each destination SHALL map reason categories, and for summary-journal lines that are revenue or a deduction from revenue each pair of reason category and service category, to its existing accounts through an account mapping that is versioned per destination and per posting mode." |
+| AI-21 | Bullet "- summary-journal control-account reconciliation by payer class;" | Add a bullet after it: "- the service category on every summary-journal line that is revenue or a deduction from revenue, its absence from every other line and from every customer-detail posting, and the mapping version on every batch;" |
+| That change's `design.md`, customer-detail table | Row "\| Write-off \| `credit_note.post` with label `write_off` \|" | "\| Write-off \| `credit_note.post` with label `write_off`, or `write_off_against_allowance` where it realizes an amount the allowance already held back (`define-revenue-cycle-core` RT-09) \|" |
+| `contracts/SHA256SUMS` and the digest citations in that change's design | `353492ce…` on `main`, or `b15c4a19…` as PR #8 amends it | The new digest, computed on the file as that change writes it |
+
+Whether a `bank_debit_clearing_release` line reaches a destination at all, or the accounting system records such a debit from its own bank feed, is the foundation's to state (T-19). The label is added so that the line has a lawful label if it does.
 
 **PA-2. `define-actors-agents-and-work-inbox` WI-07 (conforming).** Current: "The inbox SHALL present the gates of `define-mvp-practice-foundation` as work items." Proposed: "The inbox SHALL present the gates of `define-mvp-practice-foundation`, and the holds, sign-offs and proposals of `define-revenue-cycle-core` (TH-12, CG-04, CL-05, RM-05, PS-11, PY-07), as work items." TH-12 already binds through WI-01.
 
@@ -309,9 +355,11 @@ Each amendment takes effect only when the owning change adopts it. Until then th
 
 **PA-4. `define-customer-financial-data-boundaries` "Offerings determine financial routing at line level" (conforming).** Current first sentence: "Each financial offering SHALL identify its effective version, selling entity, billing route, authoritative obligation owner, category, currency, approved accounting/tax mapping and disclosure profile." Proposed: add after it, "For an insurance-billed or direct-pay healthcare service, the offering is the catalog item of `define-revenue-cycle-core` SC-01, which carries these facts (SC-06)."
 
-**PA-5. `define-practice-readiness` inventory (conforming; PR #10 is open).** Its checklist follows the requirements, so once this change is ratified it should gain rows for: the Good Faith Estimate parameter set's counsel verification (GF-03); counsel's answer on the CPT overlay (SC-02); the material write-off amount confirmed by the accountant (PS-11, RE-09); the credit-balance clock parameters (PY-06); the clearinghouse agreement (CP-05); and the payer filing windows (CL-10). The first estimator version is already its RI-02.
+**PA-5. `define-practice-readiness` inventory (conforming; PR #10 is open).** Its checklist follows the requirements, so once this change is ratified it should gain rows for: the Good Faith Estimate parameter set's counsel verification (GF-03); counsel's answer on the CPT overlay (SC-02); the material write-off amount confirmed by the accountant (PS-11, RE-09); the credit-balance clock parameters (PY-06); the clearinghouse agreement (CP-05); the payer filing windows (CL-10); and, in the accountant's policy record, the credit-loss method (RT-10), the presentation of charity care (RT-07) and the rule of the material test (PS-11). The first estimator version is already its RI-02.
 
 **PA-6. `add-reimbursement-retention-control` (conforming).** Its policy profiles should name, among their covered record families, the claim as submitted, the remittance as received, the Good Faith Estimate as issued with its delivery record, the statement as issued and the receipt as issued (GF-08, RM-11). Its requirements carry no IDs; the target is "Retention policy profiles are versioned and sourced".
+
+**PA-7. `define-mvp-practice-foundation` AI-15, for design call CR-15 (conforming).** AI-15's summary covers, in its current bullet, "- claim submission: reclassification from unbilled to billed receivable, with no revenue effect;". CL-12 moves the receivable when the payer or clearinghouse accepts the claim, not when it is sent, because a rejected claim never became a payer's debt (CR-15). Proposed bullet: "- claim acceptance by the payer or clearinghouse: reclassification from unbilled to billed receivable, with no revenue effect; a rejected claim causes none;". Until it is adopted, the two texts disagree only on timing, and this change follows CL-12 (T-18).
 
 ## Conflicts and tensions
 
@@ -334,6 +382,8 @@ Each amendment takes effect only when the owning change adopts it. Until then th
 | T-15 | FD-3 lists the daily balanced day; the foundation claims nothing about it | **Split** by ruling 130: the deposit slip here (PY-05); the drawer count and close sheet in a later change |
 | T-16 | Rulings 107, 123 and 129 need the practice's accountant to sign, but the roster has no actor type or recipe for one (`define-practice-readiness` I-1, RI-51, pending there as owner decision 141; decisions 139 and 140 there concern who may give the accountant's sign-off) | **Recorded; fail-closed.** No estimator version, policy record or material amount can be approved until those are settled, so accounting cannot go live (RE-02, PS-11). Building the features is not blocked |
 | T-17 | The foundation's `tasks.md` 2.3 asks for the Thread contract and the money ledger "each under its own governance" | **This change** is that governance (PA-3) |
+| T-18 | AI-15 reclassifies unbilled to billed at claim submission; CL-12 does it at acceptance (CR-15) | **PROPOSED conforming amendment** PA-7; the owner decides CR-15 |
+| T-19 | BAB-14 makes openPractice the single poster of each deposit it explains, but says nothing about who posts an explained bank debit; SL-13 posts `bank_debit_explained` in openPractice's ledger | **Recorded.** openPractice's own ledger needs the entry either way, so that `cash_clearing` returns to zero. Whether the destination receives the line, or the accounting system books the debit from its bank feed, is for the foundation's owner and the accountant (PA-1 note) |
 
 ## Dependencies
 
@@ -372,41 +422,51 @@ Every design call above is an open question for the owner, with its PROPOSED ans
 **For the owner** (each with this change's recommendation)
 
 1. Should the thread be a contract with a schema and digest, like the integration contracts (CR-2)? Recommendation: yes, so FD-7's "before any consumer" can be checked.
-2. Do you accept the eighteen buckets and 38 kinds as the starting list, with your accountant confirming the classifications (CR-9, CR-12)? Recommendation: yes.
-3. Until the accounting contract gains the service-category field, should revenue stay out of accounting batches rather than be folded into another field (CR-14, PA-1)? Recommendation: yes; fail closed.
-4. Should commercial and secondary claims be recorded through the manual path until a later feature builds them (CR-46)? Recommendation: yes, so no receivable goes missing.
-5. Is 14 days before the filing deadline the right default for the claim escape (CR-47)? Recommendation: yes, practice-adjustable.
-6. Do you accept the five conditions for posting a remittance automatically, with undo until the money is deposited (CR-52, CR-53)? Recommendation: yes.
-7. Should a patient's share wait when a second coverage exists, and should denials never be written off automatically (CR-54, CR-55)? Recommendation: yes to both.
-8. Should openPractice issue no Good Faith Estimate until counsel has verified its parameters (CR-30)? Recommendation: yes; the practice handles estimates outside the system meanwhile.
-9. Should the participation hold's escape refuse to send claims whose application was denied or never made (CR-45)? Recommendation: yes.
-10. Until the material write-off amount is set and confirmed, should every write-off need a named human (CR-39)? Recommendation: yes.
-11. When will the accountant's place on the roster be settled (T-16; `define-practice-readiness` RI-51, pending there as your decisions 139 to 141)? Recommendation: decide them before the foundation's accounting feature goes live, and have the owner of `define-actors-agents-and-work-inbox` carry the actor type, because every accountant approval in this change waits on it.
-12. Which feature builds the old-system balance import (ruling 131)? Recommendation: feature 4, or earlier if the first practice has legacy balances.
+2. Do you accept the eighteen buckets and 48 kinds as the starting list, with your accountant confirming the classifications (CR-9, CR-12)? Recommendation: yes.
+3. Until the accounting contract gains the service-category field and the two labels, should every summary-journal batch carrying this change's revenue be refused, which blocks accounting go-live, rather than fold the category into another field (CR-14, PA-1)? Recommendation: yes; fail closed, and route PA-1 to the accounting contract's owner now.
+4. Should the receivable move from unbilled to billed when the payer or clearinghouse accepts a claim, rather than when it is sent as AI-15 now says (CR-15, PA-7, T-18)? Recommendation: yes, and adopt PA-7: a rejected claim never became a payer's debt, and booking it at submission would show a receivable the payer refused.
+5. Should commercial and secondary claims be recorded through the manual path until a later feature builds them (CR-46)? Recommendation: yes, so no receivable goes missing.
+6. Is 14 days before the filing deadline the right default for the claim escape (CR-47)? Recommendation: yes, practice-adjustable.
+7. Should the participation hold's escape refuse to send claims whose application was denied or never made (CR-45)? Recommendation: yes.
+8. Do you accept the eight conditions for posting a remittance automatically, including a current claim version, lines matched one to one, and no answer already posted for the claim version (CR-52)? Recommendation: yes.
+9. Ruling 120 says an automatic posting is undoable. CR-53 allows a plain undo until the payment is explained in a deposit, and after that a correction with a person's reason. Do you accept that limit (CR-53)? Recommendation: yes. A plain undo after the deposit is explained would reopen a deposit already matched to its bank line; the correction still reverses everything the posting made, so the posting stays reversible in substance, with a reason on record.
+10. Should a patient's share wait when a second coverage exists, and should denials never be written off automatically (CR-54, CR-55)? Recommendation: yes to both.
+11. Should openPractice issue no Good Faith Estimate until counsel has verified its parameters (CR-30)? Recommendation: yes; the practice handles estimates outside the system meanwhile.
+12. Until the material write-off amount is set and confirmed, should every write-off need a named human (CR-39)? Recommendation: yes.
+13. Should a balance move between guarantor accounts only by a named human's `guarantor_transfer`, never below tier 2, with agents only proposing (CR-57)? Recommendation: yes.
+14. No real practice's money passes through features 1 to 3 (CR-67), because refunds arrive in feature 4. Should refund recording move into feature 2: PY-07's tier-4 record of a refund issued, `patient_credit_to_refund` and `refund_issued`, all of which move no money? Recommendation: yes, keeping CR-67 either way. It is small, and it lets the self-pay slice finish a cancelled prepaid procedure end to end; matching the refund's bank debit (SL-13) stays with feature 4.
+15. When will the accountant's place on the roster be settled (T-16; `define-practice-readiness` RI-51, pending there as your decisions 139 to 141)? Recommendation: decide them before the foundation's accounting feature goes live, and have the owner of `define-actors-agents-and-work-inbox` carry the actor type, because every accountant approval in this change waits on it.
+16. Which feature builds the old-system balance import (ruling 131)? Recommendation: feature 4, or earlier if the first practice has legacy balances.
 
 **For counsel**
 
-13. What are the current Good Faith Estimate triggers, deadlines, required contents, dispute threshold, dispute window and retention period for this practice, and does the convening-provider rule ever apply (GF-03, CR-29)? The self-pay brainstorm's figures are design assumptions it flags for verification.
-14. May a practice import its own CPT content into a self-hosted product, and is the practice's attestation enough (SC-02; FD-11, risk R-1)?
-15. May the self-pay discount be offered to a federal-program beneficiary who chooses to pay, and on what conditions (SC-04, CR-21)?
-16. What clocks govern a payer overpayment, a patient credit and an unidentified receipt, including the 60-day report-and-return rule the framework cites at 42 CFR 401.305 and state unclaimed-property rules (PY-06, RM-09)?
-17. What does a patient statement have to contain or avoid in the practice's state, and what collection rules apply to a medical practice billing its own patients (PS-03)?
-18. What retention periods apply to claims as submitted, remittances, statements, receipts and estimates (GF-08, PA-6)?
-19. What must the clearinghouse agreement contain (CP-05)?
+17. What are the current Good Faith Estimate triggers, deadlines, required contents, dispute threshold, dispute window and retention period for this practice, and does the convening-provider rule ever apply (GF-03, CR-29)? The self-pay brainstorm's figures are design assumptions it flags for verification.
+18. May a practice import its own CPT content into a self-hosted product, and is the practice's attestation enough (SC-02; FD-11, risk R-1)?
+19. May the self-pay discount be offered to a federal-program beneficiary who chooses to pay, and on what conditions (SC-04, CR-21)?
+20. What does a patient statement have to contain or avoid in the practice's state, and what collection rules apply to a medical practice billing its own patients (PS-03)?
+21. Where a minor may consent to a service confidentially under state law, may that service's administrative name appear on a statement addressed to a parent guarantor, and must it instead be left off, billed elsewhere or held (PS-03, PS-06)?
+22. What clocks govern a payer overpayment, a patient credit and an unidentified receipt, including the 60-day report-and-return rule the framework cites at 42 CFR 401.305 and state unclaimed-property rules (PY-06, RM-09)?
+23. What retention periods apply to claims as submitted, remittances, statements, receipts and estimates (GF-08, PA-6)?
+24. What must the clearinghouse agreement contain (CP-05)?
 
 **For the practice's accountant**
 
-20. Approve the policy record: reporting basis, estimator, receivable classification, materiality and reopening (RE-09, D8).
-21. Confirm how each kind maps to the books, especially the self-pay discount, price concessions, charity care and credit losses (RT-02, RT-07).
-22. Set the first method's ratios and constraints per payer class and service category, the conservative values for payers with no history, and the back-testing threshold (RE-03, RE-04, RE-08).
-23. Confirm the material write-off amount the practice sets (PS-11).
-24. Confirm that money received before a service is a contract liability (PY-03).
+25. Approve the policy record: reporting basis, estimator, receivable classification, materiality and reopening (RE-09, D8).
+26. Confirm how each kind maps to the books, especially the self-pay discount, price concessions and the allowance kinds (RT-02, RT-07, CR-12).
+27. Should charity care be shown as a deduction from revenue, as the shipped `charity_care` kind does, or kept out of revenue altogether (RT-07, CR-68)?
+28. Which credit-loss method does the practice use: the allowance method, with a provision at each close from rates you set, or the direct method, writing uncollectible balances straight to expense (RT-10, CR-62)? Nothing posts for a credit loss until you choose.
+29. Do you accept that a patient write-off first uses what the estimate held back, with only the excess reducing revenue, and how should the allowance part be presented when the write-off was charity care (RT-09, CR-61; the second worked example in Decision 3)?
+30. Set the first method's ratios and constraints per payer class and service category, the conservative values for payers with no history, and the back-testing threshold (RE-03, RE-04, RE-08).
+31. Should a charge paid in full carry a collectibility constraint, given that a Good Faith Estimate dispute can still force a refund? The shipped starting value is zero (RE-03, CR-17).
+32. Confirm the material write-off amount the practice sets, and that the test adds every write-off on the same guarantor account in the trailing 30 days (PS-11, CR-64).
+33. Confirm that money received before a service is a contract liability (PY-03).
+34. Should a bank debit that openPractice matches to a refund, chargeback, takeback or fee be posted to the books by openPractice, or recorded by the accounting system from its own bank feed (SL-13, T-19)? This is also for the foundation's owner.
 
 **For a certified biller**
 
-25. For Medicare Part B as primary: which jurisdiction and contractor, which enrollment and submission channel, and which acknowledgment windows apply (CP-06, CL-09)?
-26. What are the filing windows of the practice's payers (CL-10)?
-27. How should payer-level forwarding balances and other adjustments outside RT-02's kinds be handled (RM-08)?
-28. How often do the practice's patients need secondary claims, and does Medicare cross them over automatically for this practice (CL-02, CR-46, CR-54)?
-29. Do the practice's payers backdate enrollment, and is a 14-day escape enough for their filing windows (EG-04, CR-47)?
-30. Which remittances still arrive on paper (RM-02)?
+35. For Medicare Part B as primary: which jurisdiction and contractor, which enrollment and submission channel, and which acknowledgment windows apply (CP-06, CL-09)?
+36. What are the filing windows of the practice's payers (CL-10)?
+37. Do the practice's payers carry and recover forwarding balances as RM-08 describes, and how should payer-level adjustments outside RT-02's kinds be handled (RM-08, CR-59)?
+38. How often do the practice's patients need secondary claims, and does Medicare cross them over automatically for this practice (CL-02, CR-46, CR-54)?
+39. Do the practice's payers backdate enrollment, and is a 14-day escape enough for their filing windows (EG-04, CR-47)?
+40. Which remittances still arrive on paper (RM-02)?

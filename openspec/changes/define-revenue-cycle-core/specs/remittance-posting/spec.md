@@ -1,11 +1,15 @@
 ## ADDED Requirements
 
 ### Requirement: RM-01 A remittance is the payer's answer, and it is not the money
-openPractice SHALL record each payer remittance as the payer's answer: its claim payments, each claim payment's service-line decisions (RM-06), and any payer-level adjustments (RM-08). The payment itself SHALL be a separate record carrying the payer's trace or check reference, never a bank account or routing number (BAB-10), so that deposit explanation can match it to a bank line (BAB-14). A remittance may arrive before or after its money, and one deposit may cover several remittances (framework §4.3). The remittance SHALL be frozen as received (TH-14).
+openPractice SHALL record each payer remittance as the payer's answer: its claim payments, each claim payment's service-line decisions (RM-06), and any payer-level adjustments (RM-08). The payment itself SHALL be a separate record carrying the payer's trace or check reference, never a bank account or routing number (BAB-10), so that deposit explanation can match it to a bank line (BAB-14). A remittance may arrive before or after its money, and one deposit may cover several remittances (framework §4.3). Where the money arrived first and was recorded as an unidentified receipt, posting the answer SHALL move that money with `unidentified_receipt_to_payer` in place of `payer_payment`, linked to the receipt (design call CR-58, PROPOSED). The remittance SHALL be frozen as received (TH-14).
 
 #### Scenario: The answer arrives before the money
 - **WHEN** a remittance arrives on Monday and its EFT reaches the bank on Wednesday
 - **THEN** the answer posts on Monday, the payment waits in `cash_clearing`, and the deposit is explained against Wednesday's bank line
+
+#### Scenario: The money arrives before the answer
+- **WHEN** a 96.00 EFT is explained on Monday with no remittance yet, so it posts as `unidentified_receipt`, and the remittance arrives on Thursday
+- **THEN** posting the answer moves the 96.00 from `unidentified_receipts` to the payer receivable as `unidentified_receipt_to_payer`, and the EFT is neither reversed nor recorded again
 
 ### Requirement: RM-02 Paper and electronic remittances produce the same records
 A remittance received electronically through an adapter (CP-01) and a paper remittance that staff enter by hand SHALL produce the same records and the same postings. A hand-entered remittance SHALL record who entered it and a reference to the scanned paper.
@@ -22,18 +26,29 @@ Each claim payment SHALL attach to a submitted claim version only when it matche
 - **THEN** the money posts as `legacy_collection`, and no openPractice receivable is created
 
 ### Requirement: RM-04 Exactly matched lines post by themselves, with notice and undo
-A claim payment whose every part matches exactly SHALL post without a person, at FD-5 tier 2, done with a notification and undoable (ruling 120). Exactly matched SHALL mean (design call CR-52, PROPOSED):
+A claim payment whose every part matches exactly SHALL post without a person, at FD-5 tier 2, done with a notification and undoable (ruling 120). Exactly matched SHALL mean all eight of these (design call CR-52, PROPOSED):
 - it attached to exactly one claim version under RM-03;
+- that claim version is the current one: not voided, not replaced and not held for a retracted fact;
+- no answer from this payer has already posted for that claim version, judged by the payer's claim control number and by the payment's trace number, so a resent or stale file never posts twice;
 - every service line matches exactly one claim line by its line identity, procedure code, units and billed amount;
+- no two service lines match the same claim line;
 - every adjustment code is in the normalization table (RT-05);
 - on every line, the paid amount, the adjustments and the patient responsibility add up to the billed amount;
 - no line reverses or takes back an earlier posting.
 
-Undo SHALL be a reversal of everything the posting made (SL-05), available until the payment has been explained in a deposit; after that, a correction SHALL need a person's reason (design call CR-53, PROPOSED). This automatic posting is a shipped rule, not an agent action.
+A claim payment that fails any of them is a proposal for a human under RM-05 (ruling 120). Undo SHALL be a reversal of everything the posting made (SL-05), made by a person at FD-5 tier 2 with a notification, and available until the payment has been explained in a deposit; after that, a correction SHALL need a person's reason (design calls CR-53 and CR-66, PROPOSED). This automatic posting is a shipped rule, not an agent action.
 
 #### Scenario: A clean remittance
 - **WHEN** a remittance pays a two-line claim with standard contractual adjustments whose codes are all in the table and whose amounts add up
 - **THEN** it posts without a person, the biller is notified, and the posting can be undone from the record
+
+#### Scenario: The clearinghouse resends a file
+- **WHEN** a remittance file that already posted automatically arrives again with the same trace number and claim control numbers
+- **THEN** nothing posts automatically, because an answer from this payer has already posted for each claim version, and a proposal marked as a likely duplicate waits for a biller
+
+#### Scenario: A payment on a voided claim version
+- **WHEN** a payer pays a claim version that was voided after a retraction
+- **THEN** nothing posts automatically, and a proposal waits for a biller
 
 ### Requirement: RM-05 Anything not exactly matched is a proposal for a human
 A claim payment that does not match exactly SHALL NOT post. openPractice SHALL prepare the posting it would make and present it as a proposal in the work inbox, where a person approves, changes or rejects it (WI-03; ruling 120). An agent MAY prepare such a proposal and SHALL stay at `propose` (TH-13).
@@ -67,18 +82,26 @@ A denied amount SHALL never be written off automatically: it SHALL become work f
 - **THEN** nothing is written off, and a work item asks the biller to appeal or to write it off
 
 ### Requirement: RM-08 Payer-level adjustments are resolved, and a remittance that does not add up does not post
-A remittance's payer-level adjustments SHALL each resolve to a claim or to a named non-patient line: a takeback SHALL post as `payer_takeback` and link to what it recovers (RM-09), and payer interest SHALL post as `payer_interest` (AI-13). Any other payer-level adjustment SHALL become work until a person classifies it (RT-02). A remittance whose payment total does not equal its claim payments less its payer-level adjustments SHALL NOT post, and SHALL become work.
+A remittance's payer-level adjustments SHALL each resolve to a claim or to a named non-patient line: a takeback SHALL post as `payer_takeback` and link to what it recovers (RM-09), and payer interest SHALL post as `payer_interest` (AI-13). A forwarding balance that the payer carries forward because the practice owes it more than this remittance pays SHALL post as `payer_forwarding_balance_carried`, and its recovery in a later remittance as `payer_forwarding_balance_applied`, linked to the amount carried (design call CR-59, PROPOSED). A recovery that matches no carried amount, and a forwarding balance in the practice's favor, SHALL become work. Any other payer-level adjustment SHALL become work until a person classifies it (RT-02). A remittance whose payment total does not equal its claim payments less its payer-level adjustments SHALL NOT post, and SHALL become work.
 
 #### Scenario: A payment nets a takeback
 - **WHEN** a remittance pays 450.00 on new claims and takes back 50.00 from an earlier claim, for a payment of 400.00
 - **THEN** 450.00 posts against the new claims, 50.00 posts as `payer_takeback` linked to the earlier claim, and the 400.00 payment matches its bank line
 
+#### Scenario: A forwarding balance is carried and recovered
+- **WHEN** a remittance takes back 50.00 with no new claims, so it pays 0.00 and carries 50.00 forward, and the next remittance pays 450.00 on new claims less the 50.00 carried, for 400.00
+- **THEN** the first posts 50.00 as `payer_takeback` and 50.00 as `payer_forwarding_balance_carried`, so `cash_clearing` is untouched with no bank line; the second posts 450.00 against the new claims and 50.00 as `payer_forwarding_balance_applied`, and the 400.00 matches its bank line
+
 ### Requirement: RM-09 Recoupments and overpayments have a case and a clock
-A payer's demand for money back, or a takeback, SHALL mint a `recoupment` case thread linked `recoups` to the visit it concerns (TH-08, TH-09), with the payer's decide-by date as its clock. A person SHALL decide whether to appeal or agree, and the offset SHALL link `offsets` to the later remittance line where it lands. An overpayment the practice identifies itself SHALL post as `payer_overpayment` and mint a `credit_balance` case (PY-06), whose clock comes from a counsel-verified parameter (framework §5A.2.7).
+A payer's demand for money back, or a takeback, SHALL mint a `recoupment` case thread linked `recoups` to the visit it concerns (TH-08, TH-09), with the payer's decide-by date as its clock. A person SHALL decide whether to appeal or agree: appealing SHALL be FD-5 tier 2, and agreeing, which lets money leave the practice by offset, SHALL be tier 4, signed by a named human only (design call CR-66, PROPOSED). The offset SHALL link `offsets` to the later remittance line where it lands. An overpayment the practice identifies itself SHALL post as `payer_overpayment` and mint a `credit_balance` case (PY-06), whose clock comes from a counsel-verified parameter (framework §5A.2.7); identifying it SHALL be done by a person at tier 2, with a notification (CR-66). When a later takeback recovers an overpayment already posted as `payer_overpayment`, it SHALL post as `overpayment_recovered_by_takeback`, clearing `refund_liability` and not reopening the payer receivable, linked to the overpayment and closing its credit-balance case. It is recorded as settled by the payer's offset, not as a refund the practice issued (BAB-07; design call CR-63, PROPOSED).
 
 #### Scenario: A demand letter arrives
 - **WHEN** a payer's letter demands 75.00 back on a paid visit by the 24th
 - **THEN** a recoupment case is minted with the 24th as its clock, linked to the visit, and a person decides whether to appeal
+
+#### Scenario: A known overpayment is taken back
+- **WHEN** the practice has posted a 20.00 `payer_overpayment` and the payer later takes the 20.00 back inside a remittance
+- **THEN** the 20.00 posts as `overpayment_recovered_by_takeback`, `refund_liability` and the payer receivable are both settled, no refund is recorded as issued, and the credit-balance case closes
 
 ### Requirement: RM-10 A payer's reversal is a new posting, never an edit
 A payer's reversal or corrected remittance SHALL post reversing entries that reference the entries they undo, followed by the corrected entries (SL-05). No earlier posting SHALL be edited, and a thread the earlier posting had closed SHALL move forward again (TH-07).

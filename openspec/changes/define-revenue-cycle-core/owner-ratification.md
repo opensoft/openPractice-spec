@@ -6,7 +6,7 @@ This record is the mandatory, durable owner gate for OpenSpec change `define-rev
 
 Brett Heap made rulings 112 to 132 on 2026-11-15, and they are recorded in `design.md` under "Owner rulings", with the earlier rulings this change relies on. Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below. Under rulings 109 and 110, nothing from this change is handed to build before then.
 
-The 55 design calls in `design.md` under "Design calls for owner review" (CR-1 to CR-55) have not been ruled. Ratification records the owner's disposition of each.
+The 68 design calls in `design.md` under "Design calls for owner review" (CR-1 to CR-68) have not been ruled. Ratification records the owner's disposition of each.
 
 ## Required Validation Evidence
 
@@ -33,17 +33,17 @@ The 55 design calls in `design.md` under "Design calls for owner review" (CR-1 t
 
 Each amendment belongs to the owning change. Its disposition is recorded here; this change edits no other change.
 
-- PA-1, the service-category field in `openpractice-accounting-integration/1.0` (`define-mvp-practice-foundation`; ruling 125), accepted, changed or rejected, with the change and revision that carries it and the new schema digest. Until it is adopted, RT-04 refuses every summary-journal batch carrying this change's revenue or deduction lines: _pending_
-- PA-2 (`define-actors-agents-and-work-inbox` WI-07), PA-3 (`define-mvp-practice-foundation` `tasks.md` 2.3 and 2.4), PA-4 (`define-customer-financial-data-boundaries`, offering routing), PA-5 (`define-practice-readiness` inventory rows) and PA-6 (`add-reimbursement-retention-control` record families), each accepted, changed or rejected, with the change and revision that carries it: _pending_
+- PA-1, the service-category field and the labels `write_off_against_allowance` and `bank_debit_clearing_release` in `openpractice-accounting-integration/1.0` (`define-mvp-practice-foundation`; ruling 125), accepted, changed or rejected, with the change and revision that carries it and the new schema digest. Until it is adopted, RT-04 refuses every summary-journal batch carrying this change's revenue or deduction lines, or a line with either new label: _pending_
+- PA-2 (`define-actors-agents-and-work-inbox` WI-07), PA-3 (`define-mvp-practice-foundation` `tasks.md` 2.3 and 2.4), PA-4 (`define-customer-financial-data-boundaries`, offering routing), PA-5 (`define-practice-readiness` inventory rows), PA-6 (`add-reimbursement-retention-control` record families) and PA-7 (`define-mvp-practice-foundation` AI-15, claim acceptance), each accepted, changed or rejected, with the change and revision that carries it: _pending_
 
 ## Required Owner Decision
 
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Hand-off shape: _pending owner confirmation; must be exactly `ordered six-feature hand-off (ruling 112)` or `split into separate changes` (the owner ruled for one change with its own ordered multi-feature hand-off on 2026-11-15, as `design.md` ruling 112 records, and this field still requires his confirmation)_
-- Design-call dispositions (CR-1 to CR-55, each accepted, changed or rejected): _pending_
-- Tension dispositions (T-1 to T-17): _pending_
-- Answer to Open Question 11 (who settles the accountant's place on the roster, `define-practice-readiness` RI-51), or a record that it stays open and every accountant approval this change needs fails closed meanwhile (RE-02, RE-09, PS-11): _pending_
+- Design-call dispositions (CR-1 to CR-68, each accepted, changed or rejected): _pending_
+- Tension dispositions (T-1 to T-19): _pending_
+- Answer to Open Question 15 (who settles the accountant's place on the roster, `define-practice-readiness` RI-51), or a record that it stays open and every accountant approval this change needs fails closed meanwhile (RE-02, RE-09, PS-11): _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
 Required owner statement:

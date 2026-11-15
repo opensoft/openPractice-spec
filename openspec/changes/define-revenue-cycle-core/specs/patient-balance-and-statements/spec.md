@@ -22,14 +22,14 @@ A statement SHALL be a versioned document that renders a guarantor account's led
 - **THEN** the ledger is corrected by reversal (SL-05), a new statement is issued that replaces the first, and the first is kept as issued
 
 ### Requirement: PS-04 Statements are printable in this change, and electronic delivery comes later
-openPractice SHALL produce printable statements (ruling 122). A statement SHALL count as issued when a person prints and sends it and records that. Electronic delivery and the pay link SHALL come with the payment-processor feature (feature 6) and SHALL meet PS-06 and PS-10 then.
+openPractice SHALL produce printable statements (ruling 122). A statement SHALL count as issued when a person prints and sends it and records that. Printing and recording a statement as issued SHALL be done by a person at FD-5 tier 1 (design call CR-66, PROPOSED); an agent stays at `propose` for it. Electronic delivery and the pay link SHALL come with the payment-processor feature (feature 6) and SHALL meet PS-06 and PS-10 then.
 
 #### Scenario: Monthly statements are printed
 - **WHEN** a biller prints this month's statements and records their mailing
 - **THEN** each is frozen as issued with its mailing record
 
 ### Requirement: PS-05 Statement terms set the due date
-Each guarantor account SHALL be under one set of statement terms, versioned and set by the practice, with a default of 30 days from issue (design call CR-36, PROPOSED). A statement's due date SHALL be its issue date plus its terms, and SHALL be the due date that `customer-detail` postings carry (AI-11). The due date SHALL be the clock on the thread while the balance is open (TH-03).
+Each guarantor account SHALL be under one set of statement terms, versioned and set by the practice, with a default of 30 days from issue (design call CR-36, PROPOSED). Setting or changing terms SHALL be FD-5 tier 2, done with a notification, and SHALL apply only to statements issued after the change (design call CR-66, PROPOSED). A statement's due date SHALL be its issue date plus its terms, and SHALL be the due date that `customer-detail` postings carry (AI-11). The due date SHALL be the clock on the thread while the balance is open (TH-03).
 
 #### Scenario: Default terms
 - **WHEN** a statement is issued on March 1 under the default terms
@@ -71,12 +71,27 @@ Sending statements from openPractice, rather than printing them, SHALL be FD-5 t
 - **THEN** the biller cancels the run and nothing is sent
 
 ### Requirement: PS-11 Write-offs follow the material amount the practice sets
-Each practice SHALL set, at setup, the amount at which a write-off becomes material, and the practice's accountant SHALL confirm it in the policy record (RE-09, ruling 129). A write-off below that amount SHALL be FD-5 tier 2, done with a notification. A write-off at or above it SHALL be tier 4, signed by a named human only (BAB-17, ruling 33). Until the amount is set and confirmed, every write-off SHALL be tier 4 (design call CR-39, PROPOSED). Every write-off SHALL use a write-off kind (RT-02, RT-07), and an agent SHALL stay at `propose` for every write-off (ruling 132). A write-off on a balance the actor owes or guarantees SHALL follow PR-15's rule for a staff member acting on their own record (design call F-7 of `define-mvp-practice-foundation`).
+Each practice SHALL set, at setup, the amount at which a write-off becomes material, and the practice's accountant SHALL confirm it in the policy record (RE-09, ruling 129). The test SHALL use the write-off's amount added to every other write-off on the same guarantor account in the trailing 30 days, so that a balance cannot be written off in pieces that each stay below the amount (design call CR-64, PROPOSED; the accountant confirms the rule with the amount). A write-off whose tested total is below the amount SHALL be FD-5 tier 2, done with a notification. A write-off whose tested total is at or above it SHALL be tier 4, signed by a named human only (BAB-17, ruling 33). Until the amount is set and confirmed, every write-off SHALL be tier 4 (design call CR-39, PROPOSED). Every write-off SHALL use a write-off kind (RT-02, RT-07), first against what the estimate held back where RT-09 applies, and an agent SHALL stay at `propose` for every write-off (ruling 132). A write-off on a balance the actor owes or guarantees SHALL follow PR-15's rule for a staff member acting on their own record (design call F-7 of `define-mvp-practice-foundation`).
 
 #### Scenario: A small balance below the amount
 - **WHEN** the material amount is 25.00, confirmed, and a biller writes off a 3.10 balance
-- **THEN** the write-off is done at once, staff are notified, and it posts as `small_balance_write_off`
+- **THEN** the write-off is done at once, staff are notified, and it posts under RT-09, as `patient_write_off_against_allowance` up to the line's remaining allowance and as `small_balance_write_off` for any excess
+
+#### Scenario: A balance is written off in pieces
+- **WHEN** the material amount is 25.00, confirmed, and a biller writes off five amounts of 20.00 on the same guarantor account within a week
+- **THEN** the first is done at tier 2, and each later one, whose tested total is 40.00 or more, needs a named human's tier-4 sign-off
 
 #### Scenario: No amount set yet
 - **WHEN** no material amount has been confirmed and a biller writes off 3.10
 - **THEN** the write-off needs a named human's tier-4 sign-off
+
+### Requirement: PS-12 A balance moves between guarantor accounts only by a named human's transfer
+What a guarantor account owes SHALL move to another guarantor account only as a `guarantor_transfer` entry, for example when the patient's guarantor changes or a balance is moved under PR-15's own-record rule (design call CR-57, PROPOSED). The transfer SHALL name both accounts, the visit thread and charge lines it concerns, the amount and the reason. It SHALL be made by a named human, never below FD-5 tier 2, done with a notification, and an agent SHALL stay at `propose` for it whatever opt-in a practice records (TH-13). A transfer from or to a balance the actor owes or guarantees SHALL follow PR-15's rule for a staff member acting on their own record (design call F-7 of `define-mvp-practice-foundation`). A statement already issued SHALL stay as issued (PS-03).
+
+#### Scenario: A guarantor changes after the visit
+- **WHEN** a child's visit balance of 80.00 sits on her father's guarantor account and the practice records her mother as guarantor for that visit
+- **THEN** a named human posts an 80.00 `guarantor_transfer` from the father's account to the mother's, staff are notified, and the father's issued statement is kept unchanged
+
+#### Scenario: An agent proposes a transfer
+- **WHEN** an agent finds a balance on the wrong guarantor account and the practice has opted the agent up for other actions
+- **THEN** the agent can only propose the transfer, and a named human decides it

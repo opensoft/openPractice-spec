@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: SL-01 Every movement of money is one entry between two fixed buckets
-openPractice SHALL record every movement of money it owns as one ledger entry that moves a positive amount from one balance bucket to another, both from the fixed list of SL-02 (ruling 124). Each entry SHALL debit one bucket and credit the other by the same amount, so the ledger balances by construction and no unbalanced entry can exist. The pair of buckets SHALL be the one the entry's reason code fixes (RT-02); an entry SHALL NOT choose its own buckets. openPractice SHALL NOT author, add or rename accounts: the buckets are openPractice's own balances, and each accounting destination maps them to its own accounts through the reason codes (BAB-02, BAB-06).
+openPractice SHALL record every movement of money it owns as one ledger entry that moves a positive amount from one balance bucket to another, both from the fixed list of SL-02 (ruling 124). Each entry SHALL debit one bucket and credit the other by the same amount, so the ledger balances by construction and no unbalanced entry can exist. The one exception to two different buckets is `guarantor_transfer`, which debits one guarantor account's `patient_receivable` and credits another's by the same amount (RT-02, PS-12). The pair of buckets SHALL be the one the entry's reason code fixes (RT-02); an entry SHALL NOT choose its own buckets. openPractice SHALL NOT author, add or rename accounts: the buckets are openPractice's own balances, and each accounting destination maps them to its own accounts through the reason codes (BAB-02, BAB-06).
 
 #### Scenario: A self-pay charge is finalized
 - **WHEN** a 150.00 self-pay office visit is finalized for a guarantor account
@@ -20,17 +20,17 @@ The buckets SHALL be exactly these, shipped by the product and not changeable by
 | `payer_receivable` | Amounts claimed from a payer, at the gross charge, per payer and coverage version |
 | `patient_receivable` | Amounts a guarantor account owes, at the gross charge less any discount granted before the obligation |
 | `gross_to_net_allowance` | The part of gross receivables the practice does not expect to collect for price reasons: contractual adjustments, price concessions and amounts held out under the constraint |
-| `credit_loss_allowance` | Expected credit losses on amounts the practice did expect to collect |
+| `credit_loss_allowance` | Expected credit losses on amounts the practice did expect to collect, used only under the allowance method (RT-10) |
 | `cash_clearing` | Money received and not yet explained in a bank deposit |
-| `deposited` | Money explained in a bank deposit (BAB-14). It is a record of what reached the bank; the bank balance stays the accounting system's (BAB-02) |
+| `deposited` | Money explained against bank lines: deposits in, less bank debits matched to money paid out (BAB-14, SL-13). It is a record of what reached or left the bank; the bank balance stays the accounting system's (BAB-02) |
 | `contract_liability` | Money received before the service it pays for was given |
 | `unapplied_credit` | A guarantor account's money received and not yet allocated, or received beyond what it owes |
-| `refund_liability` | Money the practice has identified as owed back |
+| `refund_liability` | Money the practice has identified as owed back, including a forwarding balance a payer will recover by offset (RM-08) |
 | `unidentified_receipts` | Money received whose owner is not yet known |
 | `other_route_share` | The part of an explained deposit that funds another route's balances (BAB-14) |
 | `legacy_collections` | Money collected on balances from the practice's previous system (BAB-08) |
 | `gross_service_revenue` | Services given, at the gross charge |
-| `revenue_deduction` | Reductions from gross revenue: discounts, contractual adjustments, price concessions and estimate changes |
+| `revenue_deduction` | Reductions from gross revenue: discounts, contractual adjustments, price concessions and estimate changes, and write-offs beyond what the allowance held (RT-09) |
 | `credit_loss_expense` | Credit losses, kept apart from revenue (AI-12) |
 | `fee_expense` | Merchant, card, chargeback and bank fees |
 | `non_patient_income` | Money not tied to a patient service, such as payer interest |
@@ -86,11 +86,15 @@ A counterparty account SHALL reference parties only through their roles (PR-15),
 - **THEN** both visits' patient balances belong to the parent's guarantor account, and each entry names its own child's thread
 
 ### Requirement: SL-07 An allocation is its own record
-Applying a payment, credit or adjustment to charge lines SHALL be an allocation record that names the money, each charge line and the amount applied to it, and that posts the entries that move the money (SL-01). Reallocating SHALL reverse the allocation and record a new one; it SHALL NOT edit the first (BAB-04). A split SHALL use BAB-18's cumulative rounding in the order the allocation states.
+Applying a payment, credit or adjustment to charge lines SHALL be an allocation record that names the money, each charge line and the amount applied to it, and that posts the entries that move the money (SL-01). Every entry an allocation posts SHALL name the same counterparty account on each side that carries one, so that one guarantor account's money is never applied to another's charges; money moves between guarantor accounts only by `guarantor_transfer` (PS-12; design call CR-65, PROPOSED). Reallocating SHALL reverse the allocation and record a new one; it SHALL NOT edit the first (BAB-04). Reallocating SHALL be FD-5 tier 2, done with a notification (design call CR-66, PROPOSED). A split SHALL use BAB-18's cumulative rounding in the order the allocation states.
 
 #### Scenario: A misapplied payment is reallocated
 - **WHEN** a payment applied to visit A should have gone to visit B
 - **THEN** the allocation to A is reversed, a new allocation to B is recorded, and both refer to the payment
+
+#### Scenario: A credit is applied to another guarantor's charge
+- **WHEN** an agent at `act_with_notice` tries to apply guarantor A's 30.00 credit to a charge owed by guarantor B
+- **THEN** the allocation is refused, because both sides must name the same guarantor account
 
 ### Requirement: SL-08 Balances come only from entries
 Every balance SHALL be computed from ledger entries and from nothing else: by counterparty account, by thread, by charge line, by bucket and by payer class. No record SHALL store a balance that is not the sum of its entries. A thread's amount (TH-03), a statement's total (PS-03), a hold's basis (PH-04, PH-07) and a reconciliation total (SL-09) SHALL each be read from entries.
@@ -114,7 +118,7 @@ A dispute on money, such as a denied amount under appeal or a Good Faith Estimat
 - **THEN** the thread is marked disputed for 12.00, no balance is created for the dispute, and the 12.00 is held out of the recognized amount
 
 ### Requirement: SL-11 Balances from an old system stay outside the medical receivables
-A balance brought over from the practice's previous system SHALL be recorded only as an `old_system_balance` case thread (TH-08, ruling 131), carrying its amount as a memo with a one-line provenance boundary. It SHALL NOT enter any receivable bucket, SHALL NOT be posted to a destination as a receivable (BAB-08), and SHALL NOT be claimed, rebilled or appealed from openPractice. Money collected on it SHALL post to `legacy_collections`. The import that creates these threads SHALL be built before the first practice that needs it goes live (ruling 131).
+A balance brought over from the practice's previous system SHALL be recorded only as an `old_system_balance` case thread (TH-08, ruling 131), carrying its amount as a memo with a one-line provenance boundary. It SHALL NOT enter any receivable bucket, SHALL NOT be posted to a destination as a receivable (BAB-08), and SHALL NOT be claimed, rebilled or appealed from openPractice. Money collected on it SHALL post to `legacy_collections`. The import that creates these threads SHALL be built before the first practice that needs it goes live (ruling 131). Each import batch SHALL take effect only on a named human's sign-off (BAB-17) after reviewing its count and memo total, and an agent stays at `propose` for it (design call CR-66, PROPOSED).
 
 #### Scenario: A legacy payment arrives in a mixed deposit
 - **WHEN** a payer deposit pays 320.00 on openPractice claims and 180.00 on old-system balances
@@ -126,3 +130,14 @@ Every ledger entry, allocation and reversal SHALL be audited with its actor, tim
 #### Scenario: Someone alters an entry outside the application
 - **WHEN** an entry's amount is changed directly in the database
 - **THEN** verification of the trail flags the alteration
+
+### Requirement: SL-13 Money paid out of the bank clears when its bank line is matched
+When deposit explanation matches a bank debit line to money openPractice recorded as paid out and not netted inside a deposit (BAB-14), namely an issued refund, a chargeback, a returned item, a payer takeback or a fee, openPractice SHALL post `bank_debit_explained` for the matched amount, referencing the bank line and the entries it clears (design call CR-60, PROPOSED). `cash_clearing` SHALL then return to zero for that money. A bank debit line that matches nothing openPractice recorded SHALL stay the accounting system's (BAB-14) and post nothing here.
+
+#### Scenario: A refund check clears the bank
+- **WHEN** a 15.00 refund check recorded as `refund_issued` is paid by the bank, and deposit explanation matches the 15.00 debit line to it
+- **THEN** `bank_debit_explained` posts 15.00, and `cash_clearing` holds nothing for that refund
+
+#### Scenario: A takeback inside a remittance
+- **WHEN** a payer takes back 50.00 by netting it inside a 400.00 deposit
+- **THEN** no `bank_debit_explained` posts for it, because `deposit_explained` for the 400.00 net deposit already clears it
