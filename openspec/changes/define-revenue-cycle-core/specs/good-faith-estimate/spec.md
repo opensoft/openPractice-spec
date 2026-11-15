@@ -8,7 +8,7 @@ openPractice SHALL issue Good Faith Estimates for care the practice itself gives
 - **THEN** no estimate is issued by openPractice, and a work item explains why
 
 ### Requirement: GF-02 An estimate is needed when no claim will be filed for the service
-openPractice SHALL treat a booked or requested service as needing a Good Faith Estimate when no claim will be filed for it: the patient has no coverage for the service, or the patient has coverage and has chosen, in a recorded election, not to use it for this service. Whether an estimate is required in a given case, and by when, SHALL follow the rules of the approved parameter set (GF-03), never rules written into the software. The determination SHALL be made at booking and again on any reschedule that changes the service, the date or the patient's coverage (AP-03).
+openPractice SHALL treat a booked service as needing a Good Faith Estimate when no claim will be filed for it, and a requested service only where the parameter set makes a patient's request a trigger (design call CR-81, PROPOSED): the patient has no coverage for the service, or the patient has coverage and has chosen, in a recorded election, not to use it for this service. Whether an estimate is required in a given case, and by when, SHALL follow the rules of the approved parameter set (GF-03), never rules written into the software. The determination SHALL be made at booking and again on any reschedule that changes the service, the date or the patient's coverage (AP-03).
 
 #### Scenario: An insured patient elects to pay
 - **WHEN** a patient with coverage records an election to pay for a cosmetic service themselves and books it
@@ -22,14 +22,14 @@ The triggers, deadlines, required contents, dispute threshold, dispute window an
 - **THEN** no estimate is issued, a work item is raised, and the booking stands
 
 ### Requirement: GF-04 The issuance deadline is the thread's clock
-When an estimate is needed, its issuance deadline under the parameter set SHALL become a clock on the visit thread (TH-03), counted from the booking or from the patient's request. An estimate not issued as the deadline approaches SHALL appear as owned work (TH-12).
+When an estimate is needed, its issuance deadline under the parameter set SHALL become a clock on the visit thread (TH-03), counted from the booking, or from the patient's request where the parameter set makes a request a trigger (GF-02). An estimate not issued as the deadline approaches SHALL appear as owned work (TH-12).
 
 #### Scenario: A deadline approaches
 - **WHEN** an estimate is needed and its issuance deadline is tomorrow
 - **THEN** the thread's clock shows one day left and the work is owned by a named person
 
 ### Requirement: GF-05 An estimate is built from the catalog and the price list, and frozen when issued
-An estimate's amounts SHALL come from the catalog items expected for the service and the price list in force on the scheduled date, less the self-pay discount (SC-03, SC-04). Its other contents SHALL be the elements the parameter set requires, drawn from openPractice's records: the patient's identity, the provider's name, NPI, TIN and location, the expected service and diagnosis codes where known, and the notices the parameter set names. At issuance the estimate SHALL be frozen as issued (TH-14) and SHALL never be edited.
+An estimate's amounts SHALL come from the catalog items expected for the service and the price list in force on the scheduled date, less the self-pay discount (SC-03, SC-04). Its other contents SHALL be the elements the parameter set requires, drawn from openPractice's records: the patient's identity, the provider's name, NPI, TIN and location, any expected service and diagnosis codes, and the notices the parameter set names. Expected codes SHALL be entered by a named human for that estimate and SHALL never be derived from the catalog, an earlier visit or a template (CG-02). At issuance the estimate SHALL be frozen as issued (TH-14) and SHALL never be edited.
 
 #### Scenario: An estimate is issued
 - **WHEN** an estimate is issued for a self-pay visit with two expected services
@@ -43,7 +43,7 @@ When a change to the service, price, provider or date alters an issued estimate'
 - **THEN** a replacement estimate is issued naming the new provider, and the first is kept as replaced
 
 ### Requirement: GF-07 Delivery is proved, and only through permitted channels
-An estimate SHALL count as issued only when its delivery is recorded: handed over at the desk with the patient's signature, or sent through a channel that produces a delivery record, or mailed with the mailing recorded. Every delivery SHALL honor the patient's confidential-communication instructions (PR-05), including a restriction recorded through any of the person's roles (PR-15). An estimate with no recorded delivery SHALL appear as work and SHALL NOT count as issued.
+An estimate SHALL count as issued only when its delivery is recorded: handed over at the desk with the patient's signature, or sent through a channel that produces a delivery record, or mailed with the mailing recorded. Every delivery SHALL honor the patient's confidential-communication instructions (PR-05), including a restriction recorded through any of the person's roles (PR-15). A delivery to a representative SHALL be made only where the representative's granted scope includes `billing_contact` under the proxy policy (PG-06). A patient notice through the gateway (`patient.notice`, PG-12) SHALL count as delivery only where the parameter set accepts that channel and the notice's acknowledgment (`notice.ack`) is recorded; otherwise it MAY say that an estimate is ready but SHALL NOT count (design call CR-81, PROPOSED). Where PR-15's rule holds a contact because a restriction leaves no permitted channel, the estimate SHALL stay on GF-04's clock, and its work SHALL escalate before the deadline. An estimate with no recorded delivery SHALL appear as work and SHALL NOT count as issued.
 
 #### Scenario: A delivery fails
 - **WHEN** an emailed estimate bounces and nothing else is recorded

@@ -15,18 +15,22 @@ Self-pay visits SHALL produce no claim. This change SHALL build claims first for
 - **THEN** openPractice builds no electronic claim, a work item asks the biller to send it outside and record it through the manual path, and the receivable stays tracked
 
 ### Requirement: CL-03 A claim is built from final charge lines, and its coverage version is frozen on it
-A claim SHALL be built only from final charge lines (CG-04). It SHALL carry the billing and rendering providers, the place of service, the diagnosis pointers of the charge set, the line amounts and the total, and SHALL reference the exact coverage version it bills, which SHALL stay retrievable unchanged (PR-07). A charge line on a submitted claim SHALL NOT be built into a second claim to the same coverage position. An agent MAY build claims at most at `act_with_notice` (ruling 132).
+A claim SHALL be built only from final charge lines (CG-04). It SHALL carry the billing and rendering providers, the place of service, the diagnosis pointers of the charge set, the line amounts and the total, and SHALL reference the exact coverage version it bills, which SHALL stay retrievable unchanged (PR-07). A charge line on a submitted claim, including a claim recorded through the manual path (CP-04), SHALL NOT be built into a second claim to the same coverage position. An agent MAY build claims at most at `act_with_notice` (ruling 132).
 
 #### Scenario: The member identifier is corrected later
 - **WHEN** a member identifier is corrected after a claim used the earlier coverage version
 - **THEN** the claim still references the earlier version, and any resubmission is a replacement that uses the new one
 
 ### Requirement: CL-04 A claim is scrubbed before it can be released
-Before a claim can join a released batch, openPractice SHALL check it against its readiness: final documentation (EB-14), participation (EG-02), authorization (EV-02), any open identity review (EB-18), the offering route (BAB-16), and the checklist its claim-pathway adapter fills in (CP-02). A claim that fails SHALL be held with the hold reason that names the failure (TH-06), or SHALL become owned work where no hold reason applies. The result of each scrub SHALL be recorded on the claim.
+Before a claim can join a released batch, openPractice SHALL check it against its readiness: final documentation (EB-14); that no fact behind any of its lines is retracted or superseded (EB-15); participation (EG-02); authorization (EV-02); any open identity review (EB-18); the offering route (BAB-16); and the checklist its claim-pathway adapter fills in (CP-02). A claim that fails SHALL be held with the hold reason that names the failure (TH-06), or SHALL become owned work where no hold reason applies. The result of each scrub SHALL be recorded on the claim. Where a recorded deadline escape has already released the claim from a hold, the scrub SHALL record that check's failure and SHALL NOT hold the claim again for it, so that an escape is never undone by the scrub (design call CR-73, PROPOSED).
 
 #### Scenario: A missing authorization
 - **WHEN** a claim for a service needing an authorization has none recorded
 - **THEN** the scrub holds it with reason `waiting_on_authorization`, and it cannot join a batch
+
+#### Scenario: A retracted fact behind a final line
+- **WHEN** an agent builds a claim from final lines, one of which uses a diagnosis the EHR has since retracted
+- **THEN** the scrub holds the claim with reason `clinical_fact_retracted`, and it cannot join a batch or be released by any escape
 
 ### Requirement: CL-05 A named signer releases each claim batch
 Claims SHALL leave openPractice only in batches, each released by an explicit release decision of a named signer (ruling 119). The signer SHALL be a named human: an agent SHALL stay at `propose` for `claim_batch.release` (ruling 132). The release SHALL be a sign-off under BAB-17 recording the role used (`define-practice-readiness` SR-02). A claim in the batch on a record where the signer's own party holds a role SHALL follow PR-15's rule for a staff member acting on their own record (design call F-7 of `define-mvp-practice-foundation`). There SHALL be no scheduled automatic release, except the deadline escape of CL-06. Release SHALL freeze each claim version as submitted (CL-07).
@@ -40,11 +44,15 @@ Claims SHALL leave openPractice only in batches, each released by an explicit re
 - **THEN** the release is refused, and the batch waits for a named human
 
 ### Requirement: CL-06 A claim nearing its filing deadline is released by the escape, with notice and a cancel window
-A claim that is ready but unreleased when its filing clock reaches the filing threshold SHALL be released on its own at FD-5 tier 3: staff are notified, a cancel window runs, and the release records its provenance (ruling 119, EB-18). The filing threshold SHALL be a number of days before the filing deadline that the practice sets, defaulting to 14, and the cancel window SHALL end before the deadline (design call CR-47, PROPOSED). The escape SHALL NOT release a claim held for `clinical_fact_retracted`, nor one whose participation answer is `ended`, `never` or `unknown` (EG-06); those SHALL be escalated as work instead.
+A claim is ready when no hold is in force on it and its last scrub found no failure other than one a recorded escape has already released (CL-04), or when every hold in force on it is one whose defining requirement names this escape: `participation_not_effective` while the answer is `not_yet` (EG-06), `offering_route_unresolved` (BAB-16), and `identity_review` once EB-17's attestation is recorded (EB-18) (design call CR-73, PROPOSED). Any other hold keeps the claim from being ready. A claim that is ready but unreleased when its filing clock reaches the filing threshold SHALL be released on its own at FD-5 tier 3: staff are notified, a cancel window runs, and the release records its provenance (ruling 119, EB-18). The filing threshold SHALL be a number of days before the filing deadline that the practice sets, defaulting to 14, and the cancel window SHALL end before the deadline (design call CR-47, PROPOSED). The escape SHALL NOT release a claim held for `clinical_fact_retracted`, `waiting_on_clinical_documentation` or `waiting_on_authorization`, nor one whose participation answer is `ended`, `never` or `unknown` (EG-06); those SHALL be escalated as work instead, and a claim held for authorization MAY then be released only by a named human with a recorded reason (EV-02).
 
 #### Scenario: Nobody released the batch
 - **WHEN** a ready claim is still unreleased 14 days before its filing deadline
 - **THEN** staff are notified, a cancel window runs, and if nobody cancels the claim is released with the escape recorded as its provenance
+
+#### Scenario: A pending enrollment at the deadline
+- **WHEN** a claim held only because the provider's application is pending (`not_yet`) reaches the filing threshold
+- **THEN** it counts as ready, the escape releases it with notice and a cancel window, and the scrub records the participation failure without holding it again
 
 #### Scenario: A retracted fact at the deadline
 - **WHEN** a claim held because a diagnosis was retracted reaches the filing threshold
@@ -76,11 +84,15 @@ openPractice SHALL record each status the payer or clearinghouse reports as a da
 - **THEN** a work item is raised for the biller
 
 ### Requirement: CL-10 Every claim carries a filing clock from a recorded payer window
-Each claim SHALL carry a timely-filing clock: the date of service plus the payer's filing window. Each payer's window SHALL be a recorded parameter citing its source. A payer with no recorded window SHALL use the shortest window the practice has recorded for any payer, until its own is recorded (design call CR-50, PROPOSED). The clock SHALL be the visit thread's clock while it is the nearest money-costing deadline (TH-03).
+Each claim SHALL carry a timely-filing clock: the date of service plus the payer's filing window. Each payer's window SHALL be a recorded parameter citing its source, stated in the unit the payer uses (calendar days, months or years) and counted from the date the payer counts from. The deadline SHALL be the end of its last day in the practice's time zone, and the clock's instant SHALL carry that zone's offset (design call CR-79, PROPOSED). A payer with no recorded window SHALL use the shortest window the practice has recorded for any payer, until its own is recorded (design call CR-50, PROPOSED). Where the practice has recorded no window for any payer, the clock SHALL use the conservative default window the practice's policy sets, with a shipped starting value of 60 calendar days (design call CR-79, PROPOSED). The clock SHALL be the visit thread's clock while it is the nearest money-costing deadline (TH-03).
 
 #### Scenario: A payer with no recorded window
 - **WHEN** a claim is built for a payer whose filing window was never recorded
 - **THEN** it uses the shortest recorded window, and a work item asks for the payer's own
+
+#### Scenario: A deadline in the practice's time zone
+- **WHEN** a practice in a zone five hours behind UTC has a claim whose 90-day window ends on March 31
+- **THEN** the clock's deadline is March 31 at 23:59:59 local time, recorded with the -05:00 offset, not midnight UTC
 
 ### Requirement: CL-11 Submitting a claim is a protected operation through the retention change's outbox
 Every claim submission, replacement and void SHALL be authorized before it leaves under `add-reimbursement-retention-control` ("Protected reimbursement operations are authorized before execution"), and SHALL leave through its idempotent outbox ("External effects use an idempotent outbox"). Its outcome SHALL be recorded as a separate linked event of success, failure or indeterminate ("External reconciliation creates separate linked outcome events"), and an indeterminate outcome SHALL never be reported as success or sent again before it is reconciled ("Uncertain external effects become indeterminate and require reconciliation").

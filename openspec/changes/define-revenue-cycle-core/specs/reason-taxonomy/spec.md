@@ -75,7 +75,7 @@ The kinds added for money that would otherwise have nowhere to go are design cal
 
 #### Scenario: A cancelled procedure was prepaid
 - **WHEN** a patient's 100.00 prepayment for a procedure stays in `contract_liability` and the procedure is cancelled
-- **THEN** a person moves it to the guarantor account's `unapplied_credit` as `prepayment_to_credit`, without reversing or re-recording the payment
+- **THEN** it moves to the guarantor account's `unapplied_credit` as `prepayment_to_credit` with the cancellation (AP-04), without reversing or re-recording the payment
 
 #### Scenario: A payer-level adjustment no kind fits
 - **WHEN** a remittance carries a payer-level adjustment that no kind in the list fits

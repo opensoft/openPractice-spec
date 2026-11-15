@@ -66,7 +66,7 @@ openPractice SHALL NOT load payer fee schedules or contracted rates in this chan
 - **THEN** the system offers no such import
 
 ### Requirement: SC-08 Catalog and price changes are versioned, audited and do-and-notify
-Every change to a catalog item, a price, the self-pay discount or a category mapping SHALL create a new effective-dated version, keep the earlier versions retrievable, and be audited with its actor and time. Each SHALL be FD-5 tier 2: done at once, with a notification. An agent SHALL stay at `propose` for these changes (TH-13).
+Every change to a catalog item, a price, the self-pay discount or a category mapping SHALL create a new effective-dated version, keep the earlier versions retrievable, and be audited with its actor and time. Each SHALL be FD-5 tier 2: done at once, with a notification (design call CR-86, PROPOSED). An agent SHALL stay at `propose` for these changes (TH-13).
 
 #### Scenario: The discount changes
 - **WHEN** the owner changes the self-pay discount from 30 to 25 percent from the first of next month

@@ -22,18 +22,22 @@ A charge line's procedure and diagnosis codes SHALL come from one of two sources
 - the EHR's final, coded clinical facts for the encounter, read under `openpractice-ehr-clinical-facts/1.0` (EB-13, EB-14), which publishes only confirmed diagnoses (ruling 87, EB-13);
 - manual entry by authorized staff in the cases EB-17 allows, marked manual, with its provenance (ruling 21).
 
-openPractice SHALL NOT infer, suggest or derive a code from any text, and SHALL NOT change a code the EHR supplied; a disagreement SHALL go back to the EHR as a question, outside this contract. A fact's procedure code SHALL map to a catalog item only by an exact match on code system and code; a code that matches no active item SHALL become a work item.
+A code SHALL come from no other source (design call CR-76, PROPOSED). openPractice SHALL NOT infer, suggest, derive, prefill or default a code: not from text, not from the booked catalog item, not from an earlier visit, not from a template or favorite list, and not from an agent's choice. It SHALL NOT change a code the EHR supplied; a disagreement SHALL go back to the EHR as a question, outside this contract. In the manual case, only a named human SHALL enter or select a code, from the superbill or the documentation in front of them. A charge line's catalog item SHALL be found from its code, by an exact match on code system and code, and never its code from its item; a code that matches no active item SHALL become a work item.
 
 #### Scenario: openChart cannot yet supply facts
 - **WHEN** a patient is linked to openChart and openChart reports no billable-facts support
 - **THEN** staff enter the codes from the superbill, and each charge line is marked manual with that reason (EB-17)
+
+#### Scenario: A booked item does not supply a code
+- **WHEN** staff open a manual charge entry for a visit booked as an office visit
+- **THEN** no code is filled in from the booking, an earlier visit or a template, and the staff member enters each code from the superbill
 
 #### Scenario: A fact code with no catalog item
 - **WHEN** final facts carry a procedure code that no active catalog item uses
 - **THEN** no charge line is created for it, and a work item names the code
 
 ### Requirement: CG-03 A charge set starts as a draft, and a draft posts nothing
-A charge set SHALL start as a draft. Staff MAY prepare a draft, and an agent MAY prepare one at most at `act_with_notice` (ruling 132, TH-13). A draft SHALL post no ledger entry, SHALL NOT appear on a claim or a statement, and MAY be changed freely until it is finalized.
+A charge set SHALL start as a draft. Staff MAY prepare a draft. An agent MAY prepare one at most at `act_with_notice` (ruling 132, TH-13), and only from final EHR facts, carrying exactly the codes those facts supply; an agent SHALL prepare no draft in the manual case and SHALL choose no code (CG-02, CR-76). A draft SHALL post no ledger entry, SHALL NOT appear on a claim or a statement, and MAY be changed freely until it is finalized.
 
 #### Scenario: An agent drafts charges from facts
 - **WHEN** an agent opted up to `act_with_notice` drafts a charge set from newly final facts
@@ -73,18 +77,22 @@ openPractice SHALL refuse a second charge line on the same thread with the same 
 - **THEN** the second line is refused unless a coded reason is recorded
 
 ### Requirement: CG-07 A visit waiting on documentation is held, visible and on the filing clock
-A visit that happened but whose documentation is not final SHALL stay at `seen` with the condition `held` and the reason `waiting_on_clinical_documentation` (EB-14, TH-06). Its clock SHALL be the date of service plus the payer's filing window, and it SHALL appear as owned work (TH-12). Where a manual entry is allowed under EB-17, the hold SHALL release when the manual entry is finalized.
+A visit that happened but whose documentation is not final SHALL stay at `seen` with the condition `held` and the reason `waiting_on_clinical_documentation` (EB-14, TH-06). Its clock SHALL be the date of service plus the payer's filing window, and it SHALL appear as owned work (TH-12). Where a manual entry is allowed under EB-17, the hold SHALL release when the manual entry is finalized. Its deadline escape SHALL be escalation: at the filing threshold (CL-06) the work SHALL escalate to the practice manager, and the hold SHALL never release into a charge or a claim by itself, because nothing may be billed from documentation that is not final (design call CR-75, PROPOSED).
 
 #### Scenario: A note is unsigned for a week
 - **WHEN** a visit's documentation is still not final seven days after the visit
 - **THEN** the visit is shown as held, waiting on documentation, with the days left to the filing deadline, and its owner is named
 
 ### Requirement: CG-08 A final charge is corrected only by reversal and replacement
-A final charge line SHALL never be edited (BAB-04). A correction SHALL reverse the line, which reverses every entry it posted (SL-05), and SHALL add a replacement line where one is needed, both referencing the original. When a fact behind a final line is corrected or retracted by the EHR (EB-15), openPractice SHALL record the dated event and raise work for the biller to reverse or replace the line (design call CR-28, PROPOSED). When the line is already on a submitted claim, the correction SHALL be made through a replacement or void claim (CL-08), and the claim as submitted SHALL stay unchanged (EB-16).
+A final charge line SHALL never be edited (BAB-04). A correction SHALL reverse the line, which reverses every entry it posted (SL-05), and SHALL add a replacement line where one is needed, both referencing the original. When a fact behind a final line is corrected or retracted by the EHR (EB-15), openPractice SHALL record the dated event, hold the thread with reason `clinical_fact_retracted` until every final line that uses the fact has been reversed or replaced, and raise work for the biller to do so (design call CR-28, PROPOSED). While that hold is in force, no claim SHALL be built or released from those lines (CL-04). When the line is already on a submitted claim, the correction SHALL be made through a replacement or void claim (CL-08), and the claim as submitted SHALL stay unchanged (EB-16).
 
 #### Scenario: A wrong code on an unclaimed charge
 - **WHEN** a biller finds a wrong procedure code on a final charge line that has not been claimed
 - **THEN** the line and its entries are reversed, a replacement line is finalized, and both reference the original
+
+#### Scenario: A diagnosis is retracted after the charge is final
+- **WHEN** the EHR retracts a diagnosis behind a final charge line that is not yet on a claim
+- **THEN** the thread is held with reason `clinical_fact_retracted`, no claim can be built or released from the line, and the hold releases only when the biller reverses or replaces it
 
 #### Scenario: A corrected diagnosis after the claim was sent
 - **WHEN** the EHR corrects a diagnosis on a visit whose claim was already submitted

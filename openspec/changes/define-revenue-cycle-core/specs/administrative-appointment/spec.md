@@ -15,7 +15,7 @@ A booking SHALL name:
 - a bookable catalog item (SC-01);
 - the start time with its time zone, and the duration.
 
-A booking SHALL mint the visit thread at `booked` (TH-02), or move a thread that already exists for the same intent. Booking SHALL be FD-5 tier 1, done and undoable from the record. An agent MAY book at most at `act_with_notice` (ruling 132, TH-13).
+A booking SHALL mint the visit thread at `booked` (TH-02), or move a thread that already exists for the same intent. Booking SHALL be FD-5 tier 1, done and undoable from the record (design call CR-82, PROPOSED). An agent MAY book at most at `act_with_notice` (ruling 132, TH-13).
 
 #### Scenario: Staff book a visit
 - **WHEN** a front-desk staff member books an office visit for Pat Example with a provider at the main location next Tuesday at 9:00
@@ -26,13 +26,13 @@ A booking SHALL mint the visit thread at `booked` (TH-02), or move a thread that
 - **THEN** the booking is refused (AP-08)
 
 ### Requirement: AP-03 A reschedule is one move on the same thread, and only what changed is redone
-A reschedule SHALL be a `booked` to `booked` move on the same thread, keeping the earlier slot as history (TH-04). It SHALL NOT be a cancellation followed by a new booking. Only what the change affects SHALL be redone (design call CR-22, PROPOSED):
+A reschedule SHALL be a move to `booked`, from `booked` or `ready`, on the same thread, keeping the earlier slot as history (TH-04). It SHALL NOT be a cancellation followed by a new booking. Only what the change affects SHALL be redone (design call CR-22, PROPOSED):
 - a new date SHALL re-check eligibility evidence when the date crosses a coverage boundary (EV-04), and the price when a price change falls between the dates (SC-03);
 - a new provider SHALL re-check participation (EG-02) and the price;
 - a new location SHALL re-check participation and the place of service;
 - a new service SHALL re-check the price, the authorization requirement (EV-02) and whether a Good Faith Estimate is needed (GF-02).
 
-A change that alters a Good Faith Estimate's service, price or provider SHALL lead to a replacement estimate (GF-06). Rescheduling SHALL be tier 1, and an agent MAY reschedule at most at `act_with_notice` (ruling 132).
+A change that alters a Good Faith Estimate's service, price or provider SHALL lead to a replacement estimate (GF-06). Rescheduling SHALL be tier 1 (design call CR-83, PROPOSED), and an agent MAY reschedule at most at `act_with_notice` (ruling 132).
 
 #### Scenario: The same day at a different time
 - **WHEN** a visit moves from 9:00 to 14:00 on the same day with the same provider
@@ -43,11 +43,15 @@ A change that alters a Good Faith Estimate's service, price or provider SHALL le
 - **THEN** the booking warns that the claim will be held (EG-02), and the move is still allowed
 
 ### Requirement: AP-04 Cancellations, no-shows and patients who leave unseen are dispositions, never deletions
-A cancellation, a no-show and a patient who leaves without being seen SHALL each be recorded as a disposition on the thread, with a coded reason, the time and the actor, and the thread SHALL move to `closed` (TH-04). No appointment SHALL be deleted. A missed-appointment fee SHALL never be charged automatically: a person MAY charge it from a catalog item routed as direct-pay healthcare, and the thread then moves to `charged` (design call CR-23, PROPOSED). A cancellation SHALL be FD-5 tier 2, done with a notification, and an agent SHALL stay at `propose` for it (ruling 132).
+A cancellation, a no-show and a patient who leaves without being seen SHALL each be recorded as a disposition on the thread, with a coded reason, the time and the actor, and the thread SHALL move to `closed` (TH-04). No appointment SHALL be deleted. Where money paid toward the visit is still held when the disposition is recorded, its prepayment SHALL move to `unapplied_credit` with the disposition (`prepayment_to_credit`, PY-03), the thread SHALL move to `banked` instead of `closed`, and it SHALL close only when that credit has been applied, refunded or moved to a credit-balance case (PY-06; design call CR-69, PROPOSED). A missed-appointment fee SHALL never be charged automatically: a person MAY charge it later from a catalog item routed as direct-pay healthcare, which moves the thread from `closed` or `banked` to `charged` (TH-04; design call CR-23, PROPOSED). A cancellation SHALL be FD-5 tier 2, done with a notification (design call CR-84, PROPOSED), and an agent SHALL stay at `propose` for it (ruling 132).
 
 #### Scenario: A no-show
 - **WHEN** a patient does not arrive and staff record a no-show
 - **THEN** the thread closes with the disposition `no_show`, and no fee is charged unless a person charges one
+
+#### Scenario: A prepaid visit is cancelled
+- **WHEN** a patient who prepaid 100.00 for a self-pay procedure cancels it
+- **THEN** the 100.00 moves to the guarantor account's `unapplied_credit` with the cancellation, the thread moves to `banked`, and it closes only once the credit is applied, refunded or moved to a credit-balance case
 
 #### Scenario: An agent tries to cancel
 - **WHEN** an agent opted up to `act_with_notice` for booking tries to cancel an appointment
@@ -68,7 +72,7 @@ Bookable time SHALL be each provider's working hours at each location as the ros
 - **THEN** a warning is shown, staff record the reason, and the booking is made
 
 ### Requirement: AP-07 A booking applies the payment-hold clause of PH-01, with its exceptions
-Because this change gives openPractice a booking function, it SHALL apply PH-01's scheduling clause (ruling 41). While a payment hold is in effect for a patient, openPractice SHALL refuse a new non-urgent appointment for that patient, show the hold, and offer to lift it under PH-04. It SHALL allow the booking when either of PH-01's exceptions holds: a valid `appointment_needed` marker from openChart (ER-18), recorded on the booking; or an urgent escalation whose routing id openPractice's own routing record shows with applied urgency `urgent` for the same patient. No one in openPractice SHALL be able to mark an appointment clinically needed. A hold SHALL NOT cancel or change an appointment already booked.
+Because this change gives openPractice a booking function, it SHALL apply PH-01's scheduling clause (ruling 41). While a payment hold is in effect for a patient, openPractice SHALL refuse a new non-urgent appointment for that patient, show the hold, and offer to lift it under PH-04. It SHALL allow the booking when either of PH-01's exceptions holds: a valid `appointment_needed` marker from openChart (ER-18), recorded on the booking; or an urgent escalation whose routing id openPractice's own routing record shows with applied urgency `urgent` for the same patient. No one in openPractice SHALL be able to mark an appointment clinically needed. A hold SHALL NOT cancel or change an appointment already booked. A payment hold SHALL NOT refuse the arrival of a walk-in at the desk: recording the arrival of a patient who is present is not new scheduling, and it SHALL be recorded, with the hold shown to staff, who may offer to lift it under PH-04 (design call CR-80, PROPOSED).
 
 #### Scenario: A held patient asks for a routine visit
 - **WHEN** staff try to book a routine visit for a patient on a payment hold, with no marker and no urgent routing id
@@ -78,12 +82,20 @@ Because this change gives openPractice a booking function, it SHALL apply PH-01'
 - **WHEN** a valid `appointment_needed` marker exists for a held patient and staff book the visit
 - **THEN** the booking is made and records the marker's id
 
+#### Scenario: A held patient walks in
+- **WHEN** a patient on a payment hold arrives at the desk with no booking
+- **THEN** the arrival is recorded and the walk-in's thread is minted, and staff see the hold
+
 ### Requirement: AP-08 No appointment after a patient's deactivation date
-openPractice SHALL refuse an appointment dated after the deactivation date of the patient's record (PR-11). An appointment already booked for a date after a deactivation SHALL raise a work item and SHALL NOT be cancelled automatically (design call CR-25, PROPOSED).
+openPractice SHALL refuse an appointment dated after the deactivation date of the patient's record (PR-11). An appointment already booked for a date after a deactivation SHALL raise a work item and SHALL NOT be cancelled automatically (design call CR-25, PROPOSED). Recording an arrival on such an appointment SHALL be refused under PR-11 until a person reactivates the record under PR-11 or records the cancellation (CR-25).
 
 #### Scenario: A patient is deactivated with a future booking
 - **WHEN** a patient with a visit booked next week is deactivated today
 - **THEN** a work item is raised for the booked visit, and the appointment stays until a person decides
+
+#### Scenario: The patient arrives anyway
+- **WHEN** the deactivated patient arrives for that booked visit
+- **THEN** the arrival is refused until a person reactivates the record or cancels the visit, and the desk is told why
 
 ### Requirement: AP-09 The MVP books minimally and exchanges no appointment messages
 In this change, appointment booking SHALL NOT include reminders, a waitlist or self-scheduling (ruling 115). No appointment create, update or cancel operation SHALL travel on `openpractice-ehr-patient-link/1.0`, `openpractice-ehr-clinical-facts/1.0` or `openpractice-patient-gateway/1.0` (EB-19, PG-12); each waits for a governed MINOR version. Once this change's booking is built and ratified, the read-only answer `patient_answer.appointment_time` may be switched on under AO-11.

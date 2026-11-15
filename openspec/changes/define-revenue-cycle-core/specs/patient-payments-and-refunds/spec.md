@@ -22,7 +22,7 @@ Every recorded payment SHALL produce one receipt that states the amount, the dat
 A payment received before the service it pays for is given SHALL post as `prepayment` to `contract_liability`, and SHALL be applied with `prepayment_applied` when that service's charge is finalized (framework §5A.2.7; design call CR-11, PROPOSED). A payment received after the service and not yet allocated, or received beyond what the guarantor account owes, SHALL post to `unapplied_credit` (AI-13). No payment SHALL be recorded as revenue when it is received (AI-12).
 
 Money already received SHALL reach `unapplied_credit` without the payment being reversed or recorded again (design call CR-56, PROPOSED):
-- a prepayment that will not be applied, because its service was cancelled or its final charge is smaller than the prepayment, SHALL move from `contract_liability` as `prepayment_to_credit`. A person SHALL make the move at FD-5 tier 2, done with a notification;
+- a prepayment that will not be applied SHALL move from `contract_liability` as `prepayment_to_credit`, posted with the act that makes it unappliable and under that act's governance: the cancellation, no-show or left-unseen disposition of the visit it paid for (AP-04), or the finalization of a charge smaller than the prepayment (CG-09). PY-06 SHALL watch the resulting credit;
 - when a correction, void or retraction reduces a charge line below what the guarantor account has already paid on it, the excess SHALL move from `patient_receivable` as `patient_overpayment_to_credit`, posted with the correction that created it and under that correction's governance.
 
 The credit is then applied, moved to `refund_liability` (PY-07) or worked under PY-06.
@@ -33,7 +33,7 @@ The credit is then applied, moved to `refund_liability` (PY-07) or worked under 
 
 #### Scenario: The prepayment is larger than the final charge
 - **WHEN** a patient prepaid 150.00 and the procedure's final self-pay charge, after the discount, is 120.00
-- **THEN** 120.00 is applied with `prepayment_applied`, and a person moves the other 30.00 to `unapplied_credit` with `prepayment_to_credit`
+- **THEN** 120.00 is applied with `prepayment_applied`, and the other 30.00 moves to `unapplied_credit` with `prepayment_to_credit` in the same finalization
 
 #### Scenario: A paid charge is retracted
 - **WHEN** a visit's charge was paid by the payer and by the patient, and a retraction voids the charge line (EB-15)

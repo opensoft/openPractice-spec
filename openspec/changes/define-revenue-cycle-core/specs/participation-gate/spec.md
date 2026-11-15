@@ -22,7 +22,7 @@ When a claim is built for a visit whose check is not `effective`, openPractice S
 - **THEN** the claim is held, an enrollment case is minted for the pair, and the held visit links to it
 
 ### Requirement: EG-04 Every eligible held claim is released in one action once the provider is enrolled
-When a participation record makes the tuple effective on or before a held claim's date of service, openPractice SHALL release every such held claim in one action, re-check each against the claim scrub (CL-04), and notify staff with the count and total (ruling 128; FD-5 tier 2). Released claims SHALL join the claim batch and SHALL still need the batch's explicit release (CL-05); release from the hold is not submission.
+When a participation record makes the tuple effective on or before a held claim's date of service, openPractice SHALL release every such held claim in one action, re-check each against the claim scrub (CL-04), and notify staff with the count and total (ruling 128; FD-5 tier 2, design call CR-87, PROPOSED). Released claims SHALL join the claim batch and SHALL still need the batch's explicit release (CL-05); release from the hold is not submission.
 
 #### Scenario: Seven claims wait on one approval
 - **WHEN** an approval effective from the first of last month arrives for a provider with seven held claims, all dated after that day
@@ -36,7 +36,7 @@ A held claim whose date of service falls before the effective date, or whose ans
 - **THEN** those two stay held as work, and a named person decides what happens to each
 
 ### Requirement: EG-06 The deadline escape releases only a pending case's claims
-Every hold this capability places SHALL name its FD-5 deadline escape. When a held claim reaches the filing threshold (CL-06) while its answer is `not_yet`, the claim SHALL be released into the claim batch at tier 3, with notification and provenance, and SHALL still need the batch's explicit release under CL-05 and CL-06. When the answer is `ended`, `never` or `unknown`, the escape SHALL NOT submit the claim; it SHALL escalate the work instead (design call CR-45, PROPOSED, narrowing FD-5's escape as the enrollment-gated-billing brainstorm proposes).
+Every hold this capability places SHALL name its FD-5 deadline escape, and the escape SHALL be CL-06's. When a held claim reaches the filing threshold while its answer is `not_yet`, it SHALL count as ready for CL-06's escape, which releases it at tier 3 with notification, a cancel window and provenance; the scrub then records the participation failure without holding the claim again (CL-04). When the answer is `ended`, `never` or `unknown`, the escape SHALL NOT submit the claim; it SHALL escalate the work instead (design call CR-45, PROPOSED, narrowing FD-5's escape as the enrollment-gated-billing brainstorm proposes).
 
 #### Scenario: A denied application at the deadline
 - **WHEN** a claim held because the provider's application was denied reaches the filing threshold

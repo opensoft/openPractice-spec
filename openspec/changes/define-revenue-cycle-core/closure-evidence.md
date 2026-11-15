@@ -12,7 +12,7 @@ This record collects acceptance evidence for OpenSpec change `define-revenue-cyc
 - Constitution version and per-feature Constitution Check evidence: _pending_
 - Per-feature security review records and risk-analysis updates: _pending_
 - Speckit feature identifiers and paths (foundations; self-pay visit; claims against a simulated payer; remittance posting and full balances; live clearinghouse and Medicare adapter; payment processor and pay link): _pending_
-- Evidence that each feature started only after its gate in `tasks.md` section 2 was met, including the claim-pathway, remittance and payment-processor contracts defined by governed amendments before features 3, 4 and 6 (CR-24): _pending_
+- Evidence that each feature started only after its gate in `tasks.md` section 2 was met, including the claim-pathway, remittance and payment-processor contracts defined by governed amendments before features 3, 4, 5 and 6 (CR-24): the claim-pathway contract before feature 3, the remittance contract before feature 4, the clearinghouse contract before feature 5, and the payment-processor contract before feature 6: _pending_
 - Tiers proposed in feature plans for recording actions no requirement tiered, and the owner's disposition (`tasks.md` 3.5): _pending_
 
 ## Product Acceptance Evidence
