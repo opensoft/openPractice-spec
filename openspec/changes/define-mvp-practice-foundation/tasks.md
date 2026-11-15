@@ -35,7 +35,7 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - contract tests run against the clinical-facts canonical schema at its recorded digest;
   - manual entry is marked manual while the capability result is false;
   - the deadline escape is tested, including manual entry only after the EB-17 staff attestation and refusal without it;
-  - retractions (EB-15): both reason codes with the same billing effect, an absent code read as `withdrawn`, an undefined code applied as `withdrawn` with an exception that keeps no value, no cause inferred or shown, references to another link's or subject's facts changing nothing, and retractions accepted after a link ends `revoked` or `superseded` (ruling 88).
+  - retractions (EB-15): both reason codes with the same billing effect, an absent code read as `withdrawn`, an undefined code applied and recorded as `withdrawn`, its value in no record, log, diagnostic or stored copy, and reported only as a per-period count to the integration operator, no cause inferred or shown, references to another link's or subject's facts changing nothing, and retractions accepted after a link ends `revoked` or `superseded` (ruling 88).
 - [ ] 2.5 **Post-MVP: QuickBooks Online adapter, then Business Central adapter.** Each is a separate feature against `openpractice-accounting-integration/1.x` (same MAJOR). Each starts only after the vendor's authentication, API, rate limits, idempotency, data residency, line service dates, cash-basis reporting and BAA availability have been verified and recorded. Gate: task 1.2 and Feature 3 merged. These features are excluded from this change's closure.
 
 ## 3. Planning Gates For Every Feature
