@@ -8,7 +8,7 @@ separating patient, member, payer and representative roles and clinical access.
 ## ADDED Requirements
 
 ### Requirement: Parties have distinct effective roles
-The system SHALL distinguish person identity, customer, patient, membership subscriber, membership beneficiary, insurance subscriber, payer/guarantor and representative relationships. Each relationship SHALL preserve its authority, provenance, effective dates and organizational scope. Customer creation SHALL NOT require clinical patient creation.
+The system SHALL distinguish person identity, customer, patient, membership subscriber, membership beneficiary, insurance subscriber, payer/guarantor and representative relationships. Each relationship SHALL preserve its authority, provenance, effective dates and organizational scope. Customer creation SHALL NOT require clinical patient creation. The customer role SHALL apply only to membership and retail buyers (ruling 32). For medical billing, an accounting-side customer (a guarantor account or payer, in `customer-detail` mode only) SHALL be derived from the guarantor or payer role and SHALL NOT be a separate party role.
 
 #### Scenario: Retail purchaser has no patient relationship
 - **WHEN** a person purchases a retail product without an established patient relationship
@@ -19,11 +19,15 @@ The system SHALL distinguish person identity, customer, patient, membership subs
 - **THEN** the system records their separate roles and does not grant the subscriber general access to the beneficiary's clinical or purchase history
 
 ### Requirement: Cross-system identity links are controlled
-The system SHALL preserve a controlled mapping between operational party and domain-specific customer or patient identifiers. Linking and correction SHALL require verified matching evidence and attributable authority, preserve prior financial history, and restrict visibility of sensitive links. A shared contact detail alone SHALL NOT authorize a merge.
+The system SHALL preserve a controlled mapping between operational party and domain-specific customer or patient identifiers. Linking and correction SHALL require verified matching evidence and attributable authority, preserve prior financial history, and restrict visibility of sensitive links. Any approval, release decision or attestation this change requires SHALL follow the FD-5 tier of its action under `define-mvp-practice-foundation` BAB-17 (ruling 33): a named AI agent identified by an openWallet ID MAY sign only an action type opted in for agent signing, and tier-4 actions, including record merges and refunds leaving the practice, SHALL be signed by a named human only. A shared contact detail alone SHALL NOT authorize a merge.
 
 #### Scenario: Shared phone creates an ambiguous match
 - **WHEN** two customer or patient records share a phone number but identity evidence does not resolve the match
 - **THEN** the system creates review work and does not merge or cross-disclose the records
+
+#### Scenario: A medical-billing customer is derived, not created as a role
+- **WHEN** a guarantor's balance is posted to an accounting destination in `customer-detail` mode
+- **THEN** the accounting-side customer is derived from the guarantor role, and no separate customer role is added to the party
 
 #### Scenario: Customer identity does not grant patient lookup
 - **WHEN** an accountant can view a customer's accounting identifier but lacks patient-record authority

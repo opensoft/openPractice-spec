@@ -14,6 +14,19 @@ assembly constitution records v1.0.0, ratified 2026-08-24; the separate
 reimbursement-control design's placeholder-constitution statement is stale
 and is not adopted by this change.
 
+## Owner rulings that govern this change (2026-11-14)
+
+Source: **Brett Heap, 2026-11-14, authoring session.** The full table is in
+`define-mvp-practice-foundation` design.md; these rows govern this change.
+
+| # | Ruling | Governs here |
+|---|---|---|
+| 25 | Medical-billing customers may carry name and billing contact in a destination only after its BAA gate, in `customer-detail` mode only. Additional fields need a versioned recipient profile. | customer-role-boundaries |
+| 26 | `define-mvp-practice-foundation` owns posting mechanics. This change owns customer and party roles, offering routes, obligation ownership and purpose-bound views. | financial-domain-routing, design §4 |
+| 28 | `summary-journal` is the default; `customer-detail` is a per-destination opt-in behind the BAA gate. | design §4 |
+| 32 | One Party with roles. "Customer" is a party role only for membership and retail buyers; a medical-billing accounting customer is derived from the guarantor or payer role. | customer-role-boundaries, design §1 |
+| 33 | FD-5 governs sign-offs. A named human, or an opted-in named AI agent with an openWallet ID, may sign; tier 4 stays human-only. | customer-role-boundaries, financial-domain-routing, design §5 |
+
 ## Goals / Non-Goals
 
 **Goals:** define domain ownership, minimal interoperable customer records,
@@ -27,6 +40,11 @@ marketing or money movement, amend the constitution, or enlarge beta acceptance.
 ## Decisions
 
 ### 1. Extend the party register with role-specific links
+
+The customer role applies only to membership and retail buyers (ruling 32). For
+medical billing, an accounting-side customer (a guarantor account or payer, in
+`customer-detail` mode only) is derived from the guarantor or payer role and is
+not a separate party role.
 
 Person identity, customer, patient, member, payer and representative are distinct
 concepts. Keep effective dates, evidence, legal-entity scope and domain identifiers
@@ -135,7 +153,10 @@ Unresolved profiles or unsupported destination safeguards refuse delivery.
 Use existing shipped role-recipe mechanics. Accountant, outsourced biller,
 commerce operator and clinician can have different views even at one firm.
 No financial or customer permission confers chart access. Required vendor/BAA
-arrangements and revocation checks apply to the actual service and data.
+arrangements and revocation checks apply to the actual service and data. Approvals,
+release decisions and attestations follow the FD-5 tiers under
+`define-mvp-practice-foundation` BAB-17 (ruling 33). A named AI agent with an
+openWallet ID signs only opted-in action types, and tier 4 stays human-only.
 The two relevant capability specs own customer-role separation and financial
 outputs; this design neither rewrites nor ratifies the separate
 [reimbursement authorization proposal](../add-reimbursement-retention-control/proposal.md).
@@ -158,6 +179,7 @@ customer. Vendor reuse for its own promotion requires a separate applicable basi
 
 - [Identity links disclose care relationships] → Protect the crosswalk and each projection independently.
 - [Medical plus commercial invoices double-count revenue] → One authoritative obligation and one selected posting path per event, with reconciliation scenarios.
+- [A connected ledger writes or renews PHI-bearing records outside openPractice] → A configuration-time BAA gate on PHI-bearing offerings, plus a deployment control recorded in the risk analysis.
 - [Membership benefits overlap insured services] → Explicit entitlements and approved terms; unresolved financial routing creates owned review work.
 - [Accounting integrations leak PHI in attachments or logs] → Destination allowlists and handling controls cover every output surface; reject unsupported delivery.
 - [A joined business view expands access] → Recheck row, relationship, purpose and output permissions; broader reports use reviewed aggregates or de-identification.

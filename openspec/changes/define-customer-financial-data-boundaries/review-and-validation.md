@@ -134,3 +134,14 @@ Validation of the round-3 revision:
 | `openspec validate define-customer-financial-data-boundaries --strict --no-interactive`, run with OpenSpec 1.2.0 in a scratch clone | PASS: change is valid |
 | `openspec validate --all --strict --no-interactive`, run in a temporary unpushed merge with `change/define-mvp-practice-foundation` | PASS: 3 passed, 0 failed |
 | `git diff --check` | PASS |
+
+## Verification edits (fix round 4, 2026-11-14)
+
+Brett Heap ruled 32 and 33 on 2026-11-14. A verification pass also found one remaining gap. The change now has 16 requirements and 36 scenarios. Status stays draft.
+
+| # | Place | Edit | Reason |
+|---|---|---|---|
+| 20 | `specs/customer-role-boundaries/spec.md`, "Parties have distinct effective roles" | The customer role applies only to membership and retail buyers. A medical-billing accounting customer is derived from the guarantor or payer role. Adds a scenario. | ruling 32, 2026-11-14 |
+| 21 | Same file, "Cross-system identity links are controlled", and `specs/financial-domain-routing/spec.md`, "Mixed payments and corrections preserve reconciliation controls" | Sign-offs follow FD-5 tiers under the companion's BAB-17. An opted-in named AI agent with an openWallet ID may sign; tier 4 is human-only. | ruling 33, 2026-11-14 |
+| 22 | `specs/financial-domain-routing/spec.md`, "Membership and retail obligations use connected business ledgers" | A configuration-time gate refuses to activate a PHI-bearing offering against an ungated destination. Writes made outside openPractice are recorded as a deployment control. Adds a scenario. | verification N7 remainder, 2026-11-14 |
+| 23 | `design.md` | Adds an owner-rulings table (rulings 25, 26, 28, 32 and 33), the ruling-32 statement in §1, the ruling-33 statement in §5, and a risk entry for ledger-side writes. | rulings 32 and 33, N7 remainder |
