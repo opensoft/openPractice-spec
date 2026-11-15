@@ -8,8 +8,8 @@ openPractice SHALL record each payer remittance as the payer's answer: its claim
 - **THEN** the answer posts on Monday, the payment waits in `cash_clearing`, and the deposit is explained against Wednesday's bank line
 
 #### Scenario: The money arrives before the answer
-- **WHEN** a 96.00 EFT is explained on Monday with no remittance yet, so it posts as `unidentified_receipt`, and the remittance arrives on Thursday
-- **THEN** posting the answer moves the 96.00 from `unidentified_receipts` to the payer receivable as `unidentified_receipt_to_payer`, and the EFT is neither reversed nor recorded again
+- **WHEN** a 96.00 EFT is explained on Monday with no remittance yet, so it posts as `unidentified_receipt` on a `credit_balance` case minted then (PY-06), and the remittance arrives on Thursday
+- **THEN** posting the answer moves the 96.00 from `unidentified_receipts` on the case to the payer receivable on the claim's visit thread as `unidentified_receipt_to_payer`, the case records its outcome and closes with nothing owed on it, and the EFT is neither reversed nor recorded again
 
 ### Requirement: RM-02 Paper and electronic remittances produce the same records
 A remittance received electronically through an adapter (CP-01) and a paper remittance that staff enter by hand SHALL produce the same records and the same postings. A hand-entered remittance SHALL record who entered it and a reference to the scanned paper.

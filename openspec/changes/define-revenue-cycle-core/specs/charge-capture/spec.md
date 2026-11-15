@@ -64,7 +64,7 @@ Before a charge set becomes final, openPractice SHALL check, and SHALL refuse fi
 
 Charges already final when PR-15 records a same-person link are checked then. openPractice SHALL hold with reason `same_person_reconciliation` every thread of the group that holds a final charge not yet on a submitted claim for a service date on which another record of the group also holds a charge, and SHALL raise the reconciliation work for it; a charge already on a submitted claim SHALL raise that work without a hold, and any correction of it SHALL go through CL-08 (design call CR-97, PROPOSED). CL-04's scrub refuses those claims while the reconciliation is open, and no statement from either record shows a charge for that service date as owed until it is closed (PS-07).
 
-These rules SHALL keep applying between the records of every party that was in the group after the link ends, and their holds SHALL stay, until PR-15's end-of-link review decides them; where the link was ended with reason `mistaken`, that review MAY release them in one decision, which closes the reconciliation work (PR-15; design call CR-97, PROPOSED).
+These rules SHALL keep applying between each pair of records whose parties were in the group after the link ends, and their holds SHALL stay, until PR-15's end-of-link review releases that pair on a finding that the two parties are different people: the link's reason `mistaken`, which lets it release every pair in one decision, or a finding the review records. A release closes the open reconciliation work on those records, recording its reason. Without such a finding the rules stay for that pair until a link joins their parties again or one of the records is deactivated as a duplicate (PR-15; design call CR-97, PROPOSED).
 
 #### Scenario: A retracted diagnosis
 - **WHEN** the EHR retracts a diagnosis that an unfinalized charge set points to
@@ -76,7 +76,11 @@ These rules SHALL keep applying between the records of every party that was in t
 
 #### Scenario: A link is ended by mistake while two charges are held
 - **WHEN** two threads are held with reason `same_person_reconciliation` and the link between their records is ended with reason `mistaken`
-- **THEN** both threads stay held, a new fact on either record for that service date still goes to reconciliation, and the end-of-link review may release both holds in one decision, after which both claims can be scrubbed and released
+- **THEN** both threads stay held, a new fact on either record for that service date still goes to reconciliation, and the end-of-link review may release both holds in one decision on that finding, closing the reconciliation work with that reason, after which both claims can be scrubbed and released
+
+#### Scenario: A correct link is ended in error while two charges are held
+- **WHEN** two threads are held with reason `same_person_reconciliation` and the link between their records, which are one person's, is ended in error with a reason other than `mistaken`
+- **THEN** the end-of-link review cannot release the holds without recording a finding that the parties are different people; the holds end only when the reconciliation work is decided, and the safeguard stays until a link joins the parties again or one record is deactivated as a duplicate
 
 #### Scenario: A member's included service
 - **WHEN** a member's visit is a service that the membership's approved terms include
