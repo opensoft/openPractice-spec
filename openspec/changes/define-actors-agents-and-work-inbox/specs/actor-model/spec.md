@@ -147,7 +147,8 @@ One offboarding action SHALL apply identically to an on-site person, a remote VA
 - revoke every session, token and grant;
 - cancel the actor's pending delayed actions;
 - reassign its open work to named owners;
-- record a dated termination of access.
+- record a dated termination of access;
+- keep the ended roster entry's party, where it references one (AM-01), its actor type and its end date readable, so that a look-back over ended entries can run (PROPOSED).
 
 Offboarding a VA company SHALL offboard every VA it supplies. Offboarding an agent SHALL also revoke every autonomy opt-in held for it.
 
