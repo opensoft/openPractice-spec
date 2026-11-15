@@ -17,11 +17,11 @@ Paths are relative to the root of `opensoft/openPractice-spec`.
 ## What Changes
 
 This change does three things. It weakens no gate, decides no policy's content, and changes no contract. It adds no gate of its own, except what the owner's rulings order and one PROPOSED precondition, all set out as T-9 in `design.md`:
-- under rulings 139 and 140, the accountant's sign-offs wait on a recorded outside engagement, the accountant's own attestation and a check of their CPA licence against the state board's public record;
+- under rulings 139 and 140, the accountant's sign-offs wait on a recorded outside engagement, the accountant's own attestation, a check of their CPA licence against the state board's public record and a match against the practice's staff and owners (ruling 139, read with ruling 149's question);
 - under ruling 149, counsel sign-offs wait on a check of the named counsel against the state bar's public record;
-- design call RD-11 proposes that neither is accepted while no owner link is recorded.
+- design call RD-11 proposes that neither is accepted while no owner link is recorded, and that the accountant's attestation confirms the owners recorded. The practice manager records owner links, and recording one that names oneself is not an own-record act (PR #8's PR-15), so this precondition needs no outside accountant.
 
-Ruling 107 authorizes the change, and the owner made rulings 139, 140, 147 and 149 for it on the same day. Everything beyond the rulings' words is a design call marked PROPOSED. Rulings 136 to 150 also settled most of what this draft had left open. The required amendments it proposed for other owners are adopted in PR #8: RA-1, RA-3 and RA-4 under ruling 148, RA-2 under ruling 143 and RA-6 under ruling 145. RA-5 is withdrawn (ruling 144).
+Ruling 107 authorizes the change, and the owner made rulings 139, 140, 147 and 149 for it on the same day. Everything beyond the rulings' words is a design call marked PROPOSED. Rulings 136 to 150 also settled most of what this draft had left open. The required amendments it proposed for other owners are adopted in PR #8: RA-1, RA-3 and RA-4 under ruling 148, RA-2 under ruling 143 and RA-6 under ruling 145. RA-5a to RA-5c are in PR #8 in another form, as an extension of its design call F-7, which is PROPOSED there and not ruled; RA-5d is covered by F-7. PR #8 has also applied six of the conforming amendments (CA-1 to CA-4, CA-9 and CA-10).
 
 - **`readiness-checklist` (RC-01 to RC-07).** One readiness checklist per practice. Each row is a go-live gate, or a policy version a named authority approves while a fail-closed default runs. It shows:
   - what the item is;
@@ -30,7 +30,7 @@ Ruling 107 authorizes the change, and the owner made rulings 139, 140, 147 and 1
   - its state, including `unavailable` when the gate's record cannot be read;
   - what stays off until it is done, in the requirement's own words.
 
-  The checklist reads and displays only. It never satisfies, replaces or relaxes a gate, and every gate keeps its own fail-closed enforcement where it is defined today. Its rows follow the requirements. A use of a one-person alternative whose subject is a patient-side record appears only as a count, with an opaque reference to the audit entries, and both are shown only to readers authorized to see that PHI. `design.md` holds the inventory the rows start from: 51 items across the five merged changes, draft PR #7 and draft PR #8. It also records the five items retired, four because no requirement states what waits on them and one because PR #8 now meets it.
+  The checklist reads and displays only. It never satisfies, replaces or relaxes a gate, and every gate keeps its own fail-closed enforcement where it is defined today. Its rows follow the requirements. A use of a one-person alternative whose subject is a patient-side record appears only as a count, with an opaque reference to the audit entries, and both are shown only to readers authorized to see that PHI. `design.md` holds the inventory the rows start from: 54 items across the five merged changes, draft PR #7 and draft PR #8. It also records the five items retired, four because no requirement states what waits on them and one because PR #8 now meets it.
 - **`policy-starter-kit` (SK-01 to SK-06).** The product ships a starter template for each policy a gate needs, fifteen in all, for example the hold, proxy, routing-clock and messaging-continuity policies, the on-call coverage plan, the autonomy opt-in set and the revenue-recognition policy.
   - A template is inert until the authority its requirement names signs a policy made from it.
   - Signing a template is the same act, with the same record, as signing a policy written from scratch.
@@ -42,9 +42,9 @@ Ruling 107 authorizes the change, and the owner made rulings 139, 140, 147 and 1
   - one person may hold several roles;
   - every sign-off records the role under which it was given, and "an authorized person" is the practice manager unless the rule names another role (ruling 142);
   - every rule that needs two different people names its one-person alternative, and fails closed until it does;
-  - an accountant's sign-off, and a counsel sign-off that a requirement records, can never be self-approved. The accountant is a licensed CPA engaged from outside the practice who is neither an owner nor an employee, attests in their own name, and has the licence checked against the state board's public record (rulings 139 to 141). A named counsel is checked against the state bar's public record and matched against the practice's staff and owners (ruling 149). The details are PROPOSED (RD-11). Apart from those checks (T-9), SR-04 adds no record and no precondition.
+  - an accountant's sign-off, and a counsel sign-off that a requirement records, can never be self-approved. The accountant is a licensed CPA engaged from outside the practice who is neither an owner nor an employee, attests in their own name, has the licence checked against the state board's public record, and is matched against the practice's staff and owners (rulings 139 to 141, read with ruling 149's question). A named counsel is checked against the state bar's public record and matched against the practice's staff and owners (ruling 149). The details are PROPOSED (RD-11). Apart from those checks (T-9), SR-04 adds no record and no precondition.
 
-  `design.md` lists every existing rule that needs two different people, or that loses its meaning when one person signs both sides, with a PROPOSED one-person alternative for each. Where an alternative needed another change's text amended, `design.md` recorded the amendment for that change's owner; each required one is now adopted or withdrawn, and the conforming amendments remain proposals. This change edits no other change.
+  `design.md` lists every existing rule that needs two different people, or that loses its meaning when one person signs both sides, with a PROPOSED one-person alternative for each. Where an alternative needed another change's text amended, `design.md` recorded the amendment for that change's owner; each required one is now in PR #8, five adopted under rulings and RA-5a to RA-5c in a PROPOSED form there. Six conforming amendments are applied in PR #8, and four remain conditional. This change edits no other change.
 - **Design calls.** Twenty calls that go beyond the owner's rulings are listed in `design.md` under "Design calls for owner review". Each is PROPOSED and is also an open question for the owner.
 
 ## Dependencies
@@ -54,10 +54,11 @@ Ruling 107 authorizes the change, and the owner made rulings 139, 140, 147 and 1
 - **Draft PR opensoft/openPractice-spec#8, the corrections change stacked on PR #7** (branch `change/critique-2026-11-15-corrections`, still being written). It carries:
   - rulings 102, 104, 133 and 138 in AH-01, AH-02 and AH-06, including counsel's recorded confirmation of a provider's cache, and the declared model path in AM-04;
   - rulings 136 (AM-07), 137 (MA-04), 141 and 146 (AM-01, AM-02), 142 (each agreement record), 143 (ER-08, ER-09), 144, 145 and 150 (PR-15, WI-03) and 148 (AO-10, AO-03, AH-05);
-  - PR-15, with one party per person, same-person links, the practice's owner links and the rule for a staff member acting on their own record;
+  - PR-15, with one party per person, same-person links, the practice's owner links, which the practice manager records, and the rule for a staff member acting on their own record, which now also reaches PG-05, PG-06 and PH-04 (design call F-7, PROPOSED);
+  - this change's conforming amendments CA-1 to CA-4, CA-9 and CA-10;
   - ER-20, and the amended ER-12 and MA-07.
 
-  This change cites those requirement IDs and describes them, never quoting or citing line numbers, and should merge after PR #8. It reconciles against PR #8 at `93566f8`.
+  This change cites those requirement IDs and describes them, never quoting or citing line numbers, and should merge after PR #8. It reconciles against PR #8 at `0439321`.
 - **Draft PR opensoft/openPractice-spec#11** (`define-revenue-cycle-core`), not a dependency: its PS-11 and RE-09 define the amount at which a write-off becomes material (ruling 129), which ruling 141 calls the write-off threshold. When it lands, that confirmation comes under SR-04.
 
 ## Non-goals
@@ -92,6 +93,6 @@ None. This change depends on, and does not modify, the changes named under Depen
 - **External contracts:** none.
 - **PHI exposure:** none. The checklist holds no PHI (RC-07). Uses whose subject is a patient-side record are only counted, and only readers authorized to see that PHI see the count (RC-06).
 - **Amendments for other owners**, all listed in `design.md`:
-  - **required:** RA-1 to RA-4 and RA-6 are adopted in PR #8, and RA-5 is withdrawn;
-  - **conforming (ten, still proposed):** CA-1 to CA-10, of which CA-5 to CA-8 apply only if their owners come to record counsel's part. CA-3, CA-4, CA-9 and CA-10 now carry the fields ruling 149's counsel check needs.
+  - **required:** RA-1 to RA-4 and RA-6 are adopted in PR #8; RA-5a to RA-5c are there as an extension of design call F-7, PROPOSED; RA-5d is covered by F-7;
+  - **conforming (ten):** CA-1 to CA-4, CA-9 and CA-10 are applied in PR #8 at `0439321`, including the fields ruling 149's counsel check needs; CA-5 to CA-8 apply only if their owners come to record counsel's part.
 - **Runtime:** no runtime code, dependencies or vendor claims are added.

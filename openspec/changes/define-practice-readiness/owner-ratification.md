@@ -22,14 +22,14 @@ The 20 design calls in `design.md` under "Design calls for owner review" have no
 - Draft PR opensoft/openPractice-spec#7 (`change/follow-up-ruling-93-contract-gaps`) merged, with revision: _pending_
 - The corrections change stacked on it, draft PR opensoft/openPractice-spec#8 (`change/critique-2026-11-15-corrections`), merged, with revision: _pending_
 - Every requirement ID this change cites exists at those revisions (cross-reference check): _pending_
-- Rows RI-46, RI-47, RI-49, RI-50 and RI-53 to RI-56 traced to AH-01, AH-02, AH-06, AM-02, AM-04, AM-07, MA-04 and PR-15 as merged from the corrections change, and the ER-12 lapse on RI-17, RI-18 and RI-46: _pending_
+- Rows RI-46, RI-47, RI-49, RI-50 and RI-53 to RI-59 traced to AH-01, AH-02, AH-06, AM-01, AM-02, AM-04, AM-07, MA-04 and PR-15 as merged from the corrections change, and the ER-12 lapse on RI-17, RI-18 and RI-46: _pending_
 
 ## Required Amendment Dispositions
 
 Each amendment belongs to the owning change. Its disposition is recorded here; this change edits no other change.
 
-- RA-1 (AO-10), RA-2 (ER-09), RA-3 (AO-03), RA-4 (AH-05 exception 1, condition 5) and RA-6 (PR-15) confirmed as adopted in the merged revision of the corrections change, under rulings 148, 143 and 145; RA-5 withdrawn under ruling 144: _pending_
-- CA-1 to CA-4, CA-9 and CA-10, each accepted, changed or rejected, with the change and revision that carries it; CA-5 to CA-8 only if their owners come to record counsel's part: _pending_
+- RA-1 (AO-10), RA-2 (ER-09), RA-3 (AO-03), RA-4 (AH-05 exception 1, condition 5) and RA-6 (PR-15) confirmed as adopted in the merged revision of the corrections change, under rulings 148, 143 and 145; RA-5a to RA-5c as carried by PR-15's design call F-7 (PG-05, PG-06, PH-04), with the owner's disposition of F-7; RA-5d covered by F-7: _pending_
+- CA-1 to CA-4, CA-9 and CA-10, applied in the corrections change at `0439321`, confirmed in its merged revision; CA-5 to CA-8, each accepted, changed or rejected, only if their owners come to record counsel's part: _pending_
 
 ## Required Owner Decision
 

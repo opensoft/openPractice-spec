@@ -112,13 +112,17 @@ The checklist SHALL show, for each authority its rows name, the named people who
 - each row whose sign-offs were given by one person in more than one role, with the role each sign-off recorded (SR-02);
 - each row whose authority is the practice's accountant or a counsel sign-off that SR-04 covers, as needing a person engaged from outside the practice (SR-04);
 - each rule that needs two different people, or that loses its meaning when one person signs both sides, where one person now holds both sides, and whether a one-person alternative is in force for it (SR-03);
-- each chain that collapses onto one person, as a warning that changes nothing at runtime: an on-call clinician who is also the medical director to whom ER-09 escalates, where the routing-clock policy names no covering clinician (ER-08; ruling 143 orders this warning), or an owner of work whose named cover under WI-05 does not exist.
+- each chain that collapses onto one person, as a warning that changes nothing at runtime: wherever ER-09's escalation of a tracked alert can reach nobody but the alert's own recipient, as ER-09 records it (its design call DC-64 in the corrections change): the medical director can be the recipient, as an on-call clinician, and the routing-clock policy names no covering clinician, or the covering clinician it names is that recipient too (ER-08, ER-09; ruling 143 orders this warning); or an owner of work whose named cover under WI-05 does not exist.
 
 The checklist SHALL also list each use of a one-person alternative and each sign-off in which one person signed both sides of a rule (SR-03), as a list apart from the rows. A use or sign-off whose subject is a patient-side record SHALL appear only as a count for its rule (design call RD-19, PROPOSED). A patient-side record is a patient's record, or a guarantor, subscriber, representative or other role or link that ties a party to a patient. An example is an act on the actor's own balance or coverage under `define-mvp-practice-foundation` PR-15, where the actor's own party includes every party in its same-person group (ruling 150). The count carries an opaque reference that opens the audit entries (PR-10) only to a reader authorized to see that PHI. Because a count can point to the one person who could have acted, the count and its reference SHALL be shown only to a reader authorized to see that PHI, and any other reader sees neither. The checklist SHALL NOT show, for such a use, the person's name, any role the person holds in a patient record, or any amount.
 
 #### Scenario: A physician-owner holds three authorities
 - **WHEN** one named physician holds the medical director recipe, the practice manager recipe and the controller or office manager recipe, and is the only clinician on the on-call roster
 - **THEN** the checklist shows the three authorities together on that person, and, because the routing-clock policy names no covering clinician, warns that ER-09's escalation to the medical director reaches the same person (ruling 143)
+
+#### Scenario: The covering clinician is the medical director
+- **WHEN** the only clinician on the on-call roster is the medical director, and the routing-clock policy names the medical director as the covering clinician
+- **THEN** the checklist warns that ER-09's escalation reaches nobody but the alert's own recipient, as it would with no covering clinician named (ruling 143)
 
 #### Scenario: An accountant row
 - **WHEN** a practice manager reads the revenue-recognition row
