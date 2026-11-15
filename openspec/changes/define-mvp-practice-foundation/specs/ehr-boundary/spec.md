@@ -134,9 +134,19 @@ openPractice SHALL accept `demographics.correction_requested` messages from a li
 - An accepted correction SHALL be made as an ordinary openPractice change. It SHALL be published as a new demographic version referencing the request, and reported with `correction.resolved` outcome `applied`.
 - A declined request SHALL be reported with `correction.resolved` outcome `declined` and a coded reason.
 
+A correction request that arrives through a link openPractice holds in identity review (EB-05), whether or not that link was ever active, SHALL still be received and answered with `correction.ack` result `received`, but it is kept with that review: its work item SHALL show the link's review state, and the request SHALL NOT be accepted or applied until the review resolves the link as `confirmed`. If the link instead ends `revoked`, whether the review resolves it so or either side revokes or withdraws the link while the review is open, the request SHALL be closed unapplied, with the reason recorded in openPractice; no `correction.resolved` is sent for it, because the link is revoked and contract 1.0 has no decline reason for that case. A correction request through an active link is handled as above (design call F-22, PROPOSED).
+
 #### Scenario: openChart staff report a misspelled name
 - **WHEN** openChart sends a correction request for a linked patient's legal name
 - **THEN** openPractice acknowledges receipt and creates staff work, and the name changes only if staff accept it, after which the new version is published
+
+#### Scenario: A correction arrives through a link in identity review
+- **WHEN** openPractice holds a link in identity review because the EHR reference returned to it is already linked to a different openPractice patient, and a correction request for the legal name arrives through that link
+- **THEN** openPractice answers `correction.ack` `received`, the work item shows the link's review state, staff cannot accept the correction, and when the review resolves the link as `revoked`, as that kind of review must, the request is closed unapplied with the reason recorded and no `correction.resolved` is sent
+
+#### Scenario: A correction waits for a review that confirms the link
+- **WHEN** a correction request arrives through a link that was active and is now in identity review, and the review later resolves the link as `confirmed`
+- **THEN** staff can accept the request only after that resolution, and from then on it is handled as any request through an active link
 
 ### Requirement: EB-10 The EHR contracts are versioned and compatible within a MAJOR version
 The contracts `openpractice-ehr-patient-link` and `openpractice-ehr-clinical-facts` SHALL carry a `MAJOR.MINOR` version, starting at `1.0`. Implementations are compatible exactly when they share the same MAJOR version. Additive changes SHALL increment MINOR. A breaking change SHALL require a new MAJOR version, a new schema digest, and a documented migration path. A receiver SHALL refuse a message whose MAJOR version it does not support, with reason `unsupported_major_version`, rather than partially applying it.
