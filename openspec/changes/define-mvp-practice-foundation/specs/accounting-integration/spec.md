@@ -224,7 +224,7 @@ In customer-detail mode, the contract SHALL define the following postings. Each 
 | A payment above what a charge line now owes | A `reversal.post` of that part of the payment's `payment.apply`, leaving it as the customer's unapplied credit |
 | A balance moved to another guarantor account | A `credit_note.post` on the first customer's invoice and an `invoice.post` to the second customer, both with label `patient_responsibility_transfer` and linked by `applies_to` |
 | A balance passed to the payer in the next coverage position | A `credit_note.post` on the earlier payer's invoice and an `invoice.post` to the later payer, both with label `payer_responsibility_transfer` and linked by `applies_to` |
-| An unidentified receipt identified as a payer's payment | A `journal.post` that releases the unidentified-receipts liability, plus a `payment.post` on the payer, both linked by `applies_to` to the original unidentified-receipt posting |
+| An unidentified receipt identified as a payer's payment | The remittance's own postings follow their own rows, as if its money had arrived with it: the payer's payment as a `payment.post` on the payer, a payer debit or takeback as its row states, and provider-level offsets as named `journal.post` lines, made on their own because the receipt's deposit entry is already posted. With them, one `journal.post` with label `unidentified_receipt_reclassified` releases the remittance's payment total, never more than remains of the receipt, from the unidentified-receipts liability to clearing, linked by `applies_to` to the original unidentified-receipt posting, so the receipt clears exactly whatever payer-level adjustments the remittance nets. The deposit entry stays the one posted for the receipt, equal to its bank line, and nothing of the remittance is matched to a bank line again, so no cash is counted twice (design call F-23, PROPOSED) |
 | A takeback that recovers an overpayment already owed back to the payer | A `journal.post` against the refund-liability account, with label `payer_takeback`, and never a `reversal.post`, which would reopen the receivable in the destination |
 | A bank debit that openPractice has matched | Only where the destination's record under AI-20 says openPractice sends them: a `journal.post` releasing the clearing account, with label `bank_debit_clearing_release` |
 | A write-off against the allowance | No posting where the gross-to-net credit notes holding the amount are on the same customer's invoice (self-pay, and every payer-side write-off); where they are on the payer's invoice and the write-off is of the patient's share, a `credit_note.post` on the guarantor's invoice and a `debit_note.post` on the payer's invoice, both with label `write_off_against_allowance`, linked by `applies_to` |
@@ -240,6 +240,10 @@ In customer-detail mode, the contract SHALL define the following postings. Each 
 #### Scenario: A wire nets a takeback
 - **WHEN** a payer wire of 400.00 pays 450.00 on new claims and takes back 50.00 from a prior claim
 - **THEN** the deposit entry equals 400.00, and the 50.00 reverses the prior payment allocation with a back-reference
+
+#### Scenario: The money for a remittance that nets a takeback arrived first
+- **WHEN** a 400.00 payer EFT was explained as an unidentified receipt, its deposit entry posted equal to the bank line, and the remittance then arrives paying 450.00 on new claims and taking back 50.00 from a prior claim
+- **THEN** the 450.00 posts as a `payment.post` on the payer, the 50.00 reverses the prior payment allocation, and one `journal.post` releases 400.00 from the unidentified-receipts liability, linked by `applies_to` to the original posting; clearing and the liability both end at zero, no second deposit entry is posted, and releasing 450.00 instead would leave 50.00 in each
 
 #### Scenario: Chargeback
 - **WHEN** a card payment of 75.00 is charged back with a 15.00 fee
