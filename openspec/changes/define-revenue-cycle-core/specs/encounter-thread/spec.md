@@ -200,7 +200,7 @@ A case type's amount and clock that depend on what it gates SHALL be derived fro
 - **THEN** it is refused, because the type is reserved
 
 ### Requirement: TH-09 Threads link to each other; they never inherit
-Threads SHALL reference each other only through named link types: `spawned_from`, `replaces`, `recoups`, `offsets` and `held_by`. No link SHALL re-point a thread from one party to another: PR-15 records that two parties are the same person without moving any role, record or balance, so no thread moves. Version 1 has no merge of parties (ruling 150); a full merge, if a later change defines one, would need its own governed change to this contract. There SHALL be no parent-child inheritance and no cascade: a change to one thread SHALL NOT change a linked thread except through that thread's own transition.
+Threads SHALL reference each other only through named link types: `spawned_from`, `replaces`, `recoups`, `offsets` and `held_by`. No link SHALL re-point a thread from one party to another: PR-15 records that two parties are the same person without moving any role, record or balance, so no thread moves. Version 1 has no merge of parties (ruling 150, PR-15); a full merge, if a later change defines one, would need its own governed change to this contract. There SHALL be no parent-child inheritance and no cascade: a change to one thread SHALL NOT change a linked thread except through that thread's own transition.
 
 #### Scenario: A recoupment links to its visit
 - **WHEN** a payer demands money back on a paid visit
