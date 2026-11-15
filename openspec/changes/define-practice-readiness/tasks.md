@@ -2,13 +2,13 @@
 
 - [ ] 1.1 Run `openspec validate define-practice-readiness --strict --no-interactive` against the exact artifacts proposed for ratification. Acceptance evidence: `owner-ratification.md` records the command, OpenSpec version, timestamp, exact artifact revision or checksums, exit code 0, and the output.
 - [ ] 1.2 Confirm the dependencies first. Acceptance evidence: `owner-ratification.md` records the merged revisions of draft PR opensoft/openPractice-spec#7 and of the corrections change stacked on it (draft PR #8), and a cross-reference check listing every requirement ID this change cites, each found at those revisions. If either changed a cited requirement before merging, the inventory rows, the starter kit and the amendments that cite it are updated and revalidated first. A missing dependency blocks ratification.
-- [ ] 1.3 Obtain the owner's unconditional ratification before any Speckit feature is created. Acceptance evidence: the owner, not an agent, completes `owner-ratification.md`. That means identity, timestamp, exact revision, strict-validation evidence, the confirmed handoff shape (design call RD-15), his disposition of design calls RD-1 to RD-19, and the unqualified decision `APPROVED UNCONDITIONALLY`. In the same revision, the owner changes the proposal's `Status` to `ratified`.
-- [ ] 1.4 Record the disposition of each amendment this change asks of another change. Acceptance evidence: for each of RA-1 to RA-4 and RA-6, RA-5 if the corrections change's design call F-7 is rejected, and CA-1 to CA-10 (CA-5 to CA-8 only if their owners come to record counsel's part) in `design.md`, `owner-ratification.md` records accepted, changed or rejected, and, where accepted, the change and revision that carries it. A required amendment that is not accepted leaves its rule as written; the checklist lists or counts the case, and nothing else changes (SR-03).
+- [ ] 1.3 Obtain the owner's unconditional ratification before any Speckit feature is created. Acceptance evidence: the owner, not an agent, completes `owner-ratification.md`. That means identity, timestamp, exact revision, strict-validation evidence, the confirmed handoff shape (design call RD-15), his disposition of design calls RD-1 to RD-20, and the unqualified decision `APPROVED UNCONDITIONALLY`. In the same revision, the owner changes the proposal's `Status` to `ratified`.
+- [ ] 1.4 Record the disposition of each amendment this change asks of another change. Acceptance evidence: `owner-ratification.md` confirms that RA-1 to RA-4 and RA-6 are in the merged revision of PR #8 as adopted, and that RA-5 is withdrawn. For each of CA-1 to CA-10 in `design.md` (CA-5 to CA-8 only if their owners come to record counsel's part), it records accepted, changed or rejected, and, where accepted, the change and revision that carries it. A conforming amendment that is not accepted changes nothing, because SR-02 and SR-04 already bind.
 
 ## 2. Single Speckit Handoff
 
 - [ ] 2.1 Create exactly one Speckit feature from the assembly root `opensoft/openPractice` on its base branch, covering RC-01 to RC-07, SK-01 to SK-06 and SR-01 to SR-04. Gate: tasks 1.2 and 1.3, and change A's work-inbox feature merged, because it builds the first shared sign-off record (WI-03). Acceptance evidence:
-  - SR-02 and SR-04 are built into the shared sign-off record before any sign-off is recorded in production: the role on every sign-off, refusal of a role the signer does not hold or the requirement does not allow, acceptance of any held role where the requirement names none, two sign-offs for two roles, and every SR-04 refusal (no outside engagement, an engagement entry not created with its arrangement, no own attestation, a licence that does not check against the board's public record, a licensee name that matches another roster party or a recorded owner, an owner or employee, the other side of the same item, an agent), with no SR-04 check on any record outside the sign-offs SR-04 names;
+  - SR-02 and SR-04 are built into the shared sign-off record before any sign-off is recorded in production: the role on every sign-off, refusal of a role the signer does not hold or the requirement does not allow, the practice manager as "an authorized person" where a requirement names no other role (ruling 142), two sign-offs for two roles, and every SR-04 refusal (no outside engagement, an employed accountant, an accountant's entry not created with its arrangement or holding another recipe, no own attestation, no CPA licence or one that does not check active against the state board's public record, a counsel admission that does not check active against the state bar's public record, a name that matches another roster party or a recorded owner, no owner link recorded, the other side of the same item, an agent), with no SR-04 check on any record outside the sign-offs SR-04 names;
   - SR-03's fail-closed default for a two-person rule with no one-person alternative, or whose named alternative is unavailable, and the record of each use and of each sign-off in which one person signed both sides;
   - the checklist reads every row from the gate's own record; tests prove that no action on the checklist records, approves or verifies a gate's item, and that completing every row enables nothing (RC-03);
   - every row is traced to an enforcing requirement, and no row exists without one (RC-02); a row whose requirement names no authority says so;
@@ -20,7 +20,7 @@
   - no PHI in the checklist, its logs or its diagnostics (RC-07);
   - the PHI safeguard plan, security review and risk-analysis update are recorded.
 
-  Each checklist row is added with the feature that builds its gate; until then the row shows that its gate is not yet built. Template content ships only after the review Open Question 4 settles.
+  Each checklist row is added with the feature that builds its gate; until then the row shows that its gate is not yet built. Template content ships only after the reviews that ruling 147 requires are recorded (SK-06, RD-20).
 
 ## 3. Planning Gates
 
@@ -29,24 +29,24 @@
 - [ ] 3.3 Confine runtime changes to the openPractice code leg, and keep this checklist governance-only. Acceptance evidence: the plan's inventory shows no runtime edits in any other repository; executable tasks exist only in the feature's Speckit `tasks.md`; `speckit-analyze` reports no unresolved critical inconsistency.
 - [ ] 3.4 Route every open question (design.md "Open Questions") to the work it blocks. Acceptance evidence: the feature's plan records how each was answered, or why the work it blocks is out of the feature's scope:
   - Open Question 1, the inclusion rule: blocks the checklist's row set.
-  - Open Question 2, the reading of "self-approved": blocks SR-04's refusal rules.
-  - Open Question 3, the accountant's actor type and recipe: blocks every accountant sign-off in production (RI-51), and SR-04's engagement check.
-  - Open Question 4, who drafts and reviews template content: blocks shipping any template; the mechanism can be built first.
-  - Open Question 5, ruling 98: blocks nothing here.
-  - Open Question 6, the required, fallback and conditional amendments: blocks nothing here; each changes its own rule when adopted.
-  - Open Question 7, a covering clinician in a one-clinician practice: blocks nothing here.
+  - Open Question 2, SR-04's details beyond the rulings: blocks those refusal rules; the ruled ones can be built first.
+  - Open Question 3: closed by ruling 141.
+  - Open Question 4: closed by ruling 147; shipping any template waits on its recorded reviews.
+  - Open Question 5: closed by ruling 146.
+  - Open Question 6, the conforming amendments: blocks nothing here.
+  - Open Question 7: closed by ruling 143.
   - Open Question 8, gates with no named authority: blocks nothing; those rows say so.
   - Open Question 9, "the owner" in AI-20 and gateway Open Question 10: blocks nothing here.
-  - Open Question 10, rulings 102, 104 and 133: blocks nothing here; RI-46, RI-47, RI-49 and RI-53 follow the corrections change.
+  - Open Question 10, rulings 102, 104, 133 and 138: blocks nothing here; RI-46, RI-47, RI-49 and RI-53 follow the corrections change.
   - Open Question 11, the handoff shape: blocks task 2.1.
   - Open Question 12, who may read the checklist: blocks the checklist's authorization.
   - Open Question 13, security reviews and risk entries that nothing waits on: blocks nothing; no row until a requirement makes something wait on them.
-  - Open Question 14, an accountant employed by the practice: blocks nothing; until answered, SR-04 refuses such an accountant.
-  - Open Question 15, recording the practice's ownership: blocks nothing; until then SR-04 tests against the engagement record's statement.
-  - Open Question 16, WI-03 and PR-15: blocks nothing here.
+  - Open Question 14: closed by ruling 139.
+  - Open Question 15: closed by ruling 145.
+  - Open Question 16: closed by ruling 144.
   - Open Question 17, the remaining design calls: blocks the parts of the feature each governs.
-  - Open Question 18, which role "an authorized person" is: blocks nothing; until ruled, SR-02 accepts and records any held role.
-  - Open Question 19, a public-record check for counsel: blocks nothing here.
+  - Open Question 18: closed by ruling 142.
+  - Open Question 19: closed by ruling 149.
 
 ## 4. Acceptance and Closure
 

@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: SR-01 One person may hold several roles
-A named human MAY hold several roles at once (ruling 107). A role is a role recipe held through a roster entry (AM-02), an actor type (AM-01), or a capacity that a requirement names as a signer or an owner of work, such as the medical director, the practice manager, the controller or office manager, the sponsoring human of an agent (AM-04), the on-call clinician (ER-13), the practice's accountant, counsel, or the integration operator (EB-15) (design call RD-9). Holding several roles SHALL give the authority of each role and nothing more: no authority SHALL be inferred from a combination of roles (design call RD-17, PROPOSED). The practice's accountant and counsel are the exceptions that SR-04 states. An AI agent SHALL keep only the agent recipe (AM-04), and this requirement gives an agent no other role.
+A named human MAY hold several roles at once (ruling 107). A role is a role recipe held through a roster entry (AM-02), an actor type (AM-01), or a capacity that a requirement names as a signer or an owner of work, such as the medical director, the practice manager, the controller or office manager, the sponsoring human of an agent (AM-04), the on-call clinician (ER-13), the practice's accountant, which is the outside-accountant roster entry (ruling 141), counsel, or the integration operator (EB-15) (design call RD-9). Holding several roles SHALL give the authority of each role and nothing more: no authority SHALL be inferred from a combination of roles (design call RD-17, PROPOSED). The practice's accountant and counsel are the exceptions that SR-04 states. An AI agent SHALL keep only the agent recipe (AM-04), and this requirement gives an agent no other role.
 
 #### Scenario: A physician-owner holds several recipes
 - **WHEN** one named physician holds the medical director recipe, the practice manager recipe and the controller or office manager recipe
@@ -18,7 +18,7 @@ A named human MAY hold several roles at once (ruling 107). A role is a role reci
 ### Requirement: SR-02 Every sign-off records the role under which it was given
 Every sign-off that a requirement gives to a named human or a named AI agent in openPractice SHALL record, in addition to what BAB-17 requires, the one role under which it was given (ruling 107). A sign-off here is an approval, release decision, attestation, confirmation or signature recorded under BAB-17, or a record that a requirement has an authorized person make in openPractice, such as the verification of an agreement (AI-14, AH-02, VA-01, PG-15). It does not include a record that another system makes and openPractice only stores, such as HealthLinc's identity verification for a link (PG-05).
 
-The signer SHALL state that role at signing, and the sign-off SHALL be refused when the stated role is not one the signer holds at that moment, or when the governing requirement names the roles allowed for that sign-off and the stated role is not among them (design call RD-18, PROPOSED). Where the governing requirement names no role, such as a record that "an authorized person" makes (AI-14, AH-02, VA-01, PG-15, PG-16), any role the signer holds SHALL be accepted and recorded. Which role an authorized person is, is pending with the owner as decision 142, not yet ruled. One act SHALL count for one role only: where an item needs sign-offs in two roles, a person who may give both SHALL give two sign-offs, each recording its role (design call RD-10). For an agent, the role is the agent recipe, recorded with the agent's openWallet ID (BAB-17).
+The signer SHALL state that role at signing, and the sign-off SHALL be refused when the stated role is not one the signer holds at that moment, or when the governing requirement names the roles allowed for that sign-off and the stated role is not among them (design call RD-18, PROPOSED). Where a requirement says that "an authorized person" records or verifies something and names no other role, that person is the practice manager, and the record keeps the role used (ruling 142). One act SHALL count for one role only: where an item needs sign-offs in two roles, a person who may give both SHALL give two sign-offs, each recording its role (design call RD-10). For an agent, the role is the agent recipe, recorded with the agent's openWallet ID (BAB-17).
 
 #### Scenario: The controller signs the day close
 - **WHEN** a physician who holds the medical director and the controller or office manager recipes signs the daily agent digest
@@ -36,9 +36,13 @@ The signer SHALL state that role at signing, and the sign-off SHALL be refused w
 - **WHEN** a person whose medical director recipe ended yesterday tries to approve a routing-clock policy version as medical director
 - **THEN** the approval is refused
 
-#### Scenario: An agreement record whose requirement names no role
-- **WHEN** the practice manager records and verifies a VA company's BAA (VA-01) and states the practice manager role
-- **THEN** the record is accepted and records that role, because VA-01 names no role the record must be given in
+#### Scenario: An authorized person who is not the practice manager
+- **WHEN** a requirement says that an authorized person verifies an agreement and names no other role, and a person who holds only the front desk recipe tries to verify it
+- **THEN** the verification is refused, because ruling 142 makes that person the practice manager
+
+#### Scenario: The practice manager verifies an agreement
+- **WHEN** the practice manager records and verifies a VA company's BAA (VA-01)
+- **THEN** the record is accepted and keeps the practice manager role (ruling 142)
 
 #### Scenario: A record another system makes
 - **WHEN** HealthLinc reports the identity verification for a link request (PG-05)
@@ -68,44 +72,53 @@ A rule that does not need two people, but loses its meaning when one person sign
 ### Requirement: SR-04 An accountant's or counsel's sign-off can never be self-approved
 These sign-offs SHALL NOT be self-approved (ruling 107):
 - every sign-off a requirement gives to the practice's accountant: the D8 approval and every estimator-version approval (AI-12, AI-20, BAB-17, WI-03, MA-07);
-- every counsel sign-off a requirement records: counsel's review recorded on each hold-policy version (PH-03) and on the proxy policy (PG-06), the recorded confirmation of ruling 97's answer that ruling 102 makes a go-live condition (`define-actors-agents-and-work-inbox` AH-06), and the recorded confirmation that a model provider's in-memory cache is acceptable, which ruling 133 asks for (`define-actors-agents-and-work-inbox` AH-02).
+- every counsel sign-off a requirement records: counsel's review recorded on each hold-policy version (PH-03) and on the proxy policy (PG-06), the recorded confirmation of ruling 97's answer that ruling 102 makes a go-live condition (`define-actors-agents-and-work-inbox` AH-06), and the recorded confirmation that a model provider's in-memory cache is acceptable, which ruling 138 makes a go-live condition (`define-actors-agents-and-work-inbox` AH-02).
 
-A sign-off that a later requirement gives to the practice's accountant, or records as counsel's, comes under this requirement. Apart from the engagement record, the accountant's attestation and the licence check that the test below needs for the accountant's sign-offs, which make those sign-offs wait on them (this change's `design.md`, T-9), this requirement adds no record and no precondition anywhere. Where a requirement only describes counsel's part, such as counsel confirming an agreement's form (AH-02) or deciding what agreement is required (PG-15), it records no counsel sign-off, and nothing here makes any function wait on counsel.
+A sign-off that a later requirement gives to the practice's accountant, or records as counsel's, comes under this requirement. One is the confirmation of the amount at which a write-off becomes material, which ruling 141 calls the write-off threshold and ruling 129 has each practice set and its accountant confirm (`define-revenue-cycle-core` PS-11 and RE-09, a draft change). This requirement adds no record and no precondition anywhere, apart from what rulings 139, 140 and 149 order and the owner-link precondition below (this change's `design.md`, T-9). Where a requirement only describes counsel's part, such as counsel confirming an agreement's form (AH-02) or deciding what agreement is required (PG-15), it records no counsel sign-off, and nothing here makes any function wait on counsel.
 
-Such a sign-off is not self-approved only when all of these hold (design call RD-11, PROPOSED):
-- it is given by a named person engaged from outside the practice. The practice's accountant is engaged under the vendor arrangement that `define-customer-financial-data-boundaries` requires for an outsourced accounting actor ("Accountant and biller access are independently bounded"). Counsel is named on the record by the authorized person who records the review or confirmation;
-- that person is neither an owner nor an employee of the practice. The roster entry for the accountant's engagement SHALL be created together with the vendor arrangement, and SHALL never be an existing entry relabeled. It may hold the bookkeeper recipe and the actor type that entry needs, which is pending with the owner as decision 141. Holding that entry SHALL NOT make the accountant an employee and SHALL NOT count as another role;
-- that person gives no other sign-off on the same item, in any role. For example, the medical director who approves a hold-policy version cannot also be the counsel whose review is recorded on it;
-- that person is not an AI agent.
+**The accountant (rulings 139, 140 and 141).** The accountant's sign-off SHALL be given only by someone engaged from outside the practice who is neither an owner nor an employee, and an accountant employed by the practice SHALL NOT give it in version 1 (ruling 139). That accountant SHALL be a licensed CPA whose licence is checked against the state board's public record, and SHALL attest in their own name (ruling 140). The accountant's roster entry is of the outside-accountant type and SHALL hold the outside-accountant recipe and no other (ruling 141; `define-actors-agents-and-work-inbox` AM-01, AM-02). These details are design call RD-11 (PROPOSED):
+- the engagement is the vendor arrangement that `define-customer-financial-data-boundaries` requires for an outsourced accounting actor ("Accountant and biller access are independently bounded"). The accountant's roster entry SHALL be created together with that arrangement, and SHALL never be an existing entry relabeled. Holding it SHALL NOT make the accountant an employee or count as another role;
+- a person who holds any other roster entry in the practice SHALL be treated as an employee;
+- the attestation is the accountant's own, given in their own name with the engagement, and states that they are neither an owner nor an employee. A statement that someone else records for the accountant SHALL NOT count;
+- a licence that cannot be checked against the state board's public record, or that the record does not show as active, SHALL refuse the sign-off;
+- the licensee's name, as the board's public record gives it, SHALL be matched against the parties behind every other roster entry and against the practice's owners, recorded as dated links under `define-mvp-practice-foundation` PR-15 (ruling 145). Any match SHALL refuse the sign-off.
 
-The sign-off SHALL be refused when any of these is not shown. A person who holds a roster entry other than the one created for the engagement SHALL be treated as an employee of the practice. Until the owner decides whether an accountant employed by the practice may ever give the accountant's sign-off, no such accountant SHALL give it (fail closed). For the accountant, "neither an owner nor an employee" SHALL be shown by all of these (design call RD-11, PROPOSED):
-- the accountant's own attestation, given in their own name with the engagement. A statement that someone else records for the accountant SHALL NOT count;
-- a check of the accountant's licence against the licensing board's public record, the independent record that design call RD-13 names. A sign-off whose licence cannot be checked there SHALL be refused (fail closed);
-- a match of the licensee's name, as the board's public record gives it, against the parties behind the practice's roster entries, other than the accountant's own engagement entry, and against its recorded owners. Any match SHALL refuse the sign-off.
+**Counsel (rulings 141 and 149).** Counsel needs no sign-in and is not a roster entry (ruling 141). Where a requirement records counsel's review or confirmation, the person who records it SHALL name counsel, and the named counsel SHALL be checked against the state bar's public record and matched against the practice's staff and owners, as the accountant is (ruling 149). These details are design call RD-11 (PROPOSED):
+- the record keeps counsel's state bar, admission number, and the date and result of the check;
+- an admission that cannot be checked against the bar's public record, or that the record does not show as active, SHALL refuse the review or confirmation;
+- a match of the admitted name, as the bar's public record gives it, against the parties behind any roster entry or a recorded owner SHALL refuse it.
 
-Who may give the accountant's sign-off is pending with the owner as decisions 139 (only someone engaged from outside the practice who is neither an owner nor an employee) and 140 (a licensed CPA whose licence is checked against the state board's public record), neither yet ruled. This requirement picks no side beyond refusing what it cannot show. Counsel needs no roster entry and no actor type, because an authorized person records counsel's review or confirmation by reference. The counsel named SHALL NOT be a person who holds a roster entry in the practice or is recorded as its owner; how a recorded name is matched to the parties behind roster entries (`define-mvp-practice-foundation` PR-15) is decided in planning.
+How a name is matched to parties is decided in planning.
 
-No one-person alternative SHALL apply to these sign-offs. A practice whose own people cannot give them can have them given only by an accountant or counsel engaged from outside the practice, and the checklist shows that need (RC-06).
+**For both.** The sign-off SHALL also be refused when the person gives another sign-off on the same item, in any role, such as the medical director who approves a hold-policy version and the counsel whose review is recorded on it, or when the person is an AI agent. While the practice has no owner link recorded under PR-15, no accountant or counsel sign-off SHALL be accepted, because the owner match would have nothing to match (design call RD-11, PROPOSED). No one-person alternative SHALL apply to these sign-offs. A practice whose own people cannot give them can have them given only by an accountant or counsel engaged from outside the practice, and the checklist shows that need (RC-06).
 
 #### Scenario: A physician-owner tries to act as the practice's accountant
 - **WHEN** the physician who owns the practice tries to approve the revenue-recognition policy as the practice's accountant
-- **THEN** the approval is refused, AI-20's go-live gate stays closed, and the checklist shows that an accountant engaged from outside the practice must sign it
+- **THEN** the approval is refused, AI-20's go-live gate stays closed, and the checklist shows that an outside accountant must sign it
 
-#### Scenario: An in-house bookkeeper tries to approve an estimator version
-- **WHEN** an employee who holds only the bookkeeper recipe, with no outside engagement recorded, tries to approve a new estimator version as the practice's accountant
-- **THEN** the approval is refused, because the person is not engaged from outside the practice
+#### Scenario: An employed bookkeeper tries to approve an estimator version
+- **WHEN** an employee who holds the bookkeeper recipe tries to approve a new estimator version as the practice's accountant
+- **THEN** the approval is refused, because an employed accountant cannot give the accountant's sign-off in version 1 (ruling 139)
 
-#### Scenario: An outside accountant who also keeps the books
-- **WHEN** an accountant engaged from outside the practice approves a new estimator version. The engagement roster entry was created with a recorded vendor arrangement and holds only the bookkeeper recipe. The accountant attested in their own name, and their licence checks against the board's public record with no match to any other roster party or recorded owner
+#### Scenario: An outside accountant approves an estimator version
+- **WHEN** an outside accountant approves a new estimator version. The accountant is a licensed CPA whose roster entry was created with a recorded vendor arrangement and holds only the outside-accountant recipe. They attested in their own name, their licence checks active against the state board's public record, the name matches no other roster party or recorded owner, and the practice's owners are recorded
 - **THEN** the approval is accepted and records the practice's accountant role
 
+#### Scenario: An accountant who is not a CPA
+- **WHEN** a bookkeeping firm engaged from outside the practice offers a bookkeeper who holds no CPA licence to approve the revenue-recognition policy
+- **THEN** the approval is refused, because the accountant must be a licensed CPA (ruling 140)
+
 #### Scenario: An owner records themselves as the outside accountant
-- **WHEN** an owner who is a licensed accountant records a second party under a variant of their name, creates an engagement entry for it, and attests that the person is neither an owner nor an employee
-- **THEN** the licensee's name in the board's public record matches the party behind the owner's own roster entry, and the sign-off is refused
+- **WHEN** an owner who is a licensed CPA records a second party under a variant of their name, creates an outside-accountant entry for it, and attests that the person is neither an owner nor an employee
+- **THEN** the licensee's name in the board's public record matches the owner's recorded owner link, and the sign-off is refused
 
 #### Scenario: A bookkeeper's entry is relabeled
 - **WHEN** someone tries to mark an employed bookkeeper's existing roster entry as the accountant's engagement entry
-- **THEN** the change is refused, because an engagement entry is created only together with its vendor arrangement
+- **THEN** the change is refused, because the accountant's entry is created only together with its vendor arrangement
+
+#### Scenario: No owner is recorded
+- **WHEN** an outside accountant who passes every other check approves the revenue-recognition policy, and the practice has no owner link recorded
+- **THEN** the approval is refused until the owners are recorded
 
 #### Scenario: The medical director is named as counsel
 - **WHEN** a hold-policy version records counsel's review and names, as counsel, the medical director who will approve that version
@@ -113,8 +126,12 @@ No one-person alternative SHALL apply to these sign-offs. A practice whose own p
 
 #### Scenario: A practice manager who is also a lawyer
 - **WHEN** a person who holds the practice manager recipe is named as counsel on a proxy-policy version
-- **THEN** the counsel review is refused, because that person is an employee of the practice
+- **THEN** the counsel review is refused, because the bar's record of that person matches the party behind a roster entry
+
+#### Scenario: An owner who is a lawyer names themselves as counsel
+- **WHEN** the practice manager records counsel's confirmation of ruling 97's answer and names, under a variant of their name, an owner who is a lawyer
+- **THEN** the admitted name in the state bar's public record matches a recorded owner, and the confirmation is refused (ruling 149)
 
 #### Scenario: An agreement verified without counsel named
-- **WHEN** an authorized person in a one-person practice records and verifies the agent operator's BAA (AH-02) and the HealthLinc operator agreement (PG-15), naming no counsel
+- **WHEN** the practice manager of a one-person practice records and verifies the agent operator's BAA (AH-02) and the HealthLinc operator agreement (PG-15), naming no counsel
 - **THEN** both records are accepted exactly as those requirements allow, and this requirement adds no counsel sign-off and holds nothing back
