@@ -29,7 +29,7 @@ Ideation paths are relative to the root of `opensoft/openPractice-spec`. All of 
 
 ## Owner rulings (2026-11-14)
 
-Rows 1 to 33 have the same source: **Brett Heap, 2026-11-14, authoring session.** Rows marked (2026-11-15) have the source **Brett Heap, 2026-11-15, accepting the recommendations on decisions 79 to 98 except 80**, except rows 103 and 107, whose source is **Brett Heap, 2026-11-15, accepting the recommendations on decisions 99 to 111** ("accept your recs for 99-111"), and rows 141, 142, 144, 145 and 150, whose source is **Brett Heap, 2026-11-15, accepting the recommendations on decisions 136 to 150** ("approve 80. accept your recs for 136-150"; ruling 80 is not recorded here); each quotes the question and the accepted wording. Rulings 139 and 140 belong to `define-practice-readiness`, whose SR-04 says who may be the practice's accountant, and are not recorded here. The requirement text matches each ruling.
+Rows 1 to 33 have the same source: **Brett Heap, 2026-11-14, authoring session.** Rows marked (2026-11-15) have the source **Brett Heap, 2026-11-15, accepting the recommendations on decisions 79 to 98 except 80**, except rows 103 and 107, whose source is **Brett Heap, 2026-11-15, accepting the recommendations on decisions 99 to 111** ("accept your recs for 99-111"), row 125, whose source is **Brett Heap, 2026-11-15, accepting the recommendations on decisions 112 to 132** ("for the rest, go with your recomendations"; change `define-revenue-cycle-core` records rulings 112 to 132, and ruling 125 is recorded here because this change's contract carries the field it asks for), and rows 141, 142, 144, 145 and 150, whose source is **Brett Heap, 2026-11-15, accepting the recommendations on decisions 136 to 150** ("approve 80. accept your recs for 136-150"; ruling 80 is not recorded here); each quotes the question and the accepted wording. Rulings 139 and 140 belong to `define-practice-readiness`, whose SR-04 says who may be the practice's accountant, and are not recorded here. The requirement text matches each ruling.
 
 | # | Ruling | Governs |
 |---|---|---|
@@ -72,6 +72,7 @@ Rows 1 to 33 have the same source: **Brett Heap, 2026-11-14, authoring session.*
 | 93 | (2026-11-15) Question: follow-up change to the merged openPractice contracts. Accepted: "Yes, one draft PR carrying: the agent operations Hermes lacks and the consent check; a verifiable entitlement; a clinician-acknowledged status; the representative's relationship and authority; the retraction reason code …" The list ends with an erratum to the gateway change's companion list: agent operations belong to medXfactory change `define-care-organization-hermes-openpractice-operations`, and clinical AI answering to medXfactory change `define-patient-medical-ai-connection`. | Here, the retraction reason code only; "Follow-up of 2026-11-15" below |
 | 103 | (2026-11-15) Question: one money format for every contract. Accepted: "Decimal text plus a currency code on the wire, as the accounting contract already does. Whole cents in storage." | BAB-18; AI-02; accounting schema `money`, `currency` and the bank-lines result's `currency`; F-8 to F-10 are design calls under it |
 | 107 | (2026-11-15) Question: one person in several roles. Accepted: "Allowed, with each sign-off recording the role used. A rule that needs two people names a one-person alternative, as ruling 98 does. Accountant and counsel sign-offs cannot be self-approved. The readiness checklist and starter policies go in a new change." | PR-15 (a staff member who is also a patient, guarantor, subscriber or representative); F-7 is a design call under it. The readiness checklist and starter policies belong to a new change, not this one |
+| 125 | (2026-11-15) Question: How are reason codes organized? Accepted: "A fixed list we ship, on two axes: kind of money movement and service category. Add a service-category field to the accounting contract if the gap is confirmed." | AI-15, AI-08, BAB-06 and AI-21, and the accounting schema's `service_category` and `service_category_map_version` (the gap is confirmed); F-14 to F-19 are design calls under it ("Accounting-contract amendment of 2026-11-15 (PA-1)" below) |
 | 141 | (2026-11-15) Question: The roster has no place for an outside accountant, so nobody can give those sign-offs today. Add one? Accepted: "Yes: an outside-accountant entry that can read the books and approve accounting policy, estimator versions and the write-off threshold, and nothing else. Counsel needs no sign-in. Added to the corrections PR." | BAB-17, AI-12, AI-20 and PR-15 (the practice's accountant is a roster entry of change `define-actors-agents-and-work-inbox`'s outside-accountant type, its AM-01); who may hold it is `define-practice-readiness` SR-04 |
 | 142 | (2026-11-15) Question: About a dozen rules say "an authorized person" records or verifies an agreement. Which role is that? Accepted: "The practice manager, unless the rule names another role. Each record keeps the role used." | AI-14 (the practice manager records and verifies, and the record keeps the role used) |
 | 144 | (2026-11-15) Question: One rule says a proposal is never decided by its proposer; another lets a sole staff member act on their own record with a notice to the accountant. Which wins? Accepted: "The second, only where the practice has nobody else. It records both roles and notifies the outside accountant. Without an outside accountant on the roster, the act waits." | PR-15 (its one-person alternative also applies to deciding a proposal the person made in another role); change `define-actors-agents-and-work-inbox` WI-03; F-7 revised under it |
@@ -210,7 +211,7 @@ Banks (ruling 5) are covered by these requirements:
 
 ### 7. The accounting contract: `openpractice-accounting-integration/1.0`
 
-The canonical schema is `contracts/openpractice-accounting-integration-1.0.schema.json`, SHA-256 `b15c4a19f8026d5cd94c63ab4e95b61f2170b45dd5a755d68996591a16a58c16` (it was `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885` before the corrections of 2026-11-15).
+The canonical schema is `contracts/openpractice-accounting-integration-1.0.schema.json`, SHA-256 `5ef5176056228bdd80aeeb285da4e4a4478ad3c2f476dd70b346144ce3ceb5f2` (it was `b15c4a19f8026d5cd94c63ab4e95b61f2170b45dd5a755d68996591a16a58c16` before the accounting-contract amendment of 2026-11-15, PA-1, and `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885` before the corrections of 2026-11-15).
 
 **Ownership** (AI-01, ruling 26). This change owns the contract's posting mechanics: posting identity and idempotency, batches and their freeze, release, retries, the reconciliation report, the posting modes and the BAA gate. Change `define-customer-financial-data-boundaries` owns customer and party roles, routing by offering, obligation ownership and purpose-bound business views. That change references this contract for posting and defines no second posting mechanism.
 
@@ -234,7 +235,7 @@ Ruling 25 governs those customers. They exist only in `customer-detail` mode, be
 
 **Revenue recognition** (AI-12, ruling 30). Net revenue is the constrained expected entitlement, estimated at the date of service from a versioned estimator and re-estimated at each close. The gross charge is a gross line carried with its gross-to-net deduction. Billing, adjudication, cash and disputes are evidence events that update the estimate. Each re-estimate or true-up is a new dated entry that references its estimate version or close snapshot. Close re-estimates post automatically from the approved estimator version (FD-3). Only estimator versions and the D8 policy items need approval, by the practice's accountant only, never by an opted-in agent. A payer with no history gets a conservative constrained estimate, and there is no gross-then-adjust fallback. Credit losses are an expense, separate from revenue.
 
-**`summary-journal` (the default, ruling 28).** Balanced category totals post to payer-class control accounts, summarized by period, payer class, benign service category and account (AI-15). Service performed posts the gross line and its deduction. Claim submission reclassifies unbilled to billed receivable. Adjudication realizes the contractual adjustment against the allowance and trues up any difference. Payments move cash clearing against the payer-class or patient receivable, and patient-share transfers move between control accounts. Disputes, credit losses, refund liabilities and reversals are new entries. A day-level group below the destination's minimum group size (default 11 visits) rolls up to the week, then to the period (AI-15). Patient-level and day-level detail stays in openPractice's detail manifest, which the batch identifies by digest. No customer record is created.
+**`summary-journal` (the default, ruling 28).** Balanced category totals post to payer-class control accounts, summarized by period, payer class, benign service category and account (AI-15). Service performed posts the gross line and its deduction. Claim submission reclassifies unbilled to billed receivable. Adjudication realizes the contractual adjustment against the allowance and trues up any difference. Payments move cash clearing against the payer-class or patient receivable, and patient-share and payer-share transfers move between control accounts. Disputes, credit losses, refund liabilities and reversals are new entries. A day-level group below the destination's minimum group size (default 11 visits) rolls up to the week, then to the period (AI-15). Patient-level and day-level detail stays in openPractice's detail manifest, which the batch identifies by digest. No customer record is created.
 
 **`customer-detail` (opt-in, after the BAA gate).**
 
@@ -244,7 +245,8 @@ Ruling 25 governs those customers. They exist only in `customer-detail` mode, be
 | Gross-to-net deduction at the date of service | `credit_note.post`, label `gross_to_net_deduction`, referencing the estimate version (AI-12) |
 | Evidence or close re-estimate | `credit_note.post` or `debit_note.post` for the change in estimate, label `gross_to_net_true_up`, referencing the estimate version or close snapshot |
 | Payer without history | The same, with a conservative constrained estimate; no gross-then-adjust fallback (ruling 30) |
-| Credit loss (authorized) | `journal.post`, label `credit_loss`, an expense separate from revenue |
+| Credit-loss provision or its reversal at close (allowance method, authorized) | `journal.post`, label `credit_loss`, an expense separate from revenue |
+| Balance written off as a credit loss (either method, authorized) | `credit_note.post` on the guarantor's invoice, label `credit_loss`, or, for a receivable with no invoice, a `journal.post` with label `credit_loss` linked by `applies_to` to the `reversal.post` that reopened it, as AI-13 states (`define-revenue-cycle-core` RT-10, PY-09) |
 | Overpayment identified | `journal.post`, label `refund_liability` |
 | Patient responsibility | `credit_note.post` (transfer) on the payer invoice, plus `invoice.post` to the guarantor account |
 | Self-pay charges finalized | `invoice.post` to the guarantor account |
@@ -252,8 +254,8 @@ Ruling 25 governs those customers. They exist only in `customer-detail` mode, be
 | Payment received | `payment.post` into clearing, applied to the invoice |
 | Customer credit | Held unapplied until `payment.apply` or `refund.post` |
 | Chargeback / returned item | `reversal.post` of the payment, plus `journal.post` of the chargeback or bank fee |
-| Payer debit / takeback | `reversal.post` (whole or part) of the recovered payment allocation |
-| Provider-level offsets in a wire | Named `journal.post` lines in the deposit's composition: interest, forwarding balance, takeback |
+| Payer debit / takeback, except a takeback of an overpayment already owed back (AI-13) | `reversal.post` (whole or part) of the recovered payment allocation |
+| Provider-level offsets in a wire | Named `journal.post` lines in the deposit's composition: interest, forwarding balance; a takeback in the wire is the posting its own row states (AI-13), shown in the deposit's composition; where the remittance moves no money, these postings are made on their own and net to zero in clearing |
 | Virtual-card payment | Net of a `journal.post` virtual-card fee |
 | Merchant or bank fee | `journal.post` to its mapped expense account |
 | Unidentified receipt | `journal.post` to an unidentified-receipts liability. When identified: release the liability and `payment.post` to the customer, both linked by `applies_to` to the original posting. |
@@ -263,7 +265,7 @@ Ruling 25 governs those customers. They exist only in `customer-detail` mode, be
 | Explained deposit | One `deposit.post` equal to the bank line, made of clearing releases and named lines. openPractice is its single poster. |
 
 Charge postings use the date of service as their GL date. Payments, applications, refunds, deposits and other postings use their own event or bank date, under the same closed-period rule (AI-11, BAB-15).
-| Write-off | `credit_note.post` with label `write_off` |
+| Write-off | `credit_note.post` with label `write_off`; a write-off against the allowance posts as AI-13 states, with label `write_off_against_allowance` where it posts at all (`define-revenue-cycle-core` RT-09) |
 | Correction | `reversal.post` with a back-reference |
 
 **Neutral labels.** Every line carries a fixed neutral label (AI-16) that never reveals the type of service. A practice's internal reason category stays inside openPractice.
@@ -534,8 +536,45 @@ On 2026-11-15 the owner asked for the owner-supplied spec critique dated 2026-11
 
 | Contract | Digest before | Digest now |
 |---|---|---|
-| `openpractice-accounting-integration/1.0` | `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885` | `b15c4a19f8026d5cd94c63ab4e95b61f2170b45dd5a755d68996591a16a58c16` |
+| `openpractice-accounting-integration/1.0` | `353492ceac5bfa9a90fa7eea221c5727a303453e6232430847224c0807007885` | `5ef5176056228bdd80aeeb285da4e4a4478ad3c2f476dd70b346144ce3ceb5f2` |
 | `openpractice-ehr-patient-link/1.0` | `76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802` | unchanged |
 | `openpractice-ehr-clinical-facts/1.0` | `3aac773e9e8a8a370e1a78c845e5837d059b60146e411d973e0c54464aad12db` | unchanged |
 
-The accounting change is two tightenings: a bank-lines result must now carry `currency`, and every `currency` must be `USD`. No consumer outside openPractice cites that digest.
+The accounting change is two tightenings: a bank-lines result must now carry `currency`, and every `currency` must be `USD`. No consumer outside openPractice cites that digest. The accounting-contract amendment below (PA-1) changed the schema again, so "Digest now" is the digest after both.
+
+## Accounting-contract amendment of 2026-11-15 (PA-1)
+
+Change `define-revenue-cycle-core`, a draft in this repository, lists in its design's "Proposed amendments" the edits it needs in other changes. Its PA-1, as that change states it at `1ab226c`, is applied here: every row of its three tables, the schema and text rows, the AI-13 rows and the rows for section 8 above. It edits `openpractice-accounting-integration/1.0` in place, because the contract is an unratified draft with no adapter built and no batch in existence; the contract keeps its name, and the digest identifies the bytes. Only PA-1 is applied; PA-3, PA-7 and PA-10 wait for the owner. `Status` stays `draft`, and `owner-ratification.md` stays PENDING.
+
+**Compatibility.** The amendment is not backward-compatible. Every summary batch valid before it is invalid now, because a batch must record its service-category mapping version, every revenue or deduction line needs a service category, a payer class and a group level, and every patient-responsibility-transfer line, and every line under seven other labels that always touch a receivable, needs a payer class. Every batch valid under the amended schema fails the earlier one. That is acceptable only as an edit made in place while the contract is an unratified draft; once it is ratified, its own rule that a 1.x reader accepts any 1.x record would make the same edit a new MAJOR version. Customer-detail lines are unchanged except that the three new labels become available to them, and they can never carry a service category or a counter payer class (AI-16).
+
+**The estimate reference.** Only gross-to-net lines (patient-services revenue, gross-to-net deduction and gross-to-net true-up) carry the estimate reference, and the schema's existing rule that requires it is unchanged. A revenue-reducing write-off is a person's realized decision, not the application of an estimate: its evidence is the write-off record in the detail manifest, so it carries a service category, a payer class and a group level but no estimate reference.
+
+**Standing.** Ruling 125 covers the service-category field. Its accepted words include "Add a service-category field to the accounting contract if the gap is confirmed", and the gap is confirmed: AI-15 summarizes by benign service category, while the schema had no field for one and its `additionalProperties: false` refused one. Everything else in the amendment is a design call under ruling 125, PROPOSED and listed for the owner below.
+
+| What changed | Why | Where |
+|---|---|---|
+| A service category on every summary line that is revenue or a deduction from revenue, and on no other line; each summary batch records its mapping version | Ruling 125; AI-15's category axis had no field | Schema `summaryLine.service_category`, `revenueOrDeductionLabel`, `summaryBatch.service_category_map_version`; AI-15, AI-08, BAB-06, AI-21; F-14 |
+| A counter payer class on a payer-share transfer, whose amount is greater than zero | A payer-share transfer crosses two payer classes, which one `payer_class` cannot carry, and AI-21 reconciles by payer class | Schema `summaryLine.counter_payer_class` and its rule; AI-15, AI-21; F-15 |
+| Three labels: `write_off_against_allowance`, `bank_debit_clearing_release` and `payer_responsibility_transfer` | Kinds that change ships had no label | Schema `neutralLabel`; F-16 |
+| A payer class always on patient-responsibility-transfer lines and on seven other labels that always touch a receivable | The schema let those lines omit it | Schema `summaryLine` rule; AI-15, AI-21; F-17 |
+| The estimate reference on gross-to-net lines only | A revenue-reducing write-off is not an estimate's application | Schema description and `estimateRef`; AI-15; F-14 |
+| Who books an explained bank debit, recorded per destination before go-live | A destination that books its own bank feed would double the lines openPractice posts | AI-20, BAB-14, AI-21; F-18 |
+| A customer-detail posting, or a stated "no posting", for every kind that change ships | Its RT-04 holds back any kind without one | AI-13; section 8 above; F-19 |
+
+**Proposed calls under ruling 125 (for the owner).**
+
+| # | Call | Where |
+|---|---|---|
+| F-14 | **PROPOSED, under ruling 125.** The ruled field's details: a service category is carried on every summary line that is revenue or a deduction from revenue, `write_off` included, and on no other line, and never in a customer-detail posting; it is a coded value from the practice's versioned service-category mapping (`define-revenue-cycle-core` RT-03); each summary batch records the version of the whole effective-dated mapping it used; AI-08 compares totals, and BAB-06 maps accounts, by reason category and service category on those lines; and only gross-to-net lines carry the estimate reference. | Schema; AI-15, AI-08, BAB-06, AI-21 |
+| F-15 | **PROPOSED, under ruling 125.** A payer-responsibility-transfer line names the payer class that receives the amount as `payer_class` and the one that gives it up as `counter_payer_class`; no other line carries a counter payer class; its amount is greater than zero, so a reversed payer-share transfer is sent as a new line with its two classes swapped. | Schema; AI-15, AI-21 |
+| F-16 | **PROPOSED, under ruling 125.** Three labels are added for kinds `define-revenue-cycle-core` ships: `write_off_against_allowance` (no revenue effect), `bank_debit_clearing_release` (sent only where AI-20's record says openPractice sends such lines) and `payer_responsibility_transfer` (no revenue effect). | Schema `neutralLabel` |
+| F-17 | **PROPOSED, under ruling 125.** A payer class is required on every patient-responsibility-transfer, chargeback, contractual-adjustment, payment-application, payment-received, returned-item, unbilled-to-billed and write-off-against-allowance line, because every kind under those labels touches a receivable; the five labels that are mixed, credit loss, payer takeback, refund liability, unapplied payment and unidentified receipt reclassified, carry it where their reason category touches a receivable, which AI-21 tests by reason category. | Schema; AI-15, AI-21 |
+| F-18 | **PROPOSED, under ruling 125.** Before any destination goes live, in either mode, openPractice records who books the bank debits it explains: openPractice, with label `bank_debit_clearing_release`, or the destination from its own bank feed, coded against the account mapped to `cash_clearing`. Until that record exists no explained-bank-debit line is sent, and a later change to openPractice sending applies only to debits explained after its effective date; BAB-14 follows the record. | AI-20, BAB-14, AI-21 |
+| F-19 | **PROPOSED, under ruling 125.** The AI-13 rows and the matching rows of section 8: every kind `define-revenue-cycle-core` ships has a customer-detail posting, or a stated "no posting", including a takeback of an overpayment already owed back, which posts against refund liability and never as a reversal. | AI-13; section 8 |
+
+| Contract | Digest before | Digest after the amendment |
+|---|---|---|
+| `openpractice-accounting-integration/1.0` | `b15c4a19f8026d5cd94c63ab4e95b61f2170b45dd5a755d68996591a16a58c16` | `5ef5176056228bdd80aeeb285da4e4a4478ad3c2f476dd70b346144ce3ceb5f2` |
+| `openpractice-ehr-patient-link/1.0` | `76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802` | unchanged |
+| `openpractice-ehr-clinical-facts/1.0` | `3aac773e9e8a8a370e1a78c845e5837d059b60146e411d973e0c54464aad12db` | unchanged |
