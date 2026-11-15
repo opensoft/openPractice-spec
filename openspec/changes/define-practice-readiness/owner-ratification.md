@@ -22,14 +22,14 @@ The 19 design calls in `design.md` under "Design calls for owner review" have no
 - Draft PR opensoft/openPractice-spec#7 (`change/follow-up-ruling-93-contract-gaps`) merged, with revision: _pending_
 - The corrections change stacked on it, draft PR opensoft/openPractice-spec#8 (`change/critique-2026-11-15-corrections`), merged, with revision: _pending_
 - Every requirement ID this change cites exists at those revisions (cross-reference check): _pending_
-- Rows RI-46, RI-47, RI-49 and RI-50 traced to AH-01, AH-02, AH-06, AM-04 and MA-04 as merged from the corrections change, and the ER-12 lapse on RI-17, RI-18 and RI-46: _pending_
+- Rows RI-46, RI-47, RI-49, RI-50 and RI-53 traced to AH-01, AH-02, AH-06, AM-04 and MA-04 as merged from the corrections change, and the ER-12 lapse on RI-17, RI-18 and RI-46: _pending_
 
 ## Required Amendment Dispositions
 
 Each amendment belongs to the owning change. Its disposition is recorded here; this change edits no other change.
 
 - RA-1 (AO-10), RA-2 (ER-09, a record only), RA-3 (AO-03), RA-4 (AH-05 exception 1, condition 5) and RA-6 (PR-15, the practice's ownership), each accepted, changed or rejected, with the change and revision that carries it; RA-5a to RA-5d (PG-05, PG-06, PH-04, BAB-17) only if the corrections change's design call F-7 is rejected: _pending_
-- CA-1 to CA-4 and CA-9, each accepted, changed or rejected, with the change and revision that carries it; CA-5 to CA-8 only if their owners come to record counsel's part: _pending_
+- CA-1 to CA-4, CA-9 and CA-10, each accepted, changed or rejected, with the change and revision that carries it; CA-5 to CA-8 only if their owners come to record counsel's part: _pending_
 
 ## Required Owner Decision
 
@@ -39,6 +39,7 @@ Each amendment belongs to the owning change. Its disposition is recorded here; t
 - Design-call dispositions (RD-1 to RD-19, each accepted, changed or rejected): _pending_
 - Tension dispositions (T-1 to T-10): _pending_
 - Answers to Open Questions 14 (an employed accountant) and 15 (recording ownership), or a record that each stays open and SR-04 fails closed meanwhile: _pending_
+- The owner's pending decisions 139 to 148 that `design.md` points at, each ruled or recorded as still open: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
 Required owner statement:
@@ -49,7 +50,7 @@ Required owner statement:
 > - a starter template is inert until the authority its requirement names signs a policy made from it, and nothing is adopted by default or in bulk;
 > - one person may hold several roles, every sign-off records the role under which it was given, and a rule that needs two people fails closed until its owning change names a one-person alternative;
 > - an accountant's sign-off, and a counsel sign-off that a requirement records, can never be self-approved, and this change adds no counsel sign-off where a requirement only describes counsel's part;
-> - a use of a one-person alternative whose subject is a patient-side record appears on the checklist only as a count;
+> - a use of a one-person alternative whose subject is a patient-side record appears on the checklist only as a count, shown only to readers authorized to see that PHI;
 > - every amendment this change proposes takes effect only when the owning change adopts it;
 > - this change cannot be archived until the implementing work and the assembly pin bump are merged and accepted.
 

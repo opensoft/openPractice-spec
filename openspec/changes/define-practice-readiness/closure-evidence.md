@@ -20,7 +20,7 @@ This record collects acceptance evidence for OpenSpec change `define-practice-re
 - Every row traced to its enforcing requirement; no row without one; a row whose requirement names no authority says so (RC-02): _pending_
 - Row states, with `unavailable` when a gate's record cannot be read and `not_required` only from the requirement's own condition (RC-04): _pending_
 - What stays off and what still runs, in the enforcing requirement's words (RC-05): _pending_
-- Authority holders, one-person marks, collapse warnings, and the list of one-person uses and both-sides sign-offs, with every use whose subject is a patient-side record shown only as a count behind an opaque reference (RC-06): _pending_
+- Authority holders, one-person marks, collapse warnings, and the list of one-person uses and both-sides sign-offs, with every use whose subject is a patient-side record shown only as a count with an opaque reference, both visible only to readers authorized to see that PHI (RC-06): _pending_
 - No PHI in the checklist, its logs or its diagnostics; read only through the versioned API (RC-07): _pending_
 - The starter kit's templates, none of them read by a gate; inert after installation and upgrade (SK-01, SK-02): _pending_
 - A version made from a template approved through the gate's own action with the same record as one written from scratch, and template provenance that changes no check (SK-03): _pending_
@@ -29,7 +29,8 @@ This record collects acceptance evidence for OpenSpec change `define-practice-re
 - Templates carry no legal, accounting or clinical rule; the retention template holds no duration (SK-06): _pending_
 - The role on every sign-off; refusal of a role not held or not allowed; two sign-offs for two roles (SR-01, SR-02): _pending_
 - Fail-closed handling of a two-person rule with no one-person alternative, or an unavailable one; each one-person use recorded (SR-03): _pending_
-- Every SR-04 refusal: no outside engagement, an owner or employee, the other side of the same item, an agent; and no SR-04 check outside the sign-offs it names: _pending_
+- Every SR-04 refusal: no outside engagement, an engagement entry not created with its arrangement, no own attestation, a licence that does not check against the board's public record, a licensee name matching another roster party or a recorded owner, an owner or employee, the other side of the same item, an agent; and no SR-04 check outside the sign-offs it names: _pending_
+- Any role the signer holds accepted and recorded where the governing requirement names none (SR-02): _pending_
 
 ## Boundary and Merge Evidence
 
