@@ -92,7 +92,7 @@
 |---|---|---|
 | C1 Clinical | **Not built.** Consume evidence events/references only | Out of scope by established boundary |
 | C2 Party | **Build, small.** One Party with patient, guarantor, subscriber roles | Needed to bill anyone; identity mistakes are expensive to fix later |
-| C3 Operations | **Minimal.** Registration workflow and a work queue for exceptions. Full scheduling only if the EHR cannot supply appointment/encounter reference | MVP is billing-first (DECISIONS.md) |
+| C3 Operations | **Minimal.** Registration workflow, a work queue for exceptions, and the administrative appointment, for which openPractice is the system of record (ruling 31); full calendar features deferred | MVP is billing-first (DECISIONS.md) |
 | C4 Commerce/Pricing | **Minimal.** A service/procedure catalog with one fee schedule. No packages, memberships, retail or inventory | Needed for charge amounts, nothing more |
 | C5 Coverage | **Build, narrow.** Policy record, Medicare coverage record, eligibility result stored as evidence; authorization as optional, conditional record | Required to bill; depth depends on pathway |
 | C6 + C7 | **Merge into one "Revenue Cycle core" for MVP** (separate modules internally, one release unit) | Charges, claims, remittance and balances share one lifecycle; splitting early only adds integration seams |
@@ -119,7 +119,7 @@
 | Context | Responsibilities | Canonical entities | System of record | Interfaces | Exclusions |
 |---|---|---|---|---|---|
 | C1 Clinical | Document care; sign notes; orders, results; diagnoses/procedures as documented | Encounter, Order, Medication, Result, Clinical consent, Signed note | openChart / EHR | Emits evidence references to openPractice | Pricing, coverage, balances |
-| C2 Party | One identity per human/org; roles; relationships; contact; financial responsibility links | Party, PartyRole, Relationship, Address/Contact | openPractice (patient *demographic and administrative* copy); EHR is clinical master of the patient | Matches to EHR patient ID via cross-reference | Clinical history; accounting customer |
+| C2 Party | One identity per human/org; roles; relationships; contact; financial responsibility links | Party, PartyRole, Relationship, Address/Contact | openPractice (administrative source of patient demographics, published to a linked EHR); the EHR owns its clinical record (ruling 29) | Matches to EHR patient ID via cross-reference | Clinical history; accounting customer |
 | C3 Operations | Appointments, registration steps, tasks, staff queues | Appointment, RegistrationCase, WorkItem, Location/Resource | openPractice | Appointment ↔ encounter reference with EHR | Clinical encounter content |
 | C4 Commerce | What can be charged and at what price | ServiceItem, FeeSchedule, FeeScheduleEntry, (later) Package | openPractice | Charge capture reads price; GL account mapping reads item | Payer-allowed amounts (those are contract data in C5) |
 | C5 Coverage | Insurance facts, eligibility, authorization | CoverageRecord, Payer, EligibilityCheck, Authorization, Payer rule reference | openPractice | Claim Pathway Adapter; eligibility channel | Payment posting |
@@ -136,7 +136,7 @@ Principle: **one `Party` per real person or organization; everything else is a r
 |---|---|---|---|
 | Person | A human | `Party` (type person) | The only identity record |
 | Organization | Payer, employer, practice | `Party` (type organization) | Same mechanism |
-| Patient | A person receiving care | `PartyRole: patient` + cross-reference to the EHR patient ID | EHR is the clinical master; openPractice keeps the administrative copy |
+| Patient | A person receiving care | `PartyRole: patient` + cross-reference to the EHR patient ID | openPractice is the administrative source; the EHR owns its clinical record (ruling 29) |
 | Guarantor | Person financially responsible for a balance | `PartyRole: guarantor` + link to patient(s) | May be the patient themself (same Party) |
 | Subscriber / policyholder | Person who holds the insurance policy | `PartyRole: subscriber` on a CoverageRecord | May be the patient (self) or another Party |
 | Payer | Organization paying claims | `Party` (org) + `Payer` profile | Medicare is a Payer |
@@ -218,7 +218,7 @@ Because openPractice is Frappe-native, ERPNext's doctypes (Customer, Sales Invoi
 
 | Facility | Tempting use | Recommendation |
 |---|---|---|
-| ERPNext Customer | Patient as customer | **Do not.** Creates a second competing identity. Use at most a few control-party records (e.g. "Medicare receivable control") |
+| ERPNext Customer | Patient as customer | **Do not**, except in two cases (ruling 32): in `customer-detail` mode, where the customer is derived from the guarantor or payer role, and for membership and retail buyers. Otherwise it creates a second competing identity; use at most a few control-party records (e.g. "Medicare receivable control") |
 | ERPNext Sales Invoice | Claim or patient statement | **Do not for claims.** Would duplicate AR. Patient statements stay in openPractice |
 | ERPNext Payment Entry | Posting receipts | Use only as the *accounting posting vehicle* at summarized level, if ERPNext is chosen; otherwise Journal Entry |
 | ERPNext Item / Price List | Service catalog | Keep catalog in openPractice (C4) with a mapping to GL account; do not require ERPNext to be installed |
@@ -329,7 +329,7 @@ The first version recommended "gross at charge plus contractual adjustment on ad
 3. **Two separate allowances:** a transaction-price (gross-to-net) allowance, which reduces revenue, and a credit-loss allowance, which is an expense on a separate line.
 4. **No invented precision for disputes:** the disputed part stays out of the recognized asset until it is probable that including it will not cause a significant reversal.
 5. **openPractice holds every detail; the ERP holds categories and totals.** Estimates, versions and evidence are retained in openPractice and are reproducible for any close.
-6. **Proposals only:** all estimates, approvals, reversals and write-offs are proposed by automation and approved by a named person.
+6. **Proposals only:** automation proposes estimates, reversals and write-offs. Each action's FD-5 tier decides whether it needs a sign-off (ruling 33). Close re-estimates post automatically from the approved estimator version (ruling 30, FD-3).
 
 #### 5A.2.2 Reporting basis is not the payer pathway
 
@@ -390,7 +390,7 @@ Governance of the estimator:
 - Each estimate record carries estimator version, input data window, cohort ID, evidence references and approver; stored in openPractice.
 - Estimator changes (new version) need approval and take effect prospectively from a stated effective date; the effect on the open period is shown.
 - Back-testing: compare estimate to final entitlement by cohort every close; unexplained variance above a threshold the accountant sets raises a work item.
-- Automation may calculate and propose; a named human approves versions, overlays and period-end estimate summaries.
+- Automation may calculate and propose. The accountant or owner approves estimator versions and overlays (D8). Period-end re-estimates post automatically from the approved version, with no approval at close (ruling 30, FD-3).
 
 #### 5A.2.6 Classification, allowances and what is not an asset
 
@@ -427,7 +427,7 @@ Governance of the estimator:
 3. **Period-end estimate run:** re-run the estimator for open balances; compare to prior estimate; post the difference as a revenue adjustment.
 4. **Reconciliation:** (a) gross AR in openPractice equals ERP gross AR control; (b) gross-to-net allowance equals the sum of openPractice estimates; (c) net AR equals gross AR minus allowances; (d) net AR equals cumulative net revenue minus cash and clearing (this is proved for the example); (e) cash clearing equals unmatched deposits.
 5. **Close snapshot:** openPractice stores a locked snapshot (balances, estimates, versions, evidence hashes) so any closed period can be reproduced exactly.
-6. **Approval:** a named person approves the snapshot before the ERP period is closed.
+6. **No approval at close (amended by ruling 30, FD-3):** the snapshot is stored automatically, and close re-estimates post automatically from the approved estimator version. Only estimator versions and the D8 policy items need approval.
 
 **Late information after close.**
 
@@ -444,11 +444,11 @@ Governance of the estimator:
 - **Lines are categories only**, for example `SVC-OFFICE-VISIT`, `SVC-LAB-WORK`, `SVC-LAB-TEST`, plus control accounts. Mapping from openPractice service codes to categories is **versioned and effective-dated**; changes need approval and apply prospectively, with remapping handled as a posted reclassification.
 - **Never sent to the ERP:** patient identifiers, diagnosis or procedure codes, payer correspondence, claim content or remittance detail. The ERP receives a batch ID, amounts, category, `accounting_date`, `effective_date`, estimator version and a detail-manifest hash.
 - **Drill-through is restricted to openPractice;** ERP users see a batch ID, not clinical or claim content.
-- **Payer class** (for example Medicare, commercial, self-pay) is a candidate control-account dimension. It is non-clinical, but it is a policy question for Brett whether even this is too revealing.
+- **Payer class** (for example Medicare, commercial, self-pay) is a control-account dimension. Settled by ruling 28: payer-class control accounts, with `payer_class` required on revenue lines.
 
 #### 5A.2.10 Controls and authority
 
-By default, **no autonomous financial or patient-impacting action.** Automation may calculate estimates, prepare batches, flag variances and propose reversals; a named human approves estimator versions, period-end snapshots, write-offs, refunds, reversals, reopenings and any reclassification. Every action records actor, time, before and after reference and source message (Section 7.3).
+By default, **no autonomous financial or patient-impacting action.** Automation may calculate estimates, prepare batches, flag variances and propose reversals; sign-offs follow each action's FD-5 tier (ruling 33), estimator versions are approved per D8, and period-end snapshots need no approval (ruling 30); this covers write-offs, refunds, reversals, reopenings and any reclassification. Every action records actor, time, before and after reference and source message (Section 7.3).
 
 ### 5A.3 Worked example (synthetic)
 
@@ -538,7 +538,7 @@ Reading the table: at the P1 close, gross AR 200.00 less allowance 86.00 gives n
 4. Unbilled amounts: unconditional receivable vs contract asset, and presentation.
 5. Treatment of the credit-loss standard and wording (Topic 326 vs the Topic 310 text still referenced in 606-10-45).
 6. Materiality approach for errors; reopening policy; approval authority.
-7. Whether payer class may be a control-account dimension in the ERP.
+7. ~~Whether payer class may be a control-account dimension in the ERP.~~ Settled by ruling 28: payer-class control accounts.
 
 ### 5A.5 Sources (accessed 2026-11-14)
 
@@ -572,7 +572,7 @@ Synthetic patient "Pat Example" (not a real person). Steps marked **[conditional
 | 2 | Coverage capture | C5 | Record Medicare coverage; subscriber is self | `Coverage C-001` |
 | 3 | Coverage verification **[conditional]** | C5 | Run eligibility check where the pathway supports it; store response as evidence | `EligibilityCheck E-001` |
 | 4 | Authorization **[conditional]** | C5 | Only if the service/payer requires it; record or flag a work item | `Authorization A-001` or none |
-| 5 | Appointment | C3 | Optional in MVP if EHR provides the visit reference | `Appointment AP-001` |
+| 5 | Appointment | C3 | openPractice records the administrative appointment as its system of record (ruling 31); a walk-in visit may have none | `Appointment AP-001` |
 | 6 | Clinical care and signing | C1 (openChart) | Encounter documented and signed | Encounter ref `ENC-9`, version 3 |
 | 7 | Billable evidence delivered | C1→C6 | EHR sends evidence event: encounter ref, version, provider, date of service, service/diagnosis references as documented, signed-at, provenance. Medical necessity/clinical eligibility and coding are checked **[conditional]** according to the pathway; coding supplied by EHR or by a billing coder (a human) as the practice decides | `Evidence EV-1` |
 | 8 | Charge capture | C6, C4 | Price from fee schedule; create Charge referencing EV-1; duplicate guard on (encounter ref, service, date). List price is an operational figure; revenue is the constrained expected amount per Section 5A, posted by category when the service is performed | `Charge CH-1`, list amount 150.00 USD (synthetic) |
@@ -635,7 +635,7 @@ Synthetic patient "Pat Example" (not a real person). Steps marked **[conditional
 - **No chart copying:** references plus the minimum structured fields needed; the EHR remains the place to read the chart on demand.
 - **Corrections** are new events with `supersedes`; originals stay.
 - **Capability declaration:** each adapter and EHR connection advertises what it supports (e.g. eligibility, authorization, attachments); openPractice offers only what is declared.
-- **Human authority:** by default no autonomous patient-impacting or financial action. Claim submission, write-off, refund, adjustment approvals and patient statements require a named human approval or an explicit, revocable, narrowly scoped grant. Automation may *prepare*, *propose* and *flag*.
+- **Human authority** (amended by ruling 33; see D7, where FD-5 tiers govern and an opted-in named agent with an openWallet ID may sign below tier 4): by default no autonomous patient-impacting or financial action. Claim submission, write-off, refund, adjustment approvals and patient statements require a named human approval or an explicit, revocable, narrowly scoped grant. Automation may *prepare*, *propose* and *flag*.
 - **Audit:** every state change records actor, time, before/after reference, and the source message.
 
 ---
@@ -668,7 +668,7 @@ The core needs only: a claim version, line amounts, and a status event stream. Q
 | Other payers/secondary payer | | ✔ | Model must allow later |
 | Eligibility verification | Conditional | | If pathway supports |
 | Authorization tracking | Conditional | | Record only; no workflow engine |
-| Appointment scheduling | Minimal/reference | ✔ full calendar | Only if EHR cannot provide visit reference |
+| Appointment scheduling | Minimal; system of record (ruling 31) | ✔ full calendar | openPractice owns the administrative appointment; the EHR keeps a reference if needed |
 | Billable evidence intake, charge capture | ✔ | | |
 | Fee schedule (single) | ✔ | Multiple, packages, retail | |
 | Claim build, review, submit via adapter | ✔ | | |
@@ -704,13 +704,13 @@ Rationale: stages 1–6 can be built and tested end-to-end with synthetic data a
 
 | ID | Decision | Recommended default | Why |
 |---|---|---|---|
-| D1 | One `Party` identity with roles; "customer" is not a patient role | **Yes** | Prevents competing identities |
+| D1 | One `Party` identity with roles; "customer" is not a patient role | **Yes. Amended by ruling 32:** "customer" is a party role only for membership and retail buyers. For medical billing, the accounting-side customer (guarantor account or payer, `customer-detail` only) is derived from the guarantor or payer role | Prevents competing identities |
 | D2 | Receivable subledger owner | **openPractice** (Option A); ERP gets summarized control postings; `customer-detail` remains a per-destination opt-in behind the BAA gate, per `openpractice-accounting-integration/1.0` (ruling 28) | Avoids double AR; ERP-neutral |
 | D3 | Which ERP first | **ERPNext first as the reference adapter**, MSBC adapter second, one active per deployment | Same Frappe stack eases early testing; the contract stays neutral. Override if the practice already runs MSBC |
 | D4 | Deployment: one Frappe app `open_practice` with internal modules, no dependence on ERPNext doctypes | **Yes** | Keeps MSBC option open; domain lines enforced in code review, not by service splits |
 | D5 | Revenue recognition basis in postings | **Corrected:** net revenue = constrained expected entitlement at service, updated each close; gross charge is memo or gross line with its deduction; billing, adjudication, cash and disputes are evidence events (Section 5A). The first version's "gross at charge plus adjustment on adjudication" is withdrawn | Avoids overstating revenue and AR at each close; allows timely close; final policy to be approved by the practice's accountant |
 | D6 | Who supplies coding and medical-necessity evidence | **EHR supplies documented references; a human biller confirms**; openPractice does not infer codes | Preserves clinical authority; conditional on pathway |
-| D7 | Automation default | **Propose-only; named human approval for submit, write-off, refund, statement** | Preserves financial authority and reversibility |
+| D7 | Automation default | **Amended by ruling 33; FD-5 governs.** Automation is propose-only. Each action's FD-5 tier decides between approval, notification and a delay-and-cancel release, including deadline escapes. Where a tier calls for an approval, release decision or attestation, the signer is a named human or, opted in per action type and never by default, a named AI agent identified by an openWallet ID. Tier 4 stays human-only | Preserves financial authority and reversibility |
 | D8 | Revenue-recognition policy approval and close governance (Section 5A.4) | **Accountant approves reporting basis, estimator, classification, materiality and reopening policy before go-live** | Policy choices are accounting judgments, not software defaults |
 
 Nothing above is ratified until Brett records a decision.
@@ -719,10 +719,15 @@ Nothing above is ratified until Brett records a decision.
 
 - D2 → ruling 28. Option A, `summary-journal`, is the MVP default and recommended setup, and `customer-detail` remains a per-destination opt-in behind the BAA gate.
 - D5 and D8 → ruling 30. Both are adopted, superseding that change's ruling 22.
-- §5.1 appointment row → ruling 31. openPractice is the system of record for the administrative appointment, and the EHR owns the encounter.
+- Appointment (§2.3 C3, §6 step 5, §9.1; the §5.1 row already matched) → ruling 31. openPractice is the system of record for the administrative appointment, and the EHR owns the encounter.
+- Demographics wording in §3.1 C2 and §3.2 → ruling 29.
+- Payer class (§5A.2.9, §5A.4 item 7) → ruling 28. Payer-class control accounts are settled.
+- Close approvals (§5A.2.1, §5A.2.5, §5A.2.8, §5A.2.10) → ruling 30 with FD-3. Close re-estimates post automatically, and only estimator versions and D8 items need approval.
+- D1 and §5.3 ERPNext Customer → ruling 32.
+- D7 → ruling 33.
 - §5.1 demographics row → ruling 29. The row is amended above.
 - Posting contract (§5.4, §7) → governed by `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, branch `change/define-mvp-practice-foundation`, not yet on main) (ruling 26). See the pointer notes in §5.4 and §7.
-- D3 matches that change's boundary decision to build the ERPNext adapter first. D1, D4, D6 and D7 remain unruled.
+- D3 matches that change's boundary decision to build the ERPNext adapter first. D4 and D6 remain unruled.
 
 ## 11. Future questions (only where genuinely needed, not blocking)
 
