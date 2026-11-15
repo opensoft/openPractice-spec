@@ -22,7 +22,7 @@ The 20 design calls in `design.md` under "Design calls for owner review" have no
 - Draft PR opensoft/openPractice-spec#7 (`change/follow-up-ruling-93-contract-gaps`) merged, with revision: _pending_
 - The corrections change stacked on it, draft PR opensoft/openPractice-spec#8 (`change/critique-2026-11-15-corrections`), merged, with revision: _pending_
 - Every requirement ID this change cites exists at those revisions (cross-reference check): _pending_
-- Rows RI-46, RI-47, RI-49, RI-50 and RI-53 to RI-59 traced to AH-01, AH-02, AH-06, AM-01, AM-02, AM-04, AM-07, MA-04 and PR-15 as merged from the corrections change, and the ER-12 lapse on RI-17, RI-18 and RI-46: _pending_
+- Rows RI-46, RI-47, RI-49, RI-50, RI-53 to RI-59 and RI-60 traced to AH-01, AH-02, AH-06, AI-20, AM-01, AM-02, AM-04, AM-07, MA-04 and PR-15 as merged from the corrections change, and the ER-12 lapse on RI-17, RI-18 and RI-46: _pending_
 
 ## Required Amendment Dispositions
 

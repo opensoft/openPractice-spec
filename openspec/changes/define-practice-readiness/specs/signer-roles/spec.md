@@ -79,7 +79,7 @@ A sign-off that a later requirement gives to the practice's accountant, or recor
 **The accountant (rulings 139, 140 and 141).** The accountant's sign-off SHALL be given only by someone engaged from outside the practice who is neither an owner nor an employee, and an accountant employed by the practice SHALL NOT give it in version 1 (ruling 139). That accountant SHALL be a licensed CPA whose licence is checked against the state board's public record, and SHALL attest in their own name (ruling 140). The accountant's roster entry is of the outside-accountant type and SHALL hold the outside-accountant recipe and no other (ruling 141; `define-actors-agents-and-work-inbox` AM-01, AM-02). The accountant SHALL be matched against the practice's staff and owners, and a match SHALL refuse the sign-off (ruling 139, read with ruling 149's question, "as the accountant is"). These details are design call RD-11 (PROPOSED):
 - the engagement is the vendor arrangement that `define-customer-financial-data-boundaries` requires for an outsourced accounting actor ("Accountant and biller access are independently bounded"). The accountant's roster entry SHALL be created together with that arrangement, and SHALL never be an existing entry relabeled. Holding it SHALL NOT make the accountant an employee or count as another role;
 - a person who holds any other roster entry in the practice SHALL be treated as an employee;
-- the attestation is the accountant's own, given in their own name with the engagement, states that they are neither an owner nor an employee, and confirms the practice's owners as recorded under `define-mvp-practice-foundation` PR-15 when it is given. A statement that someone else records for the accountant SHALL NOT count;
+- the attestation is the accountant's own, given in their own name with the engagement, states that they are neither an owner nor an employee, and confirms the practice's owners as recorded under `define-mvp-practice-foundation` PR-15 when it is given. A change to the owner links after the attestation SHALL reopen it, and the accountant's sign-offs SHALL be refused until the accountant confirms the owners again. A statement that someone else records for the accountant SHALL NOT count;
 - a licence that cannot be checked against the state board's public record, or that the record does not show as active, SHALL refuse the sign-off;
 - the match uses the licensee's name as the board's public record gives it, against the parties behind every other roster entry, who are the practice's staff, and against the owners recorded as dated links under PR-15 (ruling 145).
 
@@ -90,7 +90,7 @@ A sign-off that a later requirement gives to the practice's accountant, or recor
 
 How a name is matched to parties is decided in planning.
 
-**For both.** The sign-off SHALL also be refused when the person gives another sign-off on the same item, in any role, such as the medical director who approves a hold-policy version and the counsel whose review is recorded on it, or when the person is an AI agent. While the practice has no owner link recorded under PR-15, no accountant or counsel sign-off SHALL be accepted, because the owner match would have nothing to match (design call RD-11, PROPOSED). No one-person alternative SHALL apply to these sign-offs. A practice whose own people cannot give them can have them given only by an accountant or counsel engaged from outside the practice, and the checklist shows that need (RC-06).
+**For both.** The sign-off SHALL also be refused when the person gives another sign-off on the same item, in any role, such as the medical director who approves a hold-policy version and the counsel whose review is recorded on it, or when the person is an AI agent. While the practice has no owner link recorded under PR-15, no accountant or counsel sign-off SHALL be accepted, because the owner match would have nothing to match (design call RD-11, PROPOSED). This relies on PR-15's rule that the first owner link recorded while the practice has none is never held for a second person or an outside accountant; without that rule, the precondition SHALL apply to the accountant's sign-offs only. No one-person alternative SHALL apply to these sign-offs. A practice whose own people cannot give them can have them given only by an accountant or counsel engaged from outside the practice, and the checklist shows that need (RC-06).
 
 #### Scenario: A physician-owner tries to act as the practice's accountant
 - **WHEN** the physician who owns the practice tries to approve the revenue-recognition policy as the practice's accountant
@@ -120,13 +120,17 @@ How a name is matched to parties is decided in planning.
 - **WHEN** an outside accountant who passes every other check approves the revenue-recognition policy, and the practice has no owner link recorded
 - **THEN** the approval is refused until the owners are recorded
 
+#### Scenario: The owners change after the attestation
+- **WHEN** the practice manager ends one owner link and records another after the outside accountant attested, and the accountant then approves a new estimator version
+- **THEN** the approval is refused until the accountant confirms the owners as now recorded (design call RD-11, PROPOSED)
+
 #### Scenario: An attestation that does not confirm the owners
 - **WHEN** an outside accountant attests in their own name that they are neither an owner nor an employee, but does not confirm the practice's owners as recorded
 - **THEN** the attestation does not count, and the accountant's sign-offs are refused until it does (design call RD-11, PROPOSED)
 
 #### Scenario: A sole owner records themselves, then counsel reviews a hold policy
 - **WHEN** the only human on a practice's roster, its owner and practice manager, records the owner link that names their own party, and then records counsel's review on a hold-policy version, naming outside counsel whose admission checks active and whose name matches no roster party or recorded owner
-- **THEN** the owner link is recorded at once, with no outside accountant, because recording a link that names oneself is not an own-record act (`define-mvp-practice-foundation` PR-15), and the counsel review is accepted
+- **THEN** the owner link is recorded at once, with no outside accountant, because the first owner link recorded while the practice has none is never held for a second person or an outside accountant (`define-mvp-practice-foundation` PR-15), and the counsel review is accepted
 
 #### Scenario: The medical director is named as counsel
 - **WHEN** a hold-policy version records counsel's review and names, as counsel, the medical director who will approve that version
