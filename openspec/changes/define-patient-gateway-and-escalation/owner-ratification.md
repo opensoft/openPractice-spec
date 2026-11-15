@@ -50,7 +50,7 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
 - **`MedxSoft/medXfactory`, change `define-patient-medical-ai-connection`** (the medical AI; ruling 93)
   - Companion change and revision compared: _pending_
   - Clinical AI answering and its clinical-safety governance owned there; `medxfactory` conversation references; the medical AI's records reaching openChart through MedxEHR, outside openPractice (rulings 53 and 70): _pending_
-  - The entitlement assertion verified before any non-urgent consult with every PG-16 check, `sub` compared only with the link bound at enrolment, and urgent need never withheld: _pending_
+  - The entitlement assertion verified before any non-urgent consult with every PG-16 check, `sub` compared only with a link the relying party bound itself, per enrolment and per link, and urgent need never withheld: _pending_
 
 ## Required Owner Decision
 

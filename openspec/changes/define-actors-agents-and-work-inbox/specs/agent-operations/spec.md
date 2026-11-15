@@ -113,7 +113,7 @@ Each agent proposal or action SHALL carry evidence references: opaque references
 - **THEN** it is refused with reason `evidence_missing`
 
 ### Requirement: AO-08 Rate and blast-radius limits stop runaway agents
-Each agent SHALL have limits per action type: a maximum number of actions per time window, and a maximum number of records one action may touch. When a limit is reached, the agent's further actions of that type SHALL become proposals. A work-item operation of AO-13 is already a proposal, and a re-route or an urgency raise applies by rule at once, so for those operations a reached limit SHALL instead refuse every further request of that kind with `rate_limited`, and the item that request named SHALL pass at once to its lane's human owner, who may still re-route it or raise it (design call D-25, PROPOSED). Its sponsoring human and the controller or office manager SHALL be alerted. The limit values SHALL be set in planning, fail closed, and be changeable only by a named human (AO-03), the practice manager or the controller or office manager, at tier 2.
+Each agent SHALL have limits per action type: a maximum number of actions per time window, and a maximum number of records one action may touch. When a limit is reached, the agent's further actions of that type SHALL become proposals. A work-item operation of AO-13 is already a proposal, and a re-route or an urgency raise applies by rule at once, so for those operations a reached limit SHALL instead refuse every further request of that kind with `rate_limited`, and the item that request named SHALL pass at once to its lane's human owner, who may still re-route it or raise it (design call D-25, PROPOSED). The released item SHALL show its human owner the refused proposal, the category or urgency the agent proposed, as a proposal for a human to judge, while the item keeps its category and urgency until a human changes them. When the refused proposal was `urgent`, the alert that tells the owner of the release SHALL be sent at urgent priority. The automatic application stays refused at the limit, so nothing floods the clinical queue or starts patient guidance without a human (design call D-25, PROPOSED). Its sponsoring human and the controller or office manager SHALL be alerted. The limit values SHALL be set in planning, fail closed, and be changeable only by a named human (AO-03), the practice manager or the controller or office manager, at tier 2.
 
 #### Scenario: A rate limit is reached
 - **WHEN** an agent reaches its hourly limit for address updates
@@ -121,7 +121,11 @@ Each agent SHALL have limits per action type: a maximum number of actions per ti
 
 #### Scenario: An agent re-routes item after item
 - **WHEN** an agent reaches its limit for `work_item.propose_clinical_reroute` and sends another re-route
-- **THEN** the request is refused with `rate_limited`, the item passes to its lane's human owner unchanged, and the sponsor and the controller are alerted
+- **THEN** the request is refused with `rate_limited`, the item passes to its lane's human owner with its category unchanged and the refused re-route shown, and the sponsor and the controller are alerted
+
+#### Scenario: An urgent raise is refused at a limit
+- **WHEN** an agent at its limit for `work_item.propose_urgency_raise` proposes `urgent` for an item
+- **THEN** the request is refused with `rate_limited`, the item keeps its urgency and passes to its lane's human owner with the refused `urgent` proposal shown, the owner is alerted at urgent priority, and no clinical routing or patient guidance starts until a human acts
 
 #### Scenario: A bulk action exceeds the blast radius
 - **WHEN** an agent's single action would touch more records than its limit
@@ -192,7 +196,7 @@ Logs, errors, diagnostics and refusal reasons under this contract MUST NOT conta
 - the limits and the pause;
 - the digest;
 - the AH-05 untrusted-content cap, the server-side untrusted determination, and every condition of AH-05 exception 1;
-- every work-item operation of AO-13: its outcome, its `propose` cap, `not_item_owner`, `text_not_held` for every item kind that has no text, `answer_not_pending`, and the `rate_limited` refusal with the item's release at an AO-08 limit;
+- every work-item operation of AO-13: its outcome, its `propose` cap, `not_item_owner`, `text_not_held` for every item kind that has no text, `answer_not_pending`, and the `rate_limited` refusal with the item's release at an AO-08 limit, the refused proposal shown to the human owner, and an urgent-priority alert when the refused proposal was `urgent`;
 - the consent check of AH-06 before scheduling and before every relay, `consent_not_recorded`, a withdrawal that wins over a concurrent relay, the hold after `ai_messaging_withdrawal_requested`, a representative's withdrawal, and the cancellation of every pending answer on withdrawal.
 
 Tests SHALL use synthetic data only.

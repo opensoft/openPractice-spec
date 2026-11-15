@@ -43,7 +43,7 @@ This record collects acceptance evidence for OpenSpec change `define-patient-gat
 - The clinical-need marker: attribution, `valid_until`, the urgent-origin check, and no openPractice-created marker: _pending_
 - `representative_scope` in place of a hold for a representative without billing scope: _pending_
 - A linked representative's relationship and authority reference in `link.result` and in the assertion (PG-06): _pending_
-- Entitlement assertions (PG-16): JWS compact tokens, registered relying parties only, header and claims valid, no PHI or hold, the cross-field rules, verification and refusal by a relying-party double including substitution and a missing nonce, key rotation, and urgent access unchanged without one: _pending_
+- Entitlement assertions (PG-16): JWS compact tokens, registered relying parties only, header and claims valid, no PHI or hold, the cross-field rules, verification and refusal by a relying-party double including substitution and a missing nonce, key rotation, key-set refresh and emergency key removal, `jti` retention, binding per enrolment and per link with re-binding only through the relying party's own verification, and urgent access unchanged without one: _pending_
 - `clinician_acknowledged` (ER-19): recorded, acknowledged, passed to HealthLinc only while the item is open, never inferred, and changing no safety path: _pending_
 - Recategorization cancels every pending agent answer on the item (ER-12): _pending_
 - Deletion of misrouted text from the agent layer and model provider under the AH-02 agreements: _pending_

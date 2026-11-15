@@ -352,7 +352,7 @@ The gateway boundary SHALL be covered by contract tests, written first (constitu
 - the no-text rule for clinical inquiries;
 - reply relay and retry;
 - the no-PHI rules;
-- the entitlement assertion of PG-16: its header and decoded claims against their schema definitions, the representative's relationship and authority, `urgent_escalation` always present, no withheld reason, hold or patient reference; and, with a relying-party double, refusal of a tampered, expired, mis-addressed, replayed or substituted assertion (one whose `sub` names another patient's link, presented in a session whose link was bound to a different patient), of a missing or different `nonce` where one was supplied, of any `alg` other than `EdDSA` and any header that names a key location, and of an unknown `kid` after one refresh; and urgent access unchanged when no assertion can be verified;
+- the entitlement assertion of PG-16: its header and decoded claims against their schema definitions, the representative's relationship and authority, `urgent_escalation` always present, no withheld reason, hold or patient reference; and, with a relying-party double, refusal of a tampered, expired, mis-addressed, replayed or substituted assertion (one whose `sub` names another patient's link, presented in a session whose link was bound to a different patient), of a missing or different `nonce` where one was supplied, of any `alg` other than `EdDSA` and any header that names a key location, and of an unknown `kid` after one refresh; a removed `kid` refused after the next scheduled refresh, within one maximum lifetime plus the skew; each accepted `jti` remembered until its `exp` plus the skew; a new link refused until the relying party's own re-enrolment or link verification binds it, and two links of one person each accepted only under the enrolment it is bound to; and urgent access unchanged when no assertion can be verified;
 - the cross-field rules the schema cannot check: an assertion whose `sub` differs from the result's `gateway_link_id`, whose `exp` is later than the result's `valid_until` or more than the maximum lifetime after `iat`, or which grants a capability the result withholds, such as `medical_ai_consult` under a payment hold, is never issued and is refused by the relying-party double;
 - `representative` on a linked representative `link.result`, and never on any other;
 - `inquiry.status` `clinician_acknowledged` (ER-19).
@@ -408,7 +408,9 @@ The claims are:
 
 No other claim is allowed. The assertion SHALL carry no PHI and no master identity: no name, date of birth, contact detail, openPractice patient reference, HealthLinc account reference, withheld capability, withheld reason, hold, hold policy, amount or balance. It never reveals a payment hold, to a representative or to a relying party (DC-34). Its `sub` SHALL equal the result's `gateway_link_id`, its `link_kind` the result's `link_kind`, and each of its capabilities SHALL be granted in the result. The schema cannot check those three, so the contract tests do (PG-14).
 
-**Keys (design call DC-46, PROPOSED).** openPractice SHALL publish each practice's verification keys as a JWK Set (RFC 7517) of Ed25519 public keys. Where the JWK Set is published, and the pin a relying party checks it against, are fixed when the relying party is registered; a relying party never takes a key or a key location from a token. Each `kid` is the RFC 7638 SHA-256 thumbprint of its key. A new key SHALL be published before its first use, and a retired key SHALL stay published for at least the maximum lifetime plus the clock-skew tolerance after its last use. A relying party that meets an unknown `kid` refreshes the JWK Set once from the registered location, and refuses the assertion if the key is still unknown.
+**Keys (design call DC-46, PROPOSED).** openPractice SHALL publish each practice's verification keys as a JWK Set (RFC 7517) of Ed25519 public keys. Where the JWK Set is published, and the pin a relying party checks it against, are fixed when the relying party is registered; a relying party never takes a key or a key location from a token. Each `kid` is the RFC 7638 SHA-256 thumbprint of its key. A new key SHALL be published before its first use, and a retired key SHALL stay published for at least the maximum lifetime plus the clock-skew tolerance after its last use. A relying party SHALL refresh its copy of the JWK Set from the registered location at least once every maximum assertion lifetime, and SHALL treat a `kid` that is no longer in the published set as unknown. A relying party that meets an unknown `kid` refreshes the JWK Set once from the registered location, and refuses the assertion if the key is still unknown.
+
+**Emergency key removal (design call DC-46, PROPOSED).** When a signing key may be compromised, openPractice SHALL stop signing with it and remove it from the published JWK Set at once, without waiting out the retirement period above. Every assertion signed with that key, including one an attacker mints, then stops verifying at every relying party within one maximum assertion lifetime plus the clock-skew tolerance, because each relying party refreshes the set at least that often and treats the removed `kid` as unknown. Assertions signed with the practice's other keys are unaffected, and urgent access never depends on any of them. Who may remove a key, and how a suspected compromise is reported, are set in planning (Open Question 18).
 
 **Lifetime and skew (design call DC-52, PROPOSED).** An assertion lives at most 15 minutes from `iat` to `exp`, and relying parties allow 60 seconds of clock skew. A payment hold, a lapse, a deactivation or a link revocation that takes effect after an assertion is issued therefore reaches the relying party no later than that assertion's expiry, at most 15 minutes and the skew after its issue. openPractice issues no later assertion that reflects the old state. Urgent access is unaffected.
 
@@ -416,10 +418,10 @@ No other claim is allowed. The assertion SHALL carry no PHI and no master identi
 1. the header validates, `alg` is `EdDSA`, the `kid` names an Ed25519 key in the practice's JWK Set from the registered location, and the signature verifies over the exact bytes received;
 2. the decoded payload validates against `entitlementAssertionClaims`;
 3. `iss` is the openPractice issuer it registered for that practice, and `aud` is its own issuer;
-4. `sub` equals the gateway link it bound to its own record of the patient when it first verified that link, and is never compared with a link named by the message, request or session that carries the assertion. On its first verification for a patient, the relying party binds the link to its own record of that patient through its own enrolment, and keeps that binding. The first binding rests on the patient app's authentication of the patient and on the relying party's enrolment, which no assertion replaces;
+4. `sub` equals a gateway link that the relying party has itself bound to the enrolment the session belongs to, and is never compared with, or bound from, a link named by the message, request or session that carries the assertion. A binding is per relying-party enrolment and per link: one person may hold several links, such as their own and one as a representative, and each is bound to the enrolment under which it was verified. A link is bound only through the relying party's own enrolment, re-enrolment or link verification, which rests on the patient app's authentication of the patient and which no assertion replaces. A new link, such as the one PG-05 mints when a patient is linked again after a revocation, is refused until the relying party binds it that way (design call DC-48, PROPOSED);
 5. the current time is no earlier than `iat` less the skew and earlier than `exp` plus the skew, and `exp` is no more than the maximum lifetime after `iat`;
 6. when it supplied a nonce for the session, `nonce` is present and equal to it. An assertion without it, or with another value, fails;
-7. `jti` has not been accepted for another session.
+7. `jti` has not been accepted for another session. A relying party SHALL remember each accepted `jti` until that assertion's `exp` plus the skew tolerance; after that, check 5 refuses the assertion anyway.
 
 A failed check means the patient holds no verified non-urgent capability with that relying party. An assertion for another patient's link is refused, and only non-urgent access is withheld.
 
@@ -448,6 +450,18 @@ A failed check means the patient holds no verified non-urgent capability with th
 #### Scenario: A key the relying party does not know
 - **WHEN** an assertion's `kid` is not in the relying party's copy of the practice's JWK Set
 - **THEN** the relying party refreshes the JWK Set once from the registered location, and refuses the assertion if the key is still unknown
+
+#### Scenario: A signing key is removed after a suspected compromise
+- **WHEN** openPractice removes a signing key from the practice's JWK Set at once, and someone keeps presenting assertions signed with it
+- **THEN** each relying party stops accepting them at its next scheduled refresh, no later than one maximum assertion lifetime plus the skew after the removal, and urgent need is still handed on
+
+#### Scenario: A patient is linked again after a revocation
+- **WHEN** a patient whose link was revoked is linked again, and an assertion names the new `gateway_link_id`
+- **THEN** the relying party refuses it until its own re-enrolment or link verification binds the new link to the patient's enrolment, and never binds the new link because an assertion names it
+
+#### Scenario: One person holds two links
+- **WHEN** a person holds their own link and a representative link for a child, and the relying party verified each under its own enrolment
+- **THEN** an assertion for either link is accepted only in a session of the enrolment that link is bound to
 
 #### Scenario: A hold starts while an assertion is valid
 - **WHEN** a payment hold takes effect five minutes after an assertion granting `medical_ai_consult` was issued

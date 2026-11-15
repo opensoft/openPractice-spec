@@ -21,7 +21,7 @@
   - the per-patient read scope, including the `patient_scope` refusal;
   - read-only answers: no payload, server assembly, eligibility, `act_after_delay` only, attribution, the automatic return to `propose` on a defect;
   - agents start at `propose`;
-  - the work-item operations of AO-13: each outcome, the `propose` cap, `not_item_owner`, `text_not_held` for a clinical item, removed text and a document, `answer_not_pending`, and the `rate_limited` refusal that releases the item to a human.
+  - the work-item operations of AO-13: each outcome, the `propose` cap, `not_item_owner`, `text_not_held` for a clinical item, removed text and a document, `answer_not_pending`, and the `rate_limited` refusal that releases the item to a human, showing the refused proposal and alerting at urgent priority when it was `urgent`.
 - [ ] 2.4 Remote VA safeguards (VA-01 to VA-05). Gate: the remote VA recipe's grant set is approved (design.md D-1). Acceptance evidence: tests for own-queue scoping, export refusal, masking, device and session refusal, and expiry.
 
 ## 3. Governance Constraints

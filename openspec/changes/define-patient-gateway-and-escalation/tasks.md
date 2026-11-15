@@ -20,7 +20,7 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - patient notices and `notice.ack`, with no grace period started before a confirmed or recorded delivery;
   - link verification, human confirmation, refusal without verification, and agent sign-off refusal are tested;
   - representative links are refused without an approved proxy policy, and a linked representative's `link.result` carries the relationship and authority reference;
-  - entitlement assertions: JWS compact tokens whose header and decoded claims validate, issued only for a registered relying party, with no PHI, withheld reason or hold; verified, and refused when tampered, expired, mis-addressed, replayed, substituted, missing the supplied nonce, signed with another algorithm or under an unknown key after one refresh, by a relying-party double; the three cross-field rules; and urgent access unchanged without one;
+  - entitlement assertions: JWS compact tokens whose header and decoded claims validate, issued only for a registered relying party, with no PHI, withheld reason or hold; verified, and refused when tampered, expired, mis-addressed, replayed, substituted, missing the supplied nonce, signed with another algorithm or under an unknown key after one refresh, or signed with a removed key after the next scheduled refresh, by a relying-party double; `jti` retention until `exp` plus the skew; a new link refused until the relying party binds it itself; the three cross-field rules; and urgent access unchanged without one;
   - proposals never auto-apply, and interim confidential-communication restrictions are honored;
   - clinical inquiries with text are refused;
   - the PHI safeguard plan, security review and risk-analysis update are recorded.
