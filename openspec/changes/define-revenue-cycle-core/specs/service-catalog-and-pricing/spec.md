@@ -34,7 +34,7 @@ openPractice SHALL keep one price list for the practice, with one effective-date
 - **THEN** a work item is raised before the patient is billed, and the issued estimate is unchanged
 
 ### Requirement: SC-04 One self-pay discount, stated once
-openPractice SHALL keep one self-pay discount for the practice: a single percentage off the price list, effective-dated, with the practice's owner recorded as the person who set it (ruling 126). It SHALL apply when a charge is finalized for a patient with no coverage for that service, and SHALL post as `self_pay_discount` (RT-06). It SHALL NOT apply automatically to a patient who has coverage from a federal health program and chooses to pay for the service themselves; such a case SHALL need a recorded decision by the owner for that visit (design call CR-21, PROPOSED), and whether the discount may be offered at all in that case is a question for counsel. The discount SHALL be rounded once per charge line, half away from zero, to the cent (BAB-18).
+openPractice SHALL keep one self-pay discount for the practice: a single percentage off the price list, effective-dated (ruling 126), set by a holder of the practice manager recipe (`define-actors-agents-and-work-inbox` AM-02), who is recorded as the person who set it (design call CR-21, PROPOSED). It SHALL apply when a charge is finalized for a patient with no coverage for that service, and SHALL post as `self_pay_discount` (RT-06). It SHALL NOT apply automatically to a patient who has coverage from a federal health program and chooses to pay for the service themselves; such a case SHALL need a recorded decision for that visit by a holder of the practice manager recipe (design call CR-21, PROPOSED), and whether the discount may be offered at all in that case is a question for counsel. The discount SHALL be rounded once per charge line, half away from zero, to the cent (BAB-18). No power here, or anywhere in this change, SHALL come from being recorded as an owner of the practice under PR-15's owner links (design call CR-21, PROPOSED).
 
 #### Scenario: An uninsured visit
 - **WHEN** a patient with no coverage has a 200.00 visit and the self-pay discount is 30 percent
@@ -42,7 +42,7 @@ openPractice SHALL keep one self-pay discount for the practice: a single percent
 
 #### Scenario: A Medicare beneficiary chooses to pay
 - **WHEN** a patient with Medicare coverage asks to pay for a service themselves
-- **THEN** the discount is not applied unless the owner records a decision for that visit
+- **THEN** the discount is not applied unless a holder of the practice manager recipe records a decision for that visit
 
 ### Requirement: SC-05 Each catalog item maps to one shipped service category
 Each catalog item SHALL map to exactly one service category from the shipped list (RT-03). The mapping SHALL be versioned and effective-dated, and a change SHALL apply only from its effective date (RT-03).
@@ -69,5 +69,5 @@ openPractice SHALL NOT load payer fee schedules or contracted rates in this chan
 Every change to a catalog item, a price, the self-pay discount or a category mapping SHALL create a new effective-dated version, keep the earlier versions retrievable, and be audited with its actor and time. Each SHALL be FD-5 tier 2: done at once, with a notification (design call CR-86, PROPOSED). An agent SHALL stay at `propose` for these changes (TH-13).
 
 #### Scenario: The discount changes
-- **WHEN** the owner changes the self-pay discount from 30 to 25 percent from the first of next month
+- **WHEN** a holder of the practice manager recipe changes the self-pay discount from 30 to 25 percent from the first of next month
 - **THEN** a new version takes effect on that date, staff are notified, and charges before it keep 30 percent
