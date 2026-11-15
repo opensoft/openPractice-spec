@@ -36,18 +36,26 @@ Each guarantor account SHALL be under one set of statement terms, versioned and 
 - **THEN** its due date is March 31
 
 ### Requirement: PS-06 Statements honor every communication restriction
-A statement SHALL be addressed to the guarantor and SHALL honor the confidential-communication instructions of PR-05, including a restriction or alternate channel recorded through any of the guarantor party's roles and every restriction PR-15 applies across its same-person group, the more restrictive instruction winning a conflict; it SHALL never use an alternate channel recorded on another party of that group (PR-15). Where the patient is not the guarantor, the statement SHALL show the patient's name only as needed to identify the visit, and nothing more about the patient (AI-16's rule applied to statements; design call CR-37, PROPOSED). A representative SHALL receive a statement only where their proxy policy includes billing (PG-06).
+A statement SHALL be addressed to the guarantor and SHALL honor the confidential-communication instructions of PR-05, including a restriction or alternate channel recorded through any of the guarantor party's roles and every restriction PR-15 applies across its same-person group, the more restrictive instruction winning a conflict; it SHALL never use an alternate channel recorded on another party of that group (PR-15). Where a restriction that crossed a same-person link bars the channel a statement would use, and the guarantor's party has no permitted channel of its own, openPractice SHALL send nothing: it SHALL leave the statement out of every print run and every sending, SHALL NOT record it as issued (PS-04), so no due date runs from it (PS-05), and SHALL hold it and raise work, owned by a roster entry, for a named human to choose how to reach the guarantor; that person MAY use another party's alternate channel only once it is recorded on the guarantor's party as its own PR-05 instruction (PR-15). A restriction that crossed a link SHALL keep applying after the link ends, and a statement held under it SHALL stay held, until PR-15's end-of-link review decides it (design call CR-96, PROPOSED). Where the patient is not the guarantor, the statement SHALL show the patient's name only as needed to identify the visit, and nothing more about the patient (AI-16's rule applied to statements; design call CR-37, PROPOSED). A representative SHALL receive a statement only where their proxy policy includes billing (PG-06).
 
 #### Scenario: A mail restriction through another role
 - **WHEN** a guarantor who is also a patient has recorded `no_home_mail` with an alternate address
 - **THEN** her child's statement goes to the alternate address, and nothing is mailed home
 
-### Requirement: PS-07 Disputed money is left off statements
-Money on a thread marked `disputed` SHALL be left off every statement and every collection step until the dispute resolves (TH-05): a Good Faith Estimate dispute (GF-10), or an appeal of the payer's decision on which the patient's share depends. The statement SHALL show that an amount is under review without stating it as owed.
+#### Scenario: No permitted channel is left
+- **WHEN** a guarantor's own party has only a home address, and `no_home_mail` crosses to it from a linked party that has an alternate address
+- **THEN** no statement is printed or sent to either address, the statement is not recorded as issued, and work is raised for a named human to choose how to reach the guarantor
+
+### Requirement: PS-07 Disputed money, and money under same-person reconciliation, is left off statements
+Money on a thread marked `disputed` SHALL be left off every statement and every collection step until the dispute resolves (TH-05): a Good Faith Estimate dispute (GF-10), or an appeal of the payer's decision on which the patient's share depends. Likewise, while same-person reconciliation work is open for a service date (CG-05), every charge for that date on each record of the group SHALL be left off every statement and every collection step until that work is closed, so that the person is never billed twice for one visit (design call CR-97, PROPOSED). The statement SHALL show that an amount is under review without stating it as owed.
 
 #### Scenario: The practice appeals a denial
 - **WHEN** a payer denies part of a claim and the practice appeals, so the patient's share depends on the outcome
 - **THEN** the patient's statement leaves the affected amount out and says it is under review
+
+#### Scenario: A duplicate record's claim was already sent
+- **WHEN** a same-person link is recorded while each record holds a charge for the same service date, one of them already on a submitted claim
+- **THEN** until the reconciliation work is closed, neither record's statement shows a charge for that date as owed, and each shows that an amount is under review
 
 ### Requirement: PS-08 A payment hold never stops a statement
 A payment hold SHALL NOT stop, delay or change any statement, and SHALL NOT stop any billing question (PH-02, PH-08).

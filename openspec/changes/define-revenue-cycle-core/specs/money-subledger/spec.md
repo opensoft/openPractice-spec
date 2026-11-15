@@ -45,7 +45,7 @@ A new bucket SHALL need a governed change.
 Every ledger entry SHALL carry (design call CR-10, PROPOSED):
 - its reason code (RT-01), and, on a revenue or deduction entry, its service category;
 - its amount and currency (SL-04);
-- its thread (TH-01), and its charge line where it concerns one;
+- its thread (TH-01), and its charge line where it concerns one; where its two sides belong to different threads, such as a credit held for one visit applied to another visit's charge line, the thread of each side;
 - its counterparty account (SL-06) where it touches a receivable, a credit or a liability;
 - the payer class where it touches a receivable or revenue (ruling 28);
 - four dates: the date of service, the effective date of the information it records, the accounting date in the open period it belongs to, and the time openPractice recorded it (AI-11);

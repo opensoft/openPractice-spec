@@ -25,9 +25,9 @@ The 100 design calls in `design.md` under "Design calls for owner review" (CR-1 
 ## Required Dependency Evidence
 
 - Draft PR opensoft/openPractice-spec#7 (`change/follow-up-ruling-93-contract-gaps`, read at `e746f58`) merged, with revision: _pending_
-- Draft PR opensoft/openPractice-spec#8 (`change/critique-2026-11-15-corrections`, read at `4bce39a` and re-checked at `050bdfd`, `f96ee1b`, `f3bed0a` and `93566f8` while still being written) merged, with revision: _pending_
-- Draft PR opensoft/openPractice-spec#10 (`change/define-practice-readiness`, read at `e9748d7` and re-checked at `d4724e1`) merged, with revision: _pending_
-- Every requirement and design-call ID this change cites from them exists at those revisions and still means what `design.md` "Dependencies" describes (EB-13, EB-15, PR-15, F-6, F-7, F-12, BAB-17 and BAB-18 as amended, F-8 to F-10, AM-01, AM-02, AO-04, AO-07, WI-03, SR-02, SR-04, RD-11, I-1, RI-51): _pending_
+- Draft PR opensoft/openPractice-spec#8 (`change/critique-2026-11-15-corrections`, read at `4bce39a` and re-checked at `050bdfd`, `f96ee1b`, `f3bed0a`, `93566f8` and `0439321` while still being written) merged, with revision: _pending_
+- Draft PR opensoft/openPractice-spec#10 (`change/define-practice-readiness`, read at `e9748d7` and re-checked at `d4724e1`, `ac091cb` and `d215ee4`) merged, with revision: _pending_
+- Every requirement and design-call ID this change cites from them exists at those revisions and still means what `design.md` "Dependencies" describes (EB-13, EB-15, PR-15, F-6, F-7, F-12, BAB-17, BAB-18 and PH-04 as amended, F-8 to F-10, AM-01, AM-02, AO-04, AO-07, WI-03, SR-02, SR-04, RD-11, I-1), and the ruling-88 retraction bullet of `define-mvp-practice-foundation` task 2.4 that PA-3 keeps: _pending_
 - Rulings 139 to 142, 144, 145, 149 and 150 are encoded in those merged texts as `design.md` "Owner rulings" relies on them, and this change cites the requirement IDs that carry them: _pending_
 
 ## Required Amendment Dispositions

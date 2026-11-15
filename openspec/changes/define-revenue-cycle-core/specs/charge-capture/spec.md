@@ -62,7 +62,9 @@ Before a charge set becomes final, openPractice SHALL check, and SHALL refuse fi
 - for a manual entry under identity review, the attestation EB-17 requires is recorded;
 - no same-person reconciliation is open for the visit's service date. Where PR-15's rules for a same-person group send a fact to reconciliation, because another record of the group holds a charge for that service date, or hold a staying record's charge until a duplicate's charge is voided or credited, the thread SHALL be held with reason `same_person_reconciliation` until a named human closes that work (TH-06; design call CR-97, PROPOSED).
 
-Charges already final when PR-15 records a same-person link are checked then. openPractice SHALL hold with reason `same_person_reconciliation` every thread of the group that holds a final charge not yet on a submitted claim for a service date on which another record of the group also holds a charge, and SHALL raise the reconciliation work for it; a charge already on a submitted claim SHALL raise that work without a hold, and any correction of it SHALL go through CL-08 (design call CR-97, PROPOSED). CL-04's scrub refuses those claims while the reconciliation is open.
+Charges already final when PR-15 records a same-person link are checked then. openPractice SHALL hold with reason `same_person_reconciliation` every thread of the group that holds a final charge not yet on a submitted claim for a service date on which another record of the group also holds a charge, and SHALL raise the reconciliation work for it; a charge already on a submitted claim SHALL raise that work without a hold, and any correction of it SHALL go through CL-08 (design call CR-97, PROPOSED). CL-04's scrub refuses those claims while the reconciliation is open, and no statement from either record shows a charge for that service date as owed until it is closed (PS-07).
+
+These rules SHALL keep applying between the records of every party that was in the group after the link ends, and their holds SHALL stay, until PR-15's end-of-link review decides them; where the link was ended with reason `mistaken`, that review MAY release them in one decision, which closes the reconciliation work (PR-15; design call CR-97, PROPOSED).
 
 #### Scenario: A retracted diagnosis
 - **WHEN** the EHR retracts a diagnosis that an unfinalized charge set points to
@@ -71,6 +73,10 @@ Charges already final when PR-15 records a same-person link are checked then. op
 #### Scenario: A link is recorded after both charges are final
 - **WHEN** two records of one person each hold a final charge for the same service date, neither yet on a submitted claim, and a person records that they are the same person
 - **THEN** both threads are held with reason `same_person_reconciliation`, the scrub refuses both claims, the filing-deadline escape cannot send them, and the reconciliation work is raised
+
+#### Scenario: A link is ended by mistake while two charges are held
+- **WHEN** two threads are held with reason `same_person_reconciliation` and the link between their records is ended with reason `mistaken`
+- **THEN** both threads stay held, a new fact on either record for that service date still goes to reconciliation, and the end-of-link review may release both holds in one decision, after which both claims can be scrubbed and released
 
 #### Scenario: A member's included service
 - **WHEN** a member's visit is a service that the membership's approved terms include
@@ -91,7 +97,7 @@ A visit that happened but whose documentation is not final SHALL stay at `seen` 
 - **THEN** the visit is shown as held, waiting on documentation, with the days left to the filing deadline, and its owner is named
 
 ### Requirement: CG-08 A final charge is corrected only by reversal and replacement
-A final charge line SHALL never be edited (BAB-04). A correction SHALL reverse the line, which reverses every entry it posted (SL-05), and SHALL add a replacement line where one is needed, both referencing the original. When a fact behind a final line is corrected or retracted by the EHR (EB-15), openPractice SHALL record the dated event, hold the thread with reason `clinical_fact_retracted` until every final line that uses the fact has been reversed or replaced, and raise work for the biller to do so (design call CR-28, PROPOSED). While that hold is in force, no claim SHALL be built or released from those lines (CL-04). When the line is already on a submitted claim, the correction SHALL be made through a replacement or void claim (CL-08), and the claim as submitted SHALL stay unchanged (EB-16).
+A final charge line SHALL never be edited (BAB-04). A correction SHALL reverse the line, which reverses every entry it posted (SL-05) except a `claim_accepted` entry, which only CL-12 moves, and SHALL add a replacement line where one is needed, both referencing the original. When a fact behind a final line is corrected or retracted by the EHR (EB-15), openPractice SHALL record the dated event, hold the thread with reason `clinical_fact_retracted` until every final line that uses the fact has been reversed or replaced, and raise work for the biller to do so (design call CR-28, PROPOSED). While that hold is in force, no claim SHALL be built or released from those lines (CL-04). When the line is already on a submitted claim, the correction SHALL be made through a replacement or void claim (CL-08), and the claim as submitted SHALL stay unchanged (EB-16).
 
 #### Scenario: A wrong code on an unclaimed charge
 - **WHEN** a biller finds a wrong procedure code on a final charge line that has not been claimed

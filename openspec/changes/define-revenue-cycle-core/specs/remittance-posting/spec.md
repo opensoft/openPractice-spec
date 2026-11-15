@@ -26,9 +26,10 @@ Each claim payment SHALL attach to a submitted claim version only when it matche
 - **THEN** the money posts as `legacy_collection`, and no openPractice receivable is created
 
 ### Requirement: RM-04 Exactly matched lines post by themselves, with notice and undo
-A claim payment whose every part matches exactly SHALL post without a person, at FD-5 tier 2, done with a notification and undoable (ruling 120). Exactly matched SHALL mean all nine of these (design call CR-52, PROPOSED):
+A claim payment whose every part matches exactly SHALL post without a person, at FD-5 tier 2, done with a notification and undoable (ruling 120). Exactly matched SHALL mean all ten of these (design call CR-52, PROPOSED):
 - it attached to exactly one claim version under RM-03;
 - that claim version is the current one: not voided, not replaced and not held for a retracted fact;
+- no same-person reconciliation is open for the claim's service date (CG-05);
 - no answer from this payer has already posted for that claim version, judged by the payer's claim control number and by the payment's trace number, so a resent or stale file never posts twice;
 - every service line matches exactly one claim line by its line identity, procedure code, units and billed amount;
 - no two service lines match the same claim line;
@@ -70,7 +71,7 @@ Posting a claim payment SHALL make these entries (AI-12, AI-15):
 - `contractual_adjustment` for the billed amount less the allowed amount;
 - a true-up for any difference between the estimate and what the answer shows (RE-05);
 - `payer_payment` for what the payer paid;
-- `patient_share_transfer` for the patient's responsibility, unless the patient has a later coverage position for that date, in which case the share SHALL wait as work for a person to decide whether a later payer is billed first (design call CR-54, PROPOSED). When the person decides to bill the later payer, the amount SHALL move to that coverage's payer receivable as `payer_share_transfer`, posted with the decision and under its governance; when they decide not to, it moves to the patient as `patient_share_transfer` (design call CR-91, PROPOSED). If the later coverage's claim is rejected and then dropped (CL-09), or that payer's answer or a recorded eligibility check (EV-01) shows that its plan does not cover the service, the `payer_share_transfer` SHALL be reversed under SL-05, returning the amount to the earlier coverage's payer receivable, and the decision SHALL be made again (design call CR-91, PROPOSED).
+- `patient_share_transfer` for the patient's responsibility, unless the patient has a later coverage position for that date, in which case the share SHALL wait as work for a person to decide whether a later payer is billed first (design call CR-54, PROPOSED). When the person decides to bill the later payer, the amount SHALL move to that coverage's payer receivable as `payer_share_transfer`, posted with the decision and under its governance; when they decide not to, it moves to the patient as `patient_share_transfer` (design call CR-91, PROPOSED). If the later coverage's claim is rejected and then dropped (CL-09), or that payer's answer or a recorded eligibility check (EV-01) shows that its plan does not cover the service, only the part of the `payer_share_transfer` still in the later coverage's payer receivable, after any answer from that payer has posted, SHALL be reversed under SL-05, returning that part to the earlier coverage's payer receivable, and the decision SHALL be made again for that part (design call CR-91, PROPOSED). A share that the later payer's answer has already moved to the patient SHALL NOT move again.
 
 A denied amount SHALL never be written off automatically: it SHALL become work for a person to appeal, which marks it disputed (SL-10), or to write off under PS-11 (design call CR-55, PROPOSED). The thread SHALL move from `claimed` to `remitted` (TH-04).
 
@@ -85,6 +86,10 @@ A denied amount SHALL never be written off automatically: it SHALL become work f
 #### Scenario: The Medigap claim is dropped
 - **WHEN** 24.00 has moved to the Medigap coverage account, the Medigap claim is rejected, and the biller records it as dropped
 - **THEN** the `payer_share_transfer` is reversed, the 24.00 is back in Medicare's coverage account, and a person decides again whether another payer or the patient is billed
+
+#### Scenario: Medigap assigns the share to the patient
+- **WHEN** 24.00 has moved to the Medigap coverage account, and Medigap's answer denies it with a patient-responsibility code, so its posting moves the 24.00 to the patient as `patient_share_transfer`
+- **THEN** nothing is left in the Medigap coverage account to reverse, nothing is reversed, and the patient owes 24.00 once
 
 #### Scenario: A denied line
 - **WHEN** a payer denies one line of a claim

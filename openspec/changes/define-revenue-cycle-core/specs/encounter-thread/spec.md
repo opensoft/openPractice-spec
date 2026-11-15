@@ -35,6 +35,8 @@ Every thread SHALL carry, at every moment:
 - **amount:** the amount at risk now and the counterparty who owes it, derived from ledger entries (SL-08) by the rule the canonical schema states for each station (design call CR-6, PROPOSED). The thread SHALL NOT store a balance. Where more than one counterparty owes money on the thread, it shows the largest open amount and names that counterparty, and the ledger gives the rest;
 - **owner:** the roster entry who must act next (AM-06). The owner SHALL never be a payer, a patient or "the system".
 
+**What is owed on a thread.** What is owed on a thread, either way, SHALL be read from the ledger entries that name it (SL-03, SL-08), for each counterparty account, as the balance those entries leave in `unbilled_receivable` and `payer_receivable` (owed by a payer), in `patient_receivable` (owed by a guarantor account), and in `contract_liability`, `unapplied_credit` and `refund_liability` (money the practice holds that was paid toward the visit, or owes back) (design call CR-6, PROPOSED). Patient balances belong to the guarantor account (ruling 124), and a thread's part of a guarantor account's balance is what the entries naming that thread carry. An amount stops counting for the thread when a posted entry moves it to any other bucket, as a payment, a write-off, a credit loss, a refund issued or a reversal does, or moves it onto another thread, as an allocation to another visit's charge line does (SL-03). A transfer between counterparties on the same thread, `guarantor_transfer` or `payer_share_transfer`, leaves it owed on the thread, by the receiving account. Money that a `credit_balance` case covers (PY-06) counts on that case thread and no longer on the thread it came from. An `old_system_balance` case owes its open memo balance (SL-11); the other case types owe nothing of their own and close when their case records its outcome (TH-08).
+
 #### Scenario: Two deadlines on one visit
 - **WHEN** a charged visit has a filing deadline in 40 days and an authorization that expires in 12 days
 - **THEN** the clock shows the authorization expiry with 12 days remaining, and the filing deadline is retrievable as the next one
@@ -59,12 +61,12 @@ A thread's station SHALL be one of ten. Visit threads use nine, every station bu
 | `banked` | The money owed on the thread was received by the practice, or the practice holds money paid toward the visit |
 | `closed` | Nobody owes anybody anything on the thread |
 
-`banked` SHALL mean that the practice recorded receipt of the money owed on the thread, or holds money paid toward a visit that will not be charged (AP-04); whether that money reached the bank is shown by deposit explanation (BAB-14), not by the thread.
+`banked` SHALL mean that the practice recorded receipt of the money owed on the thread, or holds money paid toward a visit that will not be charged (AP-04, and a disposition at `seen` with nothing to bill); whether that money reached the bank is shown by deposit explanation (BAB-14), not by the thread.
 
 A move from one station to another SHALL follow this table. Legality SHALL be judged by the pair of stations: the Occasion column gives examples, not limits. Any other move between stations SHALL be refused, not warned about. Three further kinds of transition SHALL always be legal (design call CR-70, PROPOSED):
 - a transition that keeps the station and changes only the condition, such as placing or releasing a hold or opening or ending a dispute (TH-05, TH-06);
 - the reverse of a tier-1 or tier-2 move, inside that move's undo window (TH-07), naming the transition it reverses;
-- the undo of a thread's minting transition inside its undo window, which moves the thread to `closed` with the coded disposition `entered_in_error`.
+- the undo of a thread's minting transition inside its undo window, which moves the thread to `closed` with the coded disposition `entered_in_error`, subject to the closing rule below.
 
 
 
@@ -80,6 +82,7 @@ A move from one station to another SHALL follow this table. Legality SHALL be ju
 | `arrived` | `closed` | Left without being seen, with its disposition |
 | `seen` | `charged` | A charge set was finalized (CG-04) |
 | `seen` | `closed` | Nothing to bill, with a coded disposition: the EHR withdrew the visit whole (EB-15), it was documented in error, or nothing in it is billable |
+| `seen` | `banked` | Nothing to bill, as above, while money paid toward the visit is still held (PY-03) |
 | `charged` | `claimed` | A claim was submitted (CL-05) |
 | `charged` | `banked` | Self-pay, paid in full |
 | `charged` | `closed` | Zero amount owed, or a write-off under RT-06 |
@@ -95,6 +98,8 @@ A move from one station to another SHALL follow this table. Legality SHALL be ju
 | `closed` | any earlier station | Reopened by a later fact, such as a chargeback, a recoupment, late coverage or a missed-appointment fee charged after a no-show (AP-04) |
 | `intent` | `claimed`, `remitted`, `banked`, `closed` | Non-visit cases, per their type (TH-08) |
 
+A move to `closed`, by any row above or by an undo, SHALL be refused while anything is owed on the thread, either way (TH-03). A disposition at `seen` with nothing to bill, and the undo of a minting transition, close the thread only where no money is held on it: where money is held, the disposition moves the thread to `banked` instead (PY-03), and the undo is refused until that money has been applied, refunded, corrected under SL-05 or covered by a credit-balance case (design call CR-70, PROPOSED).
+
 #### Scenario: An illegal move
 - **WHEN** a process tries to move a thread from `booked` straight to `remitted`
 - **THEN** the move is refused and the thread stays at `booked`
@@ -108,8 +113,16 @@ A move from one station to another SHALL follow this table. Legality SHALL be ju
 - **THEN** a transition from `charged` to `charged` sets the condition to `held`, and it is legal although the table lists no such row
 
 #### Scenario: The EHR withdraws a visit
-- **WHEN** the EHR withdraws the whole of a visit that is at `seen` and has no charge set
+- **WHEN** the EHR withdraws the whole of a visit that is at `seen`, has no charge set and has no money held toward it
 - **THEN** the thread moves `seen` to `closed` with a coded disposition, and no zero-amount charge set is made
+
+#### Scenario: The EHR withdraws a prepaid visit
+- **WHEN** the EHR withdraws the whole of a visit at `seen` toward which the patient prepaid 150.00
+- **THEN** the 150.00 moves to `unapplied_credit` as `prepayment_to_credit` with the disposition, and the thread moves `seen` to `banked`, not to `closed`
+
+#### Scenario: A thread with money owed cannot close
+- **WHEN** a process tries to move a thread from `remitted` to `closed` while the guarantor account still owes 24.00 on its charge line
+- **THEN** the move is refused, and the thread stays at `remitted`
 
 ### Requirement: TH-05 Conditions say why a thread is not moving
 Each thread SHALL show one condition (design call CR-3, PROPOSED):
@@ -136,9 +149,9 @@ A hold SHALL use one reason from a closed list that the product ships and the pr
 - `identity_review`: placed by EB-05 and EB-18; it escapes as EB-18 states;
 - `offering_route_unresolved`: placed by CG-05; it escapes as BAB-16 states;
 - `waiting_on_authorization`: placed by EV-02 and CL-04; it never escapes by itself, and at the filing threshold it escalates to a named human who may release the claim with a recorded reason (EV-02);
-- `same_person_reconciliation`: placed by CG-05 and CL-04 under PR-15's rules for a same-person group: on a charge whose duplicate's charge has not yet been voided or credited; on a fact for a service date on which another record of the group already holds a charge; and, when a same-person link is recorded, on every thread of the group that holds a final charge not yet on a submitted claim for such a date. It never releases by itself, and at the filing threshold it escalates to the practice manager, escalation being its only deadline escape (design call CR-97, PROPOSED).
+- `same_person_reconciliation`: placed by CG-05 and CL-04 under PR-15's rules for a same-person group: on a charge whose duplicate's charge has not yet been voided or credited; on a fact for a service date on which another record of the group already holds a charge; and, when a same-person link is recorded, on every thread of the group that holds a final charge not yet on a submitted claim for such a date. It never releases by itself, and at the filing threshold it escalates to the practice manager, escalation being its only deadline escape. Ending the same-person link SHALL NOT release it: PR-15 keeps its safeguard, and the safeguard's holds, between the records of every party that was in the group until PR-15's end-of-link review decides them, and where the link was ended with reason `mistaken` that review MAY release them in one decision (design call CR-97, PROPOSED).
 
-Each hold SHALL carry an identifier unique among that thread's holds. Besides its release condition, a hold SHALL also end when a named human closes the work it guards: a write-off of the guarded amount (PS-11), a conversion to self-pay (EG-05), which ends only a `participation_not_effective` hold, or a `seen` to `closed` disposition (TH-04). The person SHALL record the reason, at FD-5 tier 2, done with a notification (design call CR-90, PROPOSED). A `clinical_fact_retracted` hold SHALL end only when every line using the fact is reversed or replaced, or when the thread closes with no claim built from those lines; a `same_person_reconciliation` hold SHALL end only when a named human closes the reconciliation work.
+Each hold SHALL carry an identifier unique among that thread's holds; this SHALL be checked against the thread's holds, because the canonical schema refuses only a hold listed twice. Besides its release condition, a hold SHALL also end when a named human closes the work it guards: a write-off of the guarded amount (PS-11), a conversion to self-pay (EG-05), which ends only a `participation_not_effective` hold, or a disposition at `seen` with nothing to bill (TH-04). The person SHALL record the reason, at FD-5 tier 2, done with a notification (design call CR-90, PROPOSED). A `clinical_fact_retracted` hold SHALL end only when every line using the fact is reversed or replaced, or when the thread closes with no claim built from those lines; a `same_person_reconciliation` hold SHALL end only when a named human closes the reconciliation work, or when PR-15's end-of-link review releases it, which closes that work; ending the link closes neither.
 
 A dispute is the `disputed` condition (TH-05), not a hold. No thread hold SHALL stop a patient from being booked, arriving or being seen: a thread hold stops money work, never care (EV-04). A payment hold is a different thing, governed by PH-01 and AP-07.
 
@@ -164,7 +177,7 @@ Every transition SHALL record:
 - the FD-5 tier that governed it;
 - whether its effect left the building.
 
-A minting transition SHALL also record the thread type and the owner; every other transition SHALL record the condition it leaves, and any transition that changes the owner SHALL record the new one, so that a thread's snapshot can be rebuilt from its transitions alone. A transition's new condition SHALL be the condition TH-05 derives from the holds and the dispute in force once it applies, with `moving` meaning neither, because `stuck` is derived on the snapshot and never written. A transition that leaves a held or disputed thread therefore keeps it `held` while any hold stays, such as a station move on a held thread or a dispute ending while a hold stays, and a transition SHALL record `moving` only when it releases the last hold in force and leaves no dispute open. The canonical schema refuses what one transition shows to be wrong: a hold placed by a move to `moving`; a hold released from a thread that was neither held nor disputed; `held` without a hold placed, on a thread that was neither held nor disputed; and `moving` from a held thread with no hold released. Whether a released hold was the last one SHALL be checked against the thread's holds, which a transition does not carry (design call CR-72, PROPOSED). A thread SHALL never rewind. Undoing a tier-1 or tier-2 move SHALL append the reverse move (TH-04). A move's undo window SHALL last until anything derived from the move leaves the building, and never longer than 30 days (design call CR-71, PROPOSED). Reopening a `closed` thread SHALL be a forward move that appends. Once an effect has left the building, the only correction SHALL be a replacement or a void (CL-08), never an erasure.
+A minting transition SHALL also record the thread type and the owner; every other transition SHALL record the condition it leaves, and any transition that changes the owner SHALL record the new one, so that a thread's snapshot can be rebuilt from its transitions alone. A transition's new condition SHALL be the condition TH-05 derives from the holds and the dispute in force once it applies, with `moving` meaning neither, because `stuck` is derived on the snapshot and never written. A transition that leaves a held or disputed thread therefore keeps it `held` while any hold stays, such as a station move on a held thread or a dispute ending while a hold stays, and a transition SHALL record `moving` only when no hold stays in force and no dispute stays open, so a move from a held thread records `moving` only by releasing its last hold. The canonical schema refuses what one transition shows to be wrong: a hold placed by a move to `moving`; a hold released from a thread that was neither held nor disputed; `held` without a hold placed, on a thread that was neither held nor disputed; and `moving` from a held thread with no hold released. Two things SHALL be checked against the thread's holds, which a transition does not carry: whether a released hold was the last one, and that no transition places and releases the same hold (design call CR-72, PROPOSED). A thread SHALL never rewind. Undoing a tier-1 or tier-2 move SHALL append the reverse move (TH-04). A move's undo window SHALL last until anything derived from the move leaves the building, and never longer than 30 days (design call CR-71, PROPOSED). Reopening a `closed` thread SHALL be a forward move that appends. Once an effect has left the building, the only correction SHALL be a replacement or a void (CL-08), never an erasure.
 
 #### Scenario: A held thread recorded as moving
 - **WHEN** a process records a transition from a held thread to `moving` that releases no hold
