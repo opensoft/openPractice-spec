@@ -8,7 +8,7 @@ This record collects acceptance evidence for OpenSpec change `define-revenue-cyc
 
 - Owner ratification reference: `owner-ratification.md` — _pending completion_
 - Hand-off shape ratified, and the resulting feature list: _pending_
-- Dispositions of PA-1 to PA-10, with the changes and revisions that carry them: _pending_
+- Dispositions of PA-1 to PA-11, with the changes and revisions that carry them: _pending_
 - Constitution version and per-feature Constitution Check evidence: _pending_
 - Per-feature security review records and risk-analysis updates: _pending_
 - Speckit feature identifiers and paths (foundations; self-pay visit; claims against a simulated payer; remittance posting and full balances; live clearinghouse and Medicare adapter; payment processor and pay link): _pending_
