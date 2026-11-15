@@ -80,7 +80,7 @@ A version that omits any of these SHALL NOT be approvable. This change asserts n
 - **THEN** the version cannot be approved
 
 ### Requirement: PH-04 Placing and lifting a hold are logged, tiered actions, and agents start at propose
-Placing and lifting a hold SHALL each be a logged, tiered action, with the action types `payment_hold.place` and `payment_hold.lift` (ruling 41). Placing SHALL be FD-5 tier 3: a visible countdown with a cancel window, after which the hold takes effect. Lifting SHALL be tier 2: done at once, with notification. Both tiers are design call DC-5.
+Placing and lifting a hold SHALL each be a logged, tiered action, with the action types `payment_hold.place` and `payment_hold.lift` (ruling 41). Placing SHALL be FD-5 tier 3: a visible countdown with a cancel window, after which the hold takes effect. The countdown starts only once the patient notice is delivered or its delivery is recorded (PH-05). Lifting SHALL be tier 2: done at once, with notification. Both tiers are design call DC-5.
 
 Both action types SHALL start at `propose` for agents (ruling 37; change A AO-04). An agent can never act with less friction than the tier requires. Above `propose`, an agent may place a hold only at `act_after_delay`, so the countdown and cancel window always run, and may lift a hold at `act_with_notice` or `act_after_delay`. Each rung above `propose` is reached only through that action type's BAB-17 opt-in. Agent placement SHALL obey AO-08's rate and blast-radius limits.
 
@@ -88,7 +88,7 @@ Every placement and lift SHALL record the policy version, the coded criteria met
 
 #### Scenario: A staff member places a hold
 - **WHEN** a biller places a hold under an approved policy
-- **THEN** the countdown starts, the patient is told (PH-05), and the hold takes effect when the countdown ends unless it is cancelled
+- **THEN** the patient is sent a notice (PH-05), the countdown starts once its delivery is confirmed or recorded, and the hold takes effect when the countdown ends unless it is cancelled
 
 #### Scenario: The hold is cancelled in the window
 - **WHEN** a staff member cancels a hold during its countdown
@@ -103,13 +103,23 @@ Every placement and lift SHALL record the policy version, the coded criteria met
 - **THEN** the placement is cancelled and the patient is told
 
 ### Requirement: PH-05 The patient is told, with no PHI in push or text content
-openPractice SHALL tell the patient when a hold's countdown starts and when a hold lifts (ruling 41). The notice at countdown start SHALL go out before the hold takes effect (design call DC-6). It SHALL say what the hold blocks, what it never blocks (urgent help, billing contact and own records), and how to resolve it.
+openPractice SHALL tell the patient when a hold's countdown starts and when a hold lifts (ruling 41), with a `patient.notice` of kind `hold_countdown_started` or `hold_lifted` through HealthLinc. Its template is the hold policy's approved notice wording (PH-03), and its `effective_at` is when the hold would take effect or when it lifted. The notice SHALL say what the hold blocks, what it never blocks (urgent help, billing contact and own records), and how to resolve it.
 
-Notices SHALL honor the patient's confidential-communication instructions (PR-05) and, for a representative link, the proxy policy (PG-06). Push-notification and text-message content MUST NOT contain PHI, an amount or the reason for the hold. The detail SHALL appear only after sign-in, or in a statement sent through a channel the instructions allow.
+The countdown SHALL start only when openPractice holds a `notice.ack` with outcome `delivered` for the countdown notice, or has recorded a delivery through another channel that the registry's contact rules allow (PR-05), with the channel, the time and who recorded it. Without either, the countdown does not start, nothing is withheld, and the placement becomes work owned by the biller lane (design call DC-41). The hold takes effect only after the full countdown has run from that delivery (design call DC-6).
 
-#### Scenario: A countdown starts
-- **WHEN** a hold's countdown starts
-- **THEN** the patient receives an in-app notice explaining the hold, and any push text is generic
+A hold notice SHALL go to the patient's own link, and to a representative only where the representative's proxy policy includes billing (PG-06, DC-34). Notices SHALL honor the patient's confidential-communication instructions (PR-05), carried as the notice's `restriction_codes`, and, for a representative link, the proxy policy (PG-06). Push-notification and text-message content MUST NOT contain PHI, an amount or the reason for the hold. The detail SHALL appear only after sign-in, or in a statement sent through a channel the instructions allow.
+
+#### Scenario: The countdown notice is delivered
+- **WHEN** HealthLinc answers a `hold_countdown_started` notice with `notice.ack` outcome `delivered`
+- **THEN** the countdown starts at the delivery time, the patient sees the explanation in the app after sign-in, and any push text is generic
+
+#### Scenario: The countdown notice fails, then reaches the patient another way
+- **WHEN** HealthLinc answers `failed`, and staff record a statement sent through a channel the patient's instructions allow
+- **THEN** the countdown starts at the recorded delivery, and nothing is withheld before it ends
+
+#### Scenario: The countdown notice fails and no permitted channel exists
+- **WHEN** HealthLinc answers `failed` with `no_permitted_channel`, and the registry's contact rules allow no other channel
+- **THEN** the countdown does not start, no hold takes effect, and the placement becomes work owned by the biller lane
 
 #### Scenario: The patient has asked for no text messages
 - **WHEN** a patient flagged `no_text_messages` is told about a hold
@@ -117,7 +127,7 @@ Notices SHALL honor the patient's confidential-communication instructions (PR-05
 
 #### Scenario: A hold lifts
 - **WHEN** a hold is lifted
-- **THEN** the patient is told that every capability is restored
+- **THEN** the patient receives a `hold_lifted` notice saying that every capability is restored
 
 ### Requirement: PH-06 Disputed balances and GFE dispute windows never count until the policy states their treatment
 A hold policy SHALL state how disputed balances, and balances inside an open GFE dispute window (FD-4), are treated (ruling 41). Until an approved policy states that treatment, a disputed amount SHALL never count toward a hold. An amount inside an open GFE dispute window SHALL count as disputed (design call DC-8). When a dispute opens on an amount that a hold relies on, openPractice SHALL re-evaluate the hold at once. When the remaining criteria are no longer met, the hold SHALL lift under PH-09.

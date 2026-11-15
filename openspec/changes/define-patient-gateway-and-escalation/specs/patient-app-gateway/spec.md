@@ -70,8 +70,9 @@ When openPractice cannot evaluate the status, because a dependency is unavailabl
 Cut-offs other than a payment hold get safeguards too (ruling 50). They apply to `clinical_messaging_nonurgent` and, because ruling 52 gates medical-AI consults like non-urgent clinical messaging, to `medical_ai_consult` (design call DC-31):
 - When the status cannot be evaluated, neither SHALL be withheld for `evaluation_unavailable`. Routine clinical messages still route to openChart, wherever clinical routing is enabled (PG-10).
 - A deactivation or a lapsed membership SHALL withhold them only after the patient has been told and a grace period set by an approved, versioned messaging-continuity policy has passed. The medical director approves that policy, and the approval is never opted in for agent signing (DC-28). Until a version is approved, a deactivation or a lapse SHALL NOT withhold them.
+- The grace period SHALL start only when openPractice holds a `notice.ack` with outcome `delivered` for the `access_grace_started` notice, or has recorded a delivery through another channel that the registry's contact rules allow (PR-05), with the channel, the time and who recorded it. Without either, nothing SHALL be withheld, and the office manager owns the undelivered notice as work. The grace period runs its full length from that delivery; when that moves its end, openPractice sends a corrected notice (design call DC-41).
 - A clinician MAY keep them open for continuity of care with a `messaging_continuity` marker recorded in openChart (ER-18). While the marker is valid, neither SHALL be withheld for a deactivation or a lapse.
-- The notice SHALL go through HealthLinc and the channels that the patient's confidential-communication instructions allow (PR-05), with no PHI, amount or reason in push or text content (as PH-05).
+- The notice SHALL be a `patient.notice` of kind `access_grace_started`, with `grace_ends_at` and the policy's approved notice template, sent through HealthLinc, or a notice sent through another channel that the patient's confidential-communication instructions allow (PR-05). Its `restriction_codes` carry those instructions, and push or text content carries no PHI, amount or reason (as PH-05). When access returns, openPractice SHALL send a `patient.notice` of kind `access_restored`.
 
 In a practice that sells memberships, a patient who holds no membership SHALL be treated as active on the registry condition alone until the entitlement rules of `define-customer-financial-data-boundaries` are ratified. `membership_entitlement_unresolved` then withholds nothing from that patient. This is design call DC-10, not part of ruling 50.
 
@@ -86,6 +87,18 @@ In a practice that sells memberships, a patient who holds no membership SHALL be
 #### Scenario: A membership has lapsed, inside the grace period
 - **WHEN** a linked patient of a practice that sells memberships has a membership that is not current, and the grace period has not passed
 - **THEN** the three always-granted capabilities, `clinical_messaging_nonurgent` and `medical_ai_consult` remain, and the rest are withheld with `membership_not_current`
+
+#### Scenario: The grace notice is delivered
+- **WHEN** HealthLinc answers an `access_grace_started` notice with `notice.ack` outcome `delivered`
+- **THEN** the grace period starts at the delivery time, and routine clinical messaging and medical-AI consults stay granted until it ends
+
+#### Scenario: The grace notice fails, then reaches the patient another way
+- **WHEN** HealthLinc answers `failed`, and staff record a letter sent to a mailing address that the patient's instructions allow
+- **THEN** the grace period starts at the recorded delivery, and nothing is withheld before then
+
+#### Scenario: The grace notice fails and no permitted channel exists
+- **WHEN** HealthLinc answers `failed` with `no_permitted_channel`, and the registry's contact rules allow no other channel
+- **THEN** the grace period does not start, nothing is withheld, and the office manager owns the undelivered notice
 
 #### Scenario: A clinician keeps messaging open
 - **WHEN** a valid `messaging_continuity` marker exists for a patient whose grace period has passed
@@ -293,7 +306,8 @@ Gateway contract 1.0 SHALL cover exactly:
 - demographic and coverage proposals;
 - inquiry intake, inquiry status and recategorization;
 - administrative reply relay;
-- the emergency-guidance instruction.
+- the emergency-guidance instruction;
+- patient notices (`patient.notice`) and their delivery acknowledgment (`notice.ack`).
 
 It MUST NOT carry appointment or payment operations. Those SHALL be added only as later MINOR versions under a governed change (ruling 36). HealthLinc's own app features stay on HealthLinc's roadmap. The no-account texted pay link of FD-10(b) is unchanged and does not depend on the gateway.
 
@@ -323,6 +337,8 @@ The gateway boundary SHALL be covered by contract tests, written first (constitu
 - `representative_scope` in place of a hold for a representative without billing scope;
 - the conversation source and reference;
 - refusal with `clinical_routing_unavailable` while clinical routing is missing or disabled;
+- patient notices: no amount or reason, `grace_ends_at` only on `access_grace_started`, and no countdown or grace period without a confirmed or recorded delivery;
+- refusal of every message with `operator_agreement_unverified` until the HealthLinc operator agreement is verified;
 - link verification, human confirmation, and refusal without verification;
 - refusal of representative links without an approved proxy policy;
 - revocation;
@@ -340,3 +356,20 @@ The tests SHALL run against a HealthLinc contract double with synthetic data onl
 #### Scenario: A fixture looks real
 - **WHEN** a reviewer finds a gateway fixture value without a synthetic marker
 - **THEN** the fixture is rejected and replaced before merge (PR-14)
+
+### Requirement: PG-15 No gateway capability is enabled for a HealthLinc deployment until its operator agreement is verified
+openPractice SHALL enable no gateway capability for a HealthLinc deployment until an authorized person has recorded and verified the agreement that counsel requires with that deployment's HealthLinc operator (design call DC-43). The record follows the pattern of AI-14, AH-02 and VA-01: counterparty, execution date, effective and renewal or expiry dates, scope statement, owner-local document reference, verifying person and time. This change asserts no legal rule; counsel decides what agreement is required and its form. The system MUST NOT assume that any operator offers or has signed such an agreement.
+
+Until the agreement is verified, and at once if it expires or is revoked, openPractice SHALL refuse every gateway message from that deployment with `operator_agreement_unverified`, store nothing from it, and raise an exception owned by the office manager that holds no PHI. Items already accepted stay routed and owned until they close, and an urgent item's fallback keeps running (ER-09). This gate comes before PG-10's clinical-routing gate: while it is unmet, no inquiry is accepted at all; once it is met, clinical and urgent intake still waits for clinical routing. HealthLinc keeps its in-app emergency guidance throughout, and shows it for any refused urgent inquiry (companion item).
+
+#### Scenario: A deployment without a verified agreement
+- **WHEN** a HealthLinc deployment whose operator agreement is not verified sends an `entitlement.request` or an `inquiry.submitted`
+- **THEN** openPractice refuses it with `operator_agreement_unverified`, stores nothing from it, and the office manager owns an exception with no PHI
+
+#### Scenario: The agreement is verified
+- **WHEN** an authorized person records and verifies the operator agreement
+- **THEN** the gateway capabilities are enabled for that deployment, and clinical and urgent intake still waits for clinical routing (PG-10)
+
+#### Scenario: The agreement lapses with an urgent item open
+- **WHEN** the operator agreement expires while an urgent item from that deployment is routed
+- **THEN** new messages are refused with `operator_agreement_unverified`, the routed item stays owned, and its fallback keeps running

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:openpractice:contract:openpractice-patient-gateway:1.0",
   "title": "openpractice-patient-gateway 1.0",
-  "description": "Canonical message schema for the patient gateway contract between HealthLinc (the owner's working name for the ecosystem patient app) and openPractice. Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required HealthLinc companion change. Every object is closed (additionalProperties false). Reasons are codes. References are opaque or (issuer, namespace, value) triples. message_id is a random UUID and is the idempotency key; no key carries PHI. The only free-text fields are the administrative inquiry body, the administrative reply body, and the patient-proposed demographic and coverage values; a clinical inquiry carries no body. The entitlement result always grants urgent_escalation, billing_contact and own_records_access; a payment hold may withhold only clinical_messaging_nonurgent, scheduling_new_nonurgent and medical_ai_consult, and is never revealed to a representative without billing scope. An inquiry names where its conversation lives: healthlinc (HealthLinc's coach) or medxfactory (medXfactory's medical AI). 1.0 carries no appointment or payment operations; they come as later MINOR versions. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
+  "description": "Canonical message schema for the patient gateway contract between HealthLinc (the owner's working name for the ecosystem patient app) and openPractice. Owned by opensoft/openPractice-spec change define-patient-gateway-and-escalation; to be referenced by digest from the required HealthLinc companion change. Every object is closed (additionalProperties false). Reasons are codes. References are opaque or (issuer, namespace, value) triples. message_id is a random UUID and is the idempotency key; no key carries PHI. The only free-text fields are the administrative inquiry body, the administrative reply body, and the patient-proposed demographic and coverage values; a clinical inquiry carries no body. The entitlement result always grants urgent_escalation, billing_contact and own_records_access; a payment hold may withhold only clinical_messaging_nonurgent, scheduling_new_nonurgent and medical_ai_consult, and is never revealed to a representative without billing scope. An inquiry names where its conversation lives: healthlinc (HealthLinc's coach) or medxfactory (medXfactory's medical AI). Patient notices carry no amount or reason text. A deployment whose operator agreement is not verified is refused with operator_agreement_unverified. 1.0 carries no appointment or payment operations; they come as later MINOR versions. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
   "oneOf": [
     {
       "$ref": "#/$defs/entitlementRequest"
@@ -51,6 +51,12 @@
     },
     {
       "$ref": "#/$defs/guidanceAck"
+    },
+    {
+      "$ref": "#/$defs/patientNotice"
+    },
+    {
+      "$ref": "#/$defs/noticeAck"
     },
     {
       "$ref": "#/$defs/messageAck"
@@ -166,7 +172,8 @@
         "proposal_unknown",
         "capability_withheld",
         "link_pending_review",
-        "clinical_routing_unavailable"
+        "clinical_routing_unavailable",
+        "operator_agreement_unverified"
       ]
     },
     "healthlincRef": {
@@ -1024,7 +1031,8 @@
                 "link_exists",
                 "schema_invalid",
                 "unsupported_major_version",
-                "unauthorized"
+                "unauthorized",
+                "operator_agreement_unverified"
               ]
             }
           },
@@ -2808,6 +2816,281 @@
                 "required": [
                   "reject_reason"
                 ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "patientNotice": {
+      "description": "openPractice tells the patient, through HealthLinc, that a hold countdown started or a hold lifted, or that a grace period started or access was restored (PH-05, PG-04). A countdown or grace period starts only after delivery is confirmed (notice.ack) or recorded through another permitted channel.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "patient.notice"
+        },
+        "payload": {
+          "description": "Carries no amount, balance, reason text or other financial detail; the approved template states what the patient needs after sign-in.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "notice_id",
+            "notice_kind",
+            "effective_at",
+            "template_ref",
+            "restriction_codes"
+          ],
+          "properties": {
+            "notice_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "notice_kind": {
+              "description": "hold_countdown_started and hold_lifted (PH-05); access_grace_started and access_restored (PG-04, ruling 50).",
+              "enum": [
+                "hold_countdown_started",
+                "hold_lifted",
+                "access_grace_started",
+                "access_restored"
+              ]
+            },
+            "effective_at": {
+              "description": "When the notified change takes effect: the end of the hold countdown, the lift, the start of the grace period, or the restoration.",
+              "$ref": "#/$defs/timestamp"
+            },
+            "grace_ends_at": {
+              "description": "When the grace period ends. Present only for access_grace_started.",
+              "$ref": "#/$defs/timestamp"
+            },
+            "template_ref": {
+              "description": "The approved, versioned notice wording that HealthLinc shows after sign-in (PH-03, PG-04).",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "template_id",
+                "version"
+              ],
+              "properties": {
+                "template_id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "restriction_codes": {
+              "description": "The patient's confidential-communication restrictions (PR-05) that HealthLinc must honor for any push or text it sends about this notice. Empty when none apply.",
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "no_voicemail",
+                  "no_home_mail",
+                  "no_text_messages",
+                  "no_email",
+                  "alternate_channel_only"
+                ]
+              }
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "notice_kind": {
+                    "const": "access_grace_started"
+                  }
+                },
+                "required": [
+                  "notice_kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "grace_ends_at"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "notice_kind": {
+                    "enum": [
+                      "hold_countdown_started",
+                      "hold_lifted",
+                      "access_restored"
+                    ]
+                  }
+                },
+                "required": [
+                  "notice_kind"
+                ]
+              },
+              "then": {
+                "not": {
+                  "required": [
+                    "grace_ends_at"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "noticeAck": {
+      "description": "HealthLinc reports whether a patient.notice was delivered to the patient.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "contract_version",
+        "message_id",
+        "message_type",
+        "issued_at",
+        "issuer",
+        "payload",
+        "gateway_link_id"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-patient-gateway"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^1\\.[0-9]+$"
+        },
+        "message_id": {
+          "description": "Random UUID. It is the idempotency key: every retry reuses it. It never carries PHI.",
+          "$ref": "#/$defs/uuid"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "gateway_link_id": {
+          "description": "Minted by openPractice in link.result; names one HealthLinc-to-openPractice link for its whole life (PG-05).",
+          "$ref": "#/$defs/uuid"
+        },
+        "message_type": {
+          "const": "notice.ack"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "notice_id",
+            "outcome"
+          ],
+          "properties": {
+            "notice_id": {
+              "$ref": "#/$defs/uuid"
+            },
+            "outcome": {
+              "enum": [
+                "delivered",
+                "failed"
+              ]
+            },
+            "delivered_at": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "failure_reason": {
+              "enum": [
+                "link_unknown",
+                "link_revoked",
+                "no_permitted_channel",
+                "delivery_failed",
+                "schema_invalid",
+                "unsupported_major_version"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "outcome": {
+                    "const": "delivered"
+                  }
+                },
+                "required": [
+                  "outcome"
+                ]
+              },
+              "then": {
+                "required": [
+                  "delivered_at"
+                ],
+                "not": {
+                  "required": [
+                    "failure_reason"
+                  ]
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "outcome": {
+                    "const": "failed"
+                  }
+                },
+                "required": [
+                  "outcome"
+                ]
+              },
+              "then": {
+                "required": [
+                  "failure_reason"
+                ],
+                "not": {
+                  "required": [
+                    "delivered_at"
+                  ]
+                }
               }
             }
           ]

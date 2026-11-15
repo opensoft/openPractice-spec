@@ -45,7 +45,15 @@ Applying the rules is automatic. It makes no decision for the patient; it only d
 - **THEN** the change is refused
 
 ### Requirement: ER-03 Urgency is never downgraded
-openPractice MUST NOT lower an item's applied urgency, whether by rule, staff action, agent action or a later HealthLinc proposal. Urgency MAY only be raised. Each raise SHALL be recorded with its source and time. A raise on a clinical item SHALL be sent to openChart as `handoff.urgency_raised`. Neither contract SHALL contain a message that lowers urgency.
+openPractice MUST NOT lower an item's applied urgency, whether by rule, staff action, agent action or a later proposal from HealthLinc's coach or medXfactory's medical AI. Urgency MAY only be raised. Each raise SHALL be recorded with its source and time. A raise on a clinical item SHALL be sent to openChart as `handoff.urgency_raised`, with source `coach_triage`, `medical_ai_triage`, `staff`, `agent_proposal` or `routing_rule`. These two triage sources replace the earlier `healthlinc_triage`, which ruling 51 split; contract 1.0 is unratified, so no published value is withdrawn (design call DC-44). Neither contract SHALL contain a message that lowers urgency.
+
+A clinician MAY raise an item's urgency in openChart. openChart SHALL report it as `handoff.clinician_urgency_raised`, with the new urgency, the time, openChart's new `respond_by` and the clinician's reference, and openPractice SHALL acknowledge it with `message.ack` (design call DC-42). openPractice SHALL then:
+- record the raise, with the clinician reference as its source;
+- shadow the new `respond_by`, never later than its current shadow deadline;
+- for a raise to `urgent`, run the urgent path for that item: ER-09's tracked fallback on `clock_expired` or on silence past the new `respond_by`, including `guidance.instruct` to HealthLinc so the patient gets emergency guidance if the deadline is missed;
+- for a raise to `priority`, apply the priority alerting of ER-07.
+
+A clinician's raise to an urgency at or below the applied urgency SHALL be recorded and SHALL change nothing; openPractice never lowers urgency.
 
 #### Scenario: A staff member tries to lower urgency
 - **WHEN** a staff member tries to change an `urgent` item to `routine`
@@ -59,10 +67,22 @@ openPractice MUST NOT lower an item's applied urgency, whether by rule, staff ac
 - **WHEN** an item already handed to openChart is raised from `priority` to `urgent`
 - **THEN** openChart receives `handoff.urgency_raised` with the new acknowledgment and response times
 
+#### Scenario: A clinician raises urgency in openChart
+- **WHEN** openChart sends `handoff.clinician_urgency_raised` raising a routine item to `urgent` with a new `respond_by`
+- **THEN** openPractice records the raise, acknowledges it, shadows the new deadline and treats the item as urgent
+
+#### Scenario: The clinician's new deadline passes in silence
+- **WHEN** the new `respond_by` of a clinician-raised urgent item passes with neither `responded` nor `clock_expired`
+- **THEN** ER-09's fallback runs: the office manager is alerted, the on-call clinician gets a tracked alert, and HealthLinc receives `guidance.instruct` with cause `clinical_response_overdue`
+
+#### Scenario: A clinician raise would lower urgency or extend the deadline
+- **WHEN** a clinician raise names `priority` for an item already `urgent`, or a `respond_by` later than openPractice's current shadow deadline
+- **THEN** the item stays `urgent` and the earlier deadline stands, and the raise is recorded
+
 ### Requirement: ER-04 Clinical items are handed to openChart under one versioned handoff contract
 openPractice SHALL hand every clinical item to the patient's linked openChart, or other linked EHR, under one versioned contract, `openpractice-clinical-handoff/1.0` (rulings 34, 36 and 43). The canonical schema SHALL be `openpractice-clinical-handoff-1.0.schema.json` in this change's `contracts/` directory, identified by the SHA-256 digest of its bytes. Both sides SHALL validate every message against the schema with the recorded digest. Any schema change SHALL produce a new digest, recorded in this change and in the openChart companion change before either side implements it.
 
-The contract follows PG-01's versioning rules: a shared MAJOR version is compatible, additive changes increment MINOR, no sender sends a MINOR the receiver has not declared, and an unsupported MAJOR is refused with `unsupported_major_version`. The messages SHALL be `handoff.offer`, `handoff.ack`, `handoff.urgency_raised`, `handoff.status`, `clinical_need.marker` (ER-18) and `message.ack`.
+The contract follows PG-01's versioning rules: a shared MAJOR version is compatible, additive changes increment MINOR, no sender sends a MINOR the receiver has not declared, and an unsupported MAJOR is refused with `unsupported_major_version`. The messages SHALL be `handoff.offer`, `handoff.ack`, `handoff.urgency_raised`, `handoff.clinician_urgency_raised` (ER-03), `handoff.status`, `clinical_need.marker` (ER-18) and `message.ack`.
 
 #### Scenario: A valid offer is accepted
 - **WHEN** openPractice sends a `handoff.offer` that validates against the schema with the recorded digest
@@ -74,8 +94,10 @@ The contract follows PG-01's versioning rules: a shared MAJOR version is compati
 
 ### Requirement: ER-05 The handoff is reference-only and carries exactly the stated fields
 A `handoff.offer` SHALL carry exactly these fields, and no others (design call DC-2):
-- the routing id, as `handoff_id`, and the EB-01 `link_id`;
-- the EHR patient triple from that link;
+- the routing id, as `handoff_id`;
+- the identity state, `linked`, `link_in_review` or `unlinked` (ER-06);
+- for `linked` and `link_in_review`, the EB-01 `link_id` and the EHR patient triple from that link;
+- for `unlinked`, no link and no EHR triple, but an `unlinked_identity` holding only the legal name, date of birth and administrative sex, a minimal subset of the `openpractice-ehr-patient-link/1.0` snapshot (`define-mvp-practice-foundation`, SHA-256 `76f465e144893000de4bd2240adb9f547899e2e8100315f698c3cc6cb885b802`), with the same shapes;
 - HealthLinc's request reference and reply-path reference;
 - where the conversation lives, as `conversation_source` (`healthlinc` or `medxfactory`), and the `conversation_ref` in that system (ruling 51);
 - the category `clinical` and the urgency;
@@ -97,16 +119,38 @@ It MUST NOT carry the message body, question text, reply text, a medical-AI tran
 - **WHEN** openChart reports `content_unavailable` for a handoff
 - **THEN** openPractice alerts the office manager, and runs ER-09's fallback if the item is urgent
 
-### Requirement: ER-06 Automatic handoff needs an active EHR link that is not in identity review
-openPractice SHALL offer a handoff automatically only when the patient has an active EB-01 link to the EHR that is not in identity review (EB-05) (design call DC-24). When no active link exists, or the link is in identity review, openPractice MUST NOT guess a chart. It SHALL make the item a clinical routing exception owned by the office manager, holding no clinical content. It SHALL run ER-09's fallback when the item is urgent. When a patient is linked to more than one EHR, the item SHALL go to the EHR the practice configures for clinical messaging; with no such configuration, it becomes an exception.
+### Requirement: ER-06 Every handoff states its identity state, and urgent and priority items are offered even when the link is uncertain
+openPractice SHALL offer a handoff with `identity_state` `linked` when the patient has an active EB-01 link to the EHR that is not in identity review (EB-05) and not under a demographic hold (EB-08) (design call DC-24). openPractice MUST NOT guess a chart in any state.
+
+For an item whose applied urgency is `urgent` or `priority`, uncertainty about the chart SHALL NOT stop the offer (design calls DC-39 and DC-40):
+- On a link in identity review or under a demographic hold, openPractice SHALL still offer the handoff, with `identity_state` `link_in_review`, the link and the EHR triple. One state covers both cases, because neither EB-05 nor openChart's PL-08 distinguishes them (tension T-11).
+- For a patient with no active chart link, openPractice SHALL still offer the handoff, with `identity_state` `unlinked`, no link and no EHR triple, and an `unlinked_identity` limited to the patient's legal name, date of birth and administrative sex from the registry (ER-05).
+- openChart accepts such an offer as an unfiled item with the identity uncertainty shown (its companion requirement MI-18), and never files it to a chart or creates a link from it automatically.
+- At the same time, openPractice SHALL make the item a clinical routing exception owned by the office manager, holding no clinical content, so that a human resolves the identity. For an urgent item it SHALL also run ER-09's fallback at once. For a priority item it SHALL at once send ER-09's tracked on-call alert, without the emergency-guidance instruction (design call DC-30), and ER-07's priority alerting then applies.
+
+A routine item on a link in review or under a hold, or for a patient with no active chart link, SHALL NOT be offered. It SHALL become a clinical routing exception owned by the office manager, holding no clinical content, as before. openChart's reject reason `link_in_review` therefore applies only to routine offers.
+
+When a patient is linked to more than one EHR, the item SHALL go to the EHR the practice configures for clinical messaging; with no such configuration, it becomes an exception, and an urgent or priority item is offered `unlinked` to that configured EHR when one exists.
 
 #### Scenario: The patient has an active link
 - **WHEN** a clinical item arrives for a patient with an active EB-01 link that is not in review
-- **THEN** openPractice offers the handoff to that EHR
+- **THEN** openPractice offers the handoff to that EHR with `identity_state` `linked`
 
-#### Scenario: The link is in identity review
+#### Scenario: An urgent item on a link in identity review
 - **WHEN** an urgent clinical item arrives for a patient whose EHR link is in identity review
-- **THEN** no handoff is offered, the office manager owns the exception, and ER-09's fallback runs
+- **THEN** openPractice offers the handoff with `identity_state` `link_in_review`, the office manager owns the identity exception, and ER-09's fallback runs at once
+
+#### Scenario: A priority item on a link under a demographic hold
+- **WHEN** a priority clinical item arrives for a patient whose link is under a date-of-birth hold
+- **THEN** openPractice offers the handoff with `identity_state` `link_in_review`, the office manager owns the identity exception, and the on-call clinician gets a tracked alert
+
+#### Scenario: An urgent item for a patient with no chart link
+- **WHEN** an urgent clinical item arrives for a patient with no active EB-01 link
+- **THEN** openPractice offers the handoff with `identity_state` `unlinked`, no link, and only the legal name, date of birth and administrative sex, and ER-09's fallback runs at once
+
+#### Scenario: A routine item on a link in review
+- **WHEN** a routine clinical item arrives for a patient whose EHR link is in identity review
+- **THEN** no handoff is offered, and the office manager owns a clinical routing exception with no clinical content, under a clock
 
 #### Scenario: The patient has no EHR link
 - **WHEN** a routine clinical item arrives for a patient with no EHR link
@@ -171,7 +215,7 @@ openPractice SHALL run the fallback at once when the item is urgent and any of t
 - no acknowledgment arrives within the urgent window;
 - openChart reports `clock_expired`;
 - neither `responded` nor `clock_expired` arrives by `respond_by`;
-- ER-06 makes the item an exception.
+- ER-06 offers the item with `identity_state` `link_in_review` or `unlinked`, or makes it an exception.
 
 The fallback SHALL:
 - alert the office manager;
@@ -356,6 +400,8 @@ The handoff boundary SHALL be covered by contract tests, written first (constitu
 - the reference-only payload, and refusal of any content field;
 - acknowledgment, rejection and retry;
 - every alert trigger, including `clock_expired` and silence past `respond_by`, and the urgent fallback with its guidance instruction;
+- every identity state, the `unlinked_identity` subset, and the absence of an offer for a routine item on an uncertain link;
+- clinician urgency raises: acknowledgment, the shadowed deadline, the urgent path, and no lowering;
 - tracked alerts: delivery, acknowledgment, re-sending and escalation to the medical director, and the priority alert;
 - the conversation source and reference;
 - the clinical-need marker, its attribution and the urgent-origin check;

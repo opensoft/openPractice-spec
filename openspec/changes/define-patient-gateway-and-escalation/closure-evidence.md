@@ -28,6 +28,10 @@ This record collects acceptance evidence for OpenSpec change `define-patient-gat
 - Clinical inquiries carrying text refused; no clinical content in any routing record or handoff: _pending_
 - Urgency never lowered by rule, staff, agent or later proposal: _pending_
 - Acknowledgment, shadow response deadline and every alert trigger, with the office manager alerted: _pending_
+- Identity state on every handoff; urgent and priority items offered as `link_in_review` or `unlinked` (three snapshot fields only), routine items on an uncertain link kept as exceptions: _pending_
+- Clinician urgency raises: recorded, acknowledged, deadline shadowed, urgent path run, urgency never lowered: _pending_
+- Patient notices and `notice.ack`; hold countdowns and grace periods start only after a confirmed or recorded delivery: _pending_
+- HealthLinc operator agreement verified before any gateway capability; refusal with `operator_agreement_unverified` meanwhile: _pending_
 - Urgent fallback (office manager, on-call clinician, HealthLinc guidance instruction, retries), including on `clock_expired` and silence past `respond_by` with cause `clinical_response_overdue`, and the no-on-call fallback to the medical director: _pending_
 - Tracked alerts: delivery, acknowledgment, re-sending and escalation to the medical director; the priority alert: _pending_
 - Rejected urgent inquiries (link, authorization or `pending_review` reasons) raise a PHI-free exception and a guidance instruction: _pending_

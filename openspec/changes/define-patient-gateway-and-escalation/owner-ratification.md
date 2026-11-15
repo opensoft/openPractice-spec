@@ -6,7 +6,7 @@ This record is the mandatory, durable owner gate for OpenSpec change `define-pat
 
 The rulings this change encodes (34 to 54) were made by Brett Heap on 2026-11-14 and are recorded in `design.md` under "Owner rulings (2026-11-14)". Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below.
 
-The 38 design calls in `design.md` under "Design calls for owner review" have not been ruled. Ratification records the owner's disposition of each.
+The 44 design calls in `design.md` under "Design calls for owner review" have not been ruled. Ratification records the owner's disposition of each.
 
 ## Required Validation Evidence
 
@@ -51,8 +51,8 @@ Ruling 40 requires three companion changes, and rulings 47 to 49 asked for them 
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Handoff shape: _pending; must be exactly `A — ordered multi-feature handoff` or `B — split into per-capability changes` (design call DC-21 proposes `A`; no ruling states a shape)_
-- Design-call dispositions (DC-1 to DC-38, each accepted, changed or rejected): _pending_
-- Tension dispositions (T-1 to T-10; T-9 and T-10 are recorded as resolved by rulings 50 and 52): _pending_
+- Design-call dispositions (DC-1 to DC-44, each accepted, changed or rejected; DC-39 is marked for the owner): _pending_
+- Tension dispositions (T-1 to T-11; T-9 and T-10 are recorded as resolved by rulings 50 and 52, and T-11 proposes a follow-up): _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
 Required owner statement:
