@@ -222,7 +222,7 @@ Ruling 40 required these companion changes. Rulings 47 to 49 asked for them to b
 
 1. **`opensoft/openChart-spec`, change `define-clinical-message-inbox`: a clinical message inbox.** It must:
    - receive `openpractice-clinical-handoff/1.0` offers, validated against the schema at digest `047f0028dff4867a0e6bf0f6fd95ee2742bf4f2f43aa3044d7259da1dd398771`;
-   - answer each offer with `handoff.ack`. It must accept an urgent or priority offer whose `identity_state` is `link_in_review` or `unlinked` as an unfiled item with the identity uncertainty shown (its MI-18), never refuse it for that state, and never file it to a chart or create a link from it automatically. It refuses a routine offer on a link in review with `link_in_review`, and an offer on a revoked or unknown link;
+   - answer each offer with `handoff.ack`. It must accept an urgent or priority offer whose `identity_state` is `link_in_review` or `unlinked` as an unfiled item with the identity uncertainty shown (its MI-18), never refuse it for that state, and never file it to a chart or create a link from it automatically. It refuses a routine offer on a link in review with `link_in_review`, and a routine offer on a revoked or unknown link. An urgent or priority offer marked `linked` that openChart finds revoked, unknown or mismatched is also accepted unfiled with the uncertainty shown (its MI-18), so it still reaches a clinician;
    - send `handoff.clinician_urgency_raised`, with the new `respond_by` and the clinician's reference, whenever a clinician raises an item's urgency, and never lower urgency;
    - own the queue and the response clock, and report `responded`, `clock_expired`, `returned_not_clinical`, `content_unavailable` and `closed`. It must report `clock_expired` when its clock runs out and `responded` as soon as a clinician replies, because openPractice treats an expired clock, or silence past `respond_by`, as `clinical_response_overdue` and runs the urgent fallback, including the tracked on-call alert (ER-09);
    - keep an expired item in its queue until a clinician responds, and show the on-call clinician who receives openPractice's alert the item by its routing id;
@@ -231,7 +231,7 @@ Ruling 40 required these companion changes. Rulings 47 to 49 asked for them to b
    - apply `handoff.urgency_raised` and never lower urgency;
    - let a clinician record, attribute and withdraw a clinical-need marker, `appointment_needed` or `messaging_continuity`, with a `valid_until` time and an origin, and send it to openPractice as `clinical_need.marker` with no reason or note (ER-18). For an origin of `urgent_escalation`, it must carry the routing id of that urgent handoff;
    - honor confidential-communication instructions for every patient communication it originates (ruling 27, EB-06);
-   - say how a clinician reads a routed message for a patient with no EB-01 link (Open Question 5).
+   - say how a clinician reads a routed message for a patient with no EB-01 link. Its MI-18 now answers this for urgent and priority items (Open Question 5).
 2. **`opensoft/HealthLinc`, change `define-practice-gateway-integration`: the patient app side of the gateway.** HealthLinc is a private repository; this change cites it by repository and change id only. It must:
    - cover the three patient paths of ruling 51: HealthLinc's coach, "connect to my doctor" (through openPractice to openChart), and "connect to medXfactory's medical AI";
    - keep the coach to general information only, with the not-medical-advice statement in addition; anything individualized goes to medXfactory's medical AI or to the doctor (ruling 54);
@@ -405,7 +405,7 @@ Every question is routed in `tasks.md` §3.5 to the work it blocks.
 2. **Proxy policy content** (PG-06), including minors' confidentiality and personal-representative scope. Counsel.
 3. **Hold policy content** (PH-03). Counsel; the medical director approves.
 4. **Hold scope across one guarantor's dependents.** Whether a guarantor's balance can place holds on several patients. The policy decides.
-5. **A clinician reading a routed message for a patient with no EB-01 link** (ER-06). openChart companion; the exception path applies meanwhile.
+5. **A clinician reading a routed message for a patient with no EB-01 link** (ER-06). Answered for urgent and priority items: ER-06 offers them with `identity_state` `unlinked` and `unlinked_identity` (DC-39, for the owner), and the openChart companion's MI-18 accepts them unfiled. Routine items keep the exception path.
 6. **The on-call roster's source** and its relation to change A's role recipes (ER-13). Planning.
 7. **Routing-clock windows** (ER-08). The medical director; defaults meanwhile.
 8. **Ruling 42 in a mixed membership practice** (DC-10). The owner. Ruling 50 settled the messaging safeguards; DC-10's treatment of non-members is still a design call.
