@@ -66,13 +66,13 @@ When money sits in `unapplied_credit` or `refund_liability` and is not applied w
 - the posting of the remittance that sets the patient's share (RM-07);
 - the claim being voided (CL-08) or dropped (CL-09), or its payer balance being written off (PS-11);
 - the visit being converted to self-pay (EG-05), found to have had no coverage (GF-11), or given a disposition at `seen` with nothing to bill (TH-04);
-- the end of the maximum waiting period that the approved parameters set, which SHALL NOT exceed 60 days (ruling 180; counsel confirms the 60 days), counted from the later of the date of service and the day the credit began to wait (design call CR-92, PROPOSED), with a shipped starting value of 60 days.
+- the end of the maximum waiting period that the approved parameters set, which SHALL NOT exceed 60 days (ruling 180; counsel confirms the 60 days), counted from the later of the date of service and the day the practice received the money, never from when a charge was finalized, so that the practice's own delay cannot lengthen the wait (design call CR-92, PROPOSED), with a shipped starting value of 60 days.
 
 From then on the credit counts as unapplied, and its period, and any case for it, start then. A credit that an AP-04 disposition creates, for a cancellation, a no-show or a patient who left unseen, SHALL NOT wait (ruling 180, for a cancelled or missed visit), because no claim follows it: it counts as unapplied from the disposition. While a credit waits, it SHALL be shown as owned work naming the claim it waits on (TH-12). Identifying the owner of an unidentified receipt SHALL be done by a person at FD-5 tier 2, with a notification: it posts `unidentified_receipt_identified` for a guarantor account, or `unidentified_receipt_to_payer` for a payer's payment that arrived before its remittance (design call CR-66, PROPOSED). The one exception is RM-01's automatic link, made only when the remittance's trace number and payment amount both equal the receipt's (design call CR-95, PROPOSED).
 
 #### Scenario: The insurer never answers
-- **WHEN** a patient's 50.00 prepayment for an insured visit moved to credit when the charge was finalized, a week after the date of service, and 60 days after that finalization no remittance has posted and the claim is still open
-- **THEN** the wait ends, the credit counts as unapplied, and PY-06's period and any credit-balance case start from that day, with the open claim still shown on the thread
+- **WHEN** a patient's 50.00 prepayment for an insured visit, paid before the visit, moved to credit when the charge was finalized, a week after the date of service, and 60 days after the date of service no remittance has posted and the claim is still open
+- **THEN** the wait ends, counted from the date of service and not from the finalization, the credit counts as unapplied, and PY-06's period and any credit-balance case start from that day, with the open claim still shown on the thread
 
 #### Scenario: A copay on a visit whose note is never finished
 - **WHEN** a 25.00 copay is taken at checkout for an insured visit whose documentation is never finished, so its charge is never finalized and no claim is built

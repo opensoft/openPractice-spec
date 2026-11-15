@@ -12,7 +12,7 @@ openPractice SHALL record every movement of money it owns as one ledger entry th
 - **THEN** it is refused, because an entry always names two buckets and one amount
 
 ### Requirement: SL-02 The bucket list is fixed and shipped
-The buckets SHALL be exactly these, shipped by the product and not changeable by a practice (ruling 163, which accepts them as the starting list):
+The buckets SHALL be exactly these, shipped by the product and not changeable by a practice (ruling 163 accepts them as the starting list; that a practice cannot change them is design call CR-9, PROPOSED):
 
 | Bucket | What it holds |
 |---|---|

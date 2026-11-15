@@ -259,7 +259,7 @@ The thread SHALL be defined by the contract `openpractice-thread/1.0`, with one 
 - **THEN** it is refused, and nothing changes
 
 ### Requirement: TH-12 Held and stuck threads are owned work, and every gate keeps its deadline escape
-Every thread that is `held` or `stuck` SHALL appear as a work item in the one queue of WI-01, with its owner, clock, FD-5 tier and source. A user MAY snooze a stuck thread to a date with a reason; snoozing SHALL move the next review date and SHALL NOT change the thread's age or its deadline. Every hold that could stall a claim past its filing deadline SHALL name its FD-5 deadline escape (WI-06), which SHALL be the escape stated by the requirement that defines the hold.
+Every thread that is `held` or `stuck` SHALL appear as a work item in the one queue of WI-01, with its owner, clock, FD-5 tier and source. A named human MAY snooze a stuck thread to a date with a reason (ruling 182); snoozing SHALL move the next review date and SHALL NOT change the thread's age or its deadline. Every hold that could stall a claim past its filing deadline SHALL name its FD-5 deadline escape (WI-06), which SHALL be the escape stated by the requirement that defines the hold.
 
 #### Scenario: The payer says call back
 - **WHEN** a biller snoozes a stuck claim to the 12th because the payer asked them to call back then
