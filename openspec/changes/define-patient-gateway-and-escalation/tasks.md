@@ -16,6 +16,7 @@ Each feature is gated on tasks 1.2 and 1.3 and is created from the assembly root
   - priority inquiries need only `urgent_escalation`;
   - the conversation source and reference for HealthLinc-held and medical-AI conversations, and `proposal_source`, including `patient_checklist`;
   - refusal with `clinical_routing_unavailable`, with the guidance instruction and the office-manager exception;
+  - routine clinical questions (DC-70) and `medical_ai_consult` (ruling 207) withheld with `clinical_routing_unavailable` until the practice manager records that openChart records the practitioner's sign-off with openWallet and openSig, and again once that record is withdrawn; a routine clinical inquiry rejected with `capability_withheld`, an item found clinical at routine urgency given ER-12's handling, no assertion granting `medical_ai_consult`, and urgent and priority intake unaffected;
   - refusal of every message with `operator_agreement_unverified` until the HealthLinc operator agreement is verified, with the office-manager exception;
   - patient notices and `notice.ack`, with no grace period started before a confirmed or recorded delivery;
   - link verification, human confirmation, refusal without verification, and agent sign-off refusal are tested;
