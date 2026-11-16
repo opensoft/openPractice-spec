@@ -6,7 +6,7 @@ This record is the mandatory, durable owner gate for OpenSpec change `define-rev
 
 Brett Heap made rulings 112 to 132 on 2026-11-15, and later that day answered decisions 136 to 150 and decisions 152 to 194; rulings 162 to 182 answer this change's 21 open questions for the owner. Rulings 112 to 132, the later rulings this change relies on, and the earlier rulings it relies on are recorded in `design.md` under "Owner rulings". Making those rulings is not ratification of this artifact. The change was drafted by an agent, and only the owner can ratify the exact revision identified below. Under rulings 109 and 110, nothing from this change is handed to build before then.
 
-The 100 design calls in `design.md` under "Design calls for owner review" (CR-1 to CR-100) have not been ruled, except where rulings 162 to 182 and 193 rule a call or its main lines, as each call's row says; a detail beyond a ruling's words stays PROPOSED. Ratification records the owner's disposition of each.
+The 101 design calls in `design.md` under "Design calls for owner review" (CR-1 to CR-101) have not been ruled, except where rulings 162 to 182 and 193 rule a call or its main lines, as each call's row says; a detail beyond a ruling's words stays PROPOSED. Ratification records the owner's disposition of each.
 
 ## Required Validation Evidence
 
@@ -25,7 +25,7 @@ The 100 design calls in `design.md` under "Design calls for owner review" (CR-1 
 ## Required Dependency Evidence
 
 - Draft PR opensoft/openPractice-spec#7 (`change/follow-up-ruling-93-contract-gaps`, read at `e746f58`) merged, with revision: _pending_
-- Draft PR opensoft/openPractice-spec#8 (`change/critique-2026-11-15-corrections`, read at `4bce39a` and re-checked at `050bdfd`, `f96ee1b`, `f3bed0a`, `93566f8`, `0439321`, `f87a6f0`, `664fee8`, `89b97e3`, `c90b9a6`, `5805856`, `ad6f4be`, `ec9962d`, `5c85231` and `a03c575` while still being written) merged, with revision: _pending_
+- Draft PR opensoft/openPractice-spec#8 (`change/critique-2026-11-15-corrections`, read at `4bce39a` and re-checked at `050bdfd`, `f96ee1b`, `f3bed0a`, `93566f8`, `0439321`, `f87a6f0`, `664fee8`, `89b97e3`, `c90b9a6`, `5805856`, `ad6f4be`, `ec9962d`, `5c85231`, `a03c575` and `b4b382e` while still being written) merged, with revision: _pending_
 - Draft PR opensoft/openPractice-spec#10 (`change/define-practice-readiness`, read at `e9748d7` and re-checked at `d4724e1`, `ac091cb`, `d215ee4`, `2823f9f`, `75e1484`, `d1e1de1` and `0f8e4a4`) merged, with revision: _pending_
 - Every requirement and design-call ID this change cites from them exists at those revisions and still means what `design.md` "Dependencies" describes (EB-13, EB-15, PR-15, F-6, F-7, F-12, F-13, F-18, BAB-17, BAB-18, PH-01, PH-04, PH-06 and PH-09 as amended, DC-68, F-8 to F-10, AM-01, AM-02, AO-04, AO-07, WI-03, SR-02, SR-04, RD-11, I-1), and the ruling-88 retraction bullet of `define-mvp-practice-foundation` task 2.4 that PA-3 keeps: _pending_
 - Rulings 139 to 142, 144, 145, 149, 150, 164, 165, 177, 178, 185, 192 and 193 are encoded in those merged texts as `design.md` "Owner rulings" relies on them, and this change cites the requirement IDs that carry them: _pending_
@@ -42,7 +42,7 @@ Each amendment belongs to the owning change. Its disposition is recorded here; t
 - Owner identity: _pending_
 - Ratification timestamp: _pending_
 - Hand-off shape: _pending owner confirmation; must be exactly `ordered six-feature hand-off (ruling 112)` or `split into separate changes` (the owner ruled for one change with its own ordered multi-feature hand-off on 2026-11-15, as `design.md` ruling 112 records, and this field still requires his confirmation)_
-- Design-call dispositions (CR-1 to CR-100, each accepted, changed or rejected, a ruled call or main line being recorded as ruled): _pending_. CR-97 (PS-09 leaving a charge under open same-person reconciliation out of the published balance) and PR #8's design call DC-68 (PA-11) stand or fall together: rejecting one should mean rejecting both.
+- Design-call dispositions (CR-1 to CR-101, each accepted, changed or rejected, a ruled call or main line being recorded as ruled): _pending_. CR-97 (PS-09 leaving a charge under open same-person reconciliation out of the published balance) and PR #8's design call DC-68 (PA-11) stand or fall together: rejecting one should mean rejecting both.
 - Tension dispositions (T-1 to T-21; T-14, T-18, T-20 and T-21 are settled by rulings 164, 165, 181 and 178): _pending_
 - Tiers for the twelve recording actions of ruling 182: recorded in "Recording Actions To Rule On At Ratification" below
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
