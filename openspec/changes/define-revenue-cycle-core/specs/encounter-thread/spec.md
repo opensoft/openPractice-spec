@@ -42,7 +42,7 @@ Every thread SHALL carry, at every moment:
 - **THEN** the clock shows the authorization expiry with 12 days remaining, and the filing deadline is retrievable as the next one
 
 #### Scenario: A patient balance and an open secondary
-- **WHEN** a thread has 30.00 owed by the guarantor account and 55.00 expected from a second payer
+- **WHEN** a thread has 30.00 owed by the guarantor account and 55.00 owed by a second payer that has accepted its claim
 - **THEN** the thread shows 55.00 with the second payer as counterparty, and the ledger shows both amounts
 
 ### Requirement: TH-04 Stations and legal moves are fixed
