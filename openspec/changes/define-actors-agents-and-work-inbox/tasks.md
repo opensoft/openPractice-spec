@@ -1,15 +1,15 @@
 ## 1. Governance Gates
 
-- [ ] 1.1 Run `openspec validate define-actors-agents-and-work-inbox --strict --no-interactive` on the exact revision proposed for ratification, with `define-mvp-practice-foundation` at the revision it is stacked on. Acceptance evidence: exit code 0, with the version, command, timestamp, revision and output recorded in `owner-ratification.md`.
+- [ ] 1.1 Run `openspec validate define-actors-agents-and-work-inbox --strict --no-interactive` on the exact revision proposed for ratification, with `define-mvp-practice-foundation` at the same revision. Acceptance evidence: exit code 0, with the version, command, timestamp, revision and output recorded in `owner-ratification.md`.
 - [ ] 1.2 Obtain the owner's ratification in `owner-ratification.md`. Acceptance evidence: every field complete and the decision exactly `APPROVED UNCONDITIONALLY`. No Speckit feature is created before this.
 - [ ] 1.3 Confirm that `define-mvp-practice-foundation` is ratified at a revision whose requirement IDs match the ones this change cites. Acceptance evidence: a cross-reference check listing every cited ID.
 - [ ] 1.4 Compare the canonical schema digest in `contracts/SHA256SUMS` with design.md Decision 4. Acceptance evidence: `sha256sum -c` output.
 
 ## 2. Speckit Handoff
 
-- [ ] 2.1 Fold the actor model, recipes, offboarding and the work inbox into the registry feature (Feature 1 of `define-mvp-practice-foundation`), or into one feature immediately after it, as the owner decides at ratification. Acceptance evidence: the feature's traceability matrix covers AM-01 to AM-06 and WI-01 to WI-07.
+- [ ] 2.1 Fold the actor model, recipes, offboarding and the work inbox into the registry feature (Feature 1 of `define-mvp-practice-foundation`), or into one feature immediately after it, as the owner decides at ratification. Acceptance evidence: the feature's traceability matrix covers AM-01 to AM-07 and WI-01 to WI-07, including two steps at sign-in and a fresh check for each sign-off (AM-07), the outside-accountant recipe, and ruling 98's check on assigning the medical director recipe.
 - [ ] 2.2 AI data handling (AH-01 to AH-05). It comes before the agent operations contract in 2.3. Gate: before any agent grant at any rung, `observe` included. Acceptance evidence:
-  - verified BAAs with the agent operator and with each model provider, and a recipient profile for each;
+  - verified BAAs with the agent operator and with each model provider, each model provider's verified zero-data-retention arrangement for its exact endpoints and models, with any in-memory cache's limit recorded and counsel's confirmation of ruling 133 where one is allowed, a go-live condition under ruling 138, each agent's declared model path (D-32), counsel's recorded confirmation of ruling 97's answer (ruling 102), and a recipient profile for each;
   - the suspension of all agent PHI access when a control lapses, and its lifting only by a named human;
   - the server-side untrusted determination, including a false-flag fixture;
   - prompt-injection test fixtures (synthetic) showing the `propose` cap, and every condition of AH-05 exception 1;
@@ -27,7 +27,7 @@
 ## 3. Governance Constraints
 
 - [ ] 3.1 Each feature's plan performs a Constitution Check against v1.0.0 and records a security review. Agent grants, opt-ins above `propose`, read-only answer types and VA companies each get a risk-analysis entry.
-- [ ] 3.2 Route the open questions in design.md to the work they block. The recipe grant sets block 2.4 and the new recipes. The limit values and openWallet mechanics block opt-ins above `propose`. Each practice's answer types, and the consent record of Open Question 9, block switching them on. Open Question 7 (reading item text) blocks granting `work_item.read_text`. Open Question 6 (a request below openPractice's rung) blocks nothing.
+- [ ] 3.2 Route the open questions in design.md to the work they block. The recipe grant sets block 2.4 and the new recipes. The limit values and openWallet mechanics block opt-ins above `propose`. Each practice's answer types, and the consent record of Open Question 9, block switching them on. Rulings 99, 100, 133, 144 and 141 closed Open Questions 7, 6, 10, 12 and 13.
 - [ ] 3.3 Keep this checklist governance-only. Executable tasks live in each feature's Speckit `tasks.md`.
 
 ## 4. Acceptance and Closure

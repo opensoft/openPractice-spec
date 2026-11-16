@@ -37,7 +37,9 @@ The owner, or an authorized signer under BAB-17, SHALL be able to approve, chang
 
 An agent SHALL NOT decide its own proposal. An agent SHALL NOT decide another agent's proposal unless the deciding agent itself holds that action type at a rung above `propose` (AO-04), at or above the rung the decision exercises, so that it could have taken the action itself; the action then runs under the deciding agent's rung, so an `act_after_delay` decision runs its delay. A proposal that untrusted content contributed to SHALL be decided by a human (AH-05).
 
-Every decision SHALL record the signer's identity, including an agent's openWallet ID. A tier-4 proposal SHALL be decided by a named human only. A D8 or estimator-version proposal SHALL be decided by the practice's accountant only.
+Every decision SHALL record the signer's identity, including an agent's openWallet ID. A tier-4 proposal SHALL be decided by a named human only. A D8 or estimator-version proposal SHALL be decided by the practice's accountant only, the outside-accountant roster entry of AM-01 (ruling 141).
+
+**A proposal made in another role (ruling 144).** The decider is never the proposer, with one exception: where the practice has nobody else, a person MAY decide a proposal they made in another role on a record where their own party holds a role, such as a change to their own address they proposed as a patient through the patient app, under the one-person alternative of `define-mvp-practice-foundation` PR-15. The decision records both roles and notifies the outside accountant, listing everyone else who was on the roster at the time (ruling 192), each with the recipes they held (design call D-39, PROPOSED), and without an outside accountant on the roster the act waits (ruling 144). Ruling 192 rules that ruling 144's "only where the practice has nobody else" means nobody else who holds the permission for the act: the practice has nobody else when, at the moment of the decision, the roster holds no other human roster entry that may decide the proposal, which is to say that holds its grant (ruling 192), and no agent that may decide it whose sponsor is not the person (design call D-39, PROPOSED). Everywhere else the rule stands, whatever role the proposer acted in, and the proposal waits for another decider.
 
 #### Scenario: Staff approve a proposed correction
 - **WHEN** front-desk staff approve an agent's proposed address correction
@@ -54,6 +56,22 @@ Every decision SHALL record the signer's identity, including an agent's openWall
 #### Scenario: An agent decides another agent's proposal without an opt-in
 - **WHEN** an agent at `propose` for address updates tries to approve another agent's proposed address update
 - **THEN** the decision is refused, and the item waits for a human or for an agent opted in above `propose` for that action type
+
+#### Scenario: A sole staff member decides a change they proposed as a patient
+- **WHEN** a practice's only staff member, who is also its patient, decides an address change they proposed through the patient app, and an outside accountant is on the roster
+- **THEN** the change applies, the decision records both roles, and the outside accountant is notified
+
+#### Scenario: Other staff who do not hold the grant
+- **WHEN** a practice's only holder of the grant for address changes, who is also its patient, decides an address change they proposed through the patient app, two other staff members who do not hold that grant are on the roster, and an outside accountant is on the roster
+- **THEN** the decision is allowed, because nobody else holds the permission, and the notice to the outside accountant lists the two other staff members, the accountant and any agent on the roster, with the recipes each held
+
+#### Scenario: No outside accountant on the roster
+- **WHEN** the same staff member tries to decide that proposal, and no outside accountant is on the roster
+- **THEN** the decision is refused, and the proposal waits
+
+#### Scenario: A proposal made in the same role
+- **WHEN** a sole staff member tries to approve a proposal they made as staff
+- **THEN** the decision is refused, and the proposal waits for another decider
 
 ### Requirement: WI-04 Agents hand work to humans with their evidence
 An agent SHALL hand a work item to a human owner, with its evidence and reasoning references (AO-07), whenever any of these holds:
@@ -96,7 +114,7 @@ Each work item SHALL have a due time. When the clock expires, the item SHALL be 
 - **THEN** EB-18's escape applies, and the inbox shows the release
 
 ### Requirement: WI-07 The inbox carries the existing gates without redefining them
-The inbox SHALL present the gates of `define-mvp-practice-foundation` as work items. Each gate's own requirement SHALL govern its meaning, tier, signer and deadline escape:
+The inbox SHALL present the gates of `define-mvp-practice-foundation`, and the holds, sign-offs, proposals and cancel windows of `define-revenue-cycle-core` (TH-12, CG-04, CL-05, CL-06, RM-05, PS-11, PY-07, GF-12, EG-05), a draft not yet on `main`, as work items (design call D-41, PROPOSED). Each gate's own requirement SHALL govern its meaning, tier, signer and deadline escape:
 - identity review (EB-05);
 - link confirmation (EB-04);
 - held-date-of-birth rejections (EB-08);

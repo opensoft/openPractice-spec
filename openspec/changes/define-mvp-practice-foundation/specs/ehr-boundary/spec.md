@@ -76,11 +76,23 @@ openPractice SHALL be the source of administrative demographic changes for linke
 - provenance made of an opaque actor reference, a source, and a reason from the schema's coded list. Free-text reasons MUST NOT be sent;
 - a full snapshot: legal and preferred name, date of birth, administrative sex, gender identity, pronouns, preferred language, telecom, addresses, confidential-communication instructions, and administrative status.
 
-The snapshot's confidential-communication instructions SHALL stay in the snapshot, and the receiving EHR SHALL honor them for every patient communication it originates, including communications from any system it drives (ruling 27; openChart PL-16). The message MUST NOT include guarantor, coverage, financial, deactivation-reason or internal-note content. Coverage is excluded from contract version 1.0 and may be added only as a later MINOR version.
+The snapshot's confidential-communication instructions SHALL stay in the snapshot, and the receiving EHR SHALL honor them for every patient communication it originates, including communications from any system it drives (ruling 27; openChart PL-16). Where the record's party belongs to a same-person group (PR-15), the snapshot's restrictions SHALL include every restriction that crosses to that party, as restriction flags only and never another party's channels. After a link of the group ends, they SHALL keep including each restriction that crossed to the party until the end-of-link review decides the party's own, and openPractice SHALL publish the next version when a link of the group is recorded and when an end-of-link review changes them (ruling 150; design call F-6, PROPOSED). A restriction that leaves the EHR no permitted channel for a communication means that the EHR sends nothing by that route. This is a companion expectation for `opensoft/openChart-spec` change `define-openpractice-boundary` (its PL-16), and it binds the EHR only when that change's owner adopts it (design call F-6, PROPOSED). The message MUST NOT include guarantor, coverage, financial, deactivation-reason or internal-note content. Coverage is excluded from contract version 1.0 and may be added only as a later MINOR version.
 
 #### Scenario: A patient's address changes
 - **WHEN** staff change a linked patient's home address
 - **THEN** openPractice publishes the next demographic version, with `address` in the changed fields and the full snapshot
+
+#### Scenario: A restriction crosses a same-person link
+- **WHEN** a record carrying `no_home_mail` is retired as a duplicate of a record linked to the EHR, and their parties stay linked
+- **THEN** the linked record's snapshot carries `no_home_mail` but not the other party's alternate address, so the EHR mails nothing to the home address
+
+#### Scenario: A link ends before its review
+- **WHEN** a same-person link is ended while a linked record's snapshot carries a crossing `no_home_mail`
+- **THEN** the snapshot keeps the flag until the end-of-link review decides the party's own restrictions, and the next version is published when the review changes them
+
+#### Scenario: A crossing restriction leaves the EHR no channel
+- **WHEN** the snapshot carries a crossing `no_home_mail` and the record has no alternate address of its own
+- **THEN** the snapshot carries no other party's address, and under the companion expectation the EHR sends nothing by mail
 
 #### Scenario: A patient is deactivated
 - **WHEN** a linked patient is deactivated in openPractice
@@ -89,9 +101,9 @@ The snapshot's confidential-communication instructions SHALL stay in the snapsho
 ### Requirement: EB-07 Publication is reliable, idempotent and version-ordered per link
 openPractice SHALL write each `demographics.updated` message to an outbox in the same transaction as the change that caused it, and deliver it asynchronously. Every retry SHALL reuse the original `message_id`. The receiver SHALL compare `demographic_version` with the last version applied on that `link_id`, and SHALL acknowledge with exactly one result:
 - `applied` when the version is greater than the last applied version;
-- `duplicate` when the `message_id` was already applied, or when the same version arrives with identical content under a new `message_id`;
+- `duplicate` when the `message_id` was already applied, or when the same version arrives with an identical `snapshot` under a new `message_id`, whatever its provenance, because a republish carries a different `provenance.reason` (design call F-24, PROPOSED);
 - `stale` when the version is lower, in which case nothing changes;
-- `rejected` when the same version arrives with different content, when the MAJOR version is unsupported, or when the link is revoked, superseded or unknown;
+- `rejected` when the same version arrives with a different `snapshot`, when the MAJOR version is unsupported, or when the link is revoked, superseded or unknown;
 - `identity_review` when the link is in review or the update is held.
 
 openPractice SHALL record every acknowledgement and SHALL show staff any `rejected` or `identity_review` result on the patient record. An undelivered message SHALL become work owned by a Roster entry once the retry policy is exhausted. An EHR outage SHALL NOT block or delay any openPractice registry operation.
@@ -109,6 +121,12 @@ When the receiver acknowledges an update as `identity_review` because it is hold
 - On `link.review_resolved` with outcome `confirmed`, the receiver will have applied the latest held snapshot. openPractice SHALL resume, publishing the current snapshot if it is newer than the applied version.
 - On `demographics.hold_rejected`, openPractice SHALL keep the link suspended, record the rejection, and present it as work. Delivery resumes only after an authorized user either corrects the field, which publishes a new version, or re-asserts the value with reason `reassertion_after_hold_rejected`, which publishes the current snapshot for a fresh review.
 
+Whether or not openPractice suspended delivery for a held update, and unless delivery on that link is suspended after a `demographics.hold_rejected`, on any `link.review_resolved` with outcome `confirmed` whose `applied_version` is lower than openPractice's current demographic version for that patient, or that carries no `applied_version`, openPractice SHALL publish the current snapshot on that link with reason `republish_after_review`, so that a version that arrived while the review was open is not left unapplied until the patient next changes. Where the republished snapshot differs from the one applied in a field the EHR holds for review, such as the date of birth, the EHR holds it and answers `identity_review`, and delivery is suspended as above (design call F-24, PROPOSED).
+
+#### Scenario: A newer version arrives while a review is open
+- **WHEN** a link is in identity review, the EHR's reviewer confirms it against version 3, the snapshot they read, while openPractice has since recorded version 4 with a corrected legal name, and `link.review_resolved` `confirmed` carries `applied_version` 3
+- **THEN** openPractice publishes version 4's snapshot on that link with reason `republish_after_review`, and the EHR applies it; had version 4 corrected the date of birth instead, the EHR would hold it and answer `identity_review`, and openPractice would suspend delivery on that link
+
 #### Scenario: Two versions are held and then confirmed
 - **WHEN** the EHR holds version 5, which changes the date of birth, and also receives version 6 before the review ends, and the reviewer then confirms
 - **THEN** the EHR applies version 6, openPractice resumes delivery, and no deadlock occurs
@@ -122,9 +140,31 @@ openPractice SHALL accept `demographics.correction_requested` messages from a li
 - An accepted correction SHALL be made as an ordinary openPractice change. It SHALL be published as a new demographic version referencing the request, and reported with `correction.resolved` outcome `applied`.
 - A declined request SHALL be reported with `correction.resolved` outcome `declined` and a coded reason.
 
+A correction request that arrives through a link openPractice holds in identity review (EB-05), whether or not that link was ever active, SHALL still be received and answered with `correction.ack` result `received`, but it is kept with that review: its work item SHALL show the link's review state, and nothing SHALL be decided on the request while the review is open: it SHALL be neither accepted, applied nor declined until the review resolves the link as `confirmed`. Until then nobody can say whose record the request concerns, so a decline would be a decision on the wrong person's request as easily as an acceptance would, and `correction.resolved` would travel through a link that is not confirmed. The request's age SHALL count from its receipt, and its work item SHALL show that age; the open review SHALL NOT pause the work item's clock (`define-actors-agents-and-work-inbox` WI-06), so an item whose clock expires during the review is raised as any other is, and still nothing is decided on it until the review resolves the link. If the link ends `revoked` or `superseded` before a request through it is decided, whether or not a review is open, and whether a review resolves it as `revoked`, either side revokes or withdraws it, or it is superseded, the request SHALL be closed unapplied, with the reason recorded in openPractice; no `correction.resolved` is sent for it, because the link has ended and contract 1.0 has no decline reason for that case. Otherwise a correction request through an active link is handled as above (design call F-22, PROPOSED).
+
 #### Scenario: openChart staff report a misspelled name
 - **WHEN** openChart sends a correction request for a linked patient's legal name
 - **THEN** openPractice acknowledges receipt and creates staff work, and the name changes only if staff accept it, after which the new version is published
+
+#### Scenario: A correction arrives through a link in identity review
+- **WHEN** openPractice holds a link in identity review because the EHR reference returned to it is already linked to a different openPractice patient, and a correction request for the legal name arrives through that link
+- **THEN** openPractice answers `correction.ack` `received`, the work item shows the link's review state and the request's age from receipt, staff can neither accept nor decline the correction, and when the review resolves the link as `revoked`, as that kind of review must, the request is closed unapplied with the reason recorded and no `correction.resolved` is sent
+
+#### Scenario: A correction waits for a review that confirms the link
+- **WHEN** a correction request arrives through a link that was active and is now in identity review, and the review later resolves the link as `confirmed`
+- **THEN** staff can accept or decline the request only after that resolution, and from then on it is handled as any request through an active link, its age still counted from its receipt
+
+#### Scenario: A correction held on a link that is superseded during the review
+- **WHEN** a correction request is held with an open identity review, and the link ends `superseded` before the review resolves
+- **THEN** the request is closed unapplied with the reason recorded in openPractice, no `correction.resolved` is sent, and its work item no longer escalates, because nothing is left to decide on it
+
+#### Scenario: The active link of an undecided correction ends
+- **WHEN** a correction request arrived through an active link, and before staff decide it the EHR revokes the link as the wrong patient
+- **THEN** the request is closed unapplied with the reason recorded in openPractice, staff can no longer accept or decline it, and no `correction.resolved` is sent
+
+#### Scenario: A correction's clock runs while the review is open
+- **WHEN** the work item of a correction request held with an open identity review reaches its due time before the review resolves
+- **THEN** the item is raised to the owner's cover and to the controller as any other is, the review not having paused its clock, and still no one can accept or decline the request until the review resolves the link
 
 ### Requirement: EB-10 The EHR contracts are versioned and compatible within a MAJOR version
 The contracts `openpractice-ehr-patient-link` and `openpractice-ehr-clinical-facts` SHALL carry a `MAJOR.MINOR` version, starting at `1.0`. Implementations are compatible exactly when they share the same MAJOR version. Additive changes SHALL increment MINOR. A breaking change SHALL require a new MAJOR version, a new schema digest, and a documented migration path. A receiver SHALL refuse a message whose MAJOR version it does not support, with reason `unsupported_major_version`, rather than partially applying it.

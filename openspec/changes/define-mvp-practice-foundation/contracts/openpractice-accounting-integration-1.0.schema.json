@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:openpractice:contract:openpractice-accounting-integration:1.0",
   "title": "openpractice-accounting-integration 1.0",
-  "description": "Canonical schema for the accounting integration contract between openPractice core and every destination adapter. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation. A released batch is frozen; content_digest is the SHA-256 of the RFC 8785 (JCS) canonical JSON of the batch with content_digest removed. Delivery state (per-posting status, destination document references, recorded/sync timestamps) is NOT batch content and is never an accounting date. Posting modes are summary-journal, the default and recommended setup (ruling 28), and customer-detail, a per-destination opt-in. Revenue and deduction lines reference the estimate version or close snapshot they apply (ruling 30). A summary-journal batch carries no customer record, name or per-person identifier. Only a customer-detail batch carries customers, and it is released only while the destination's BAA gate is satisfied (AI-14). There a guarantor-account customer may carry a display name, billing address and billing contact, and any further field only as profile_fields documented by the batch's versioned recipient profile. recipientProfileDocument is the only recipient-profile shape; define-customer-financial-data-boundaries references it rather than defining another. No key, line, label or diagnostic carries a person's name, and no customer or line carries chart notes, diagnoses, medications, results, full claim payloads, EHR medical-record numbers, service-revealing reason categories, or full bank account or routing numbers. Posting mechanics are owned by change define-mvp-practice-foundation; customer and party roles, offering routes and obligation ownership by change define-customer-financial-data-boundaries. Adapters accept any 1.x and reject any other MAJOR.",
+  "description": "Canonical schema for the accounting integration contract between openPractice core and every destination adapter. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation. A released batch is frozen; content_digest is the SHA-256 of the RFC 8785 (JCS) canonical JSON of the batch with content_digest removed. Delivery state (per-posting status, destination document references, recorded/sync timestamps) is NOT batch content and is never an accounting date. Posting modes are summary-journal, the default and recommended setup (ruling 28), and customer-detail, a per-destination opt-in. Gross-to-net lines, meaning patient-services revenue, gross-to-net deduction and gross-to-net true-up lines, reference the estimate version or close snapshot they apply (ruling 30). A summary-journal batch carries no customer record, name or per-person identifier. Only a customer-detail batch carries customers, and it is released only while the destination's BAA gate is satisfied (AI-14). There a guarantor-account customer may carry a display name, billing address and billing contact, and any further field only as profile_fields documented by the batch's versioned recipient profile. recipientProfileDocument is the only recipient-profile shape; define-customer-financial-data-boundaries references it rather than defining another. No key, line, label or diagnostic carries a person's name, and no customer or line carries chart notes, diagnoses, medications, results, full claim payloads, EHR medical-record numbers, service-revealing reason categories, or full bank account or routing numbers. Posting mechanics are owned by change define-mvp-practice-foundation; customer and party roles, offering routes and obligation ownership by change define-customer-financial-data-boundaries. Adapters accept any 1.x and reject any other MAJOR.",
   "oneOf": [
     { "$ref": "#/$defs/customerDetailBatch" },
     { "$ref": "#/$defs/summaryBatch" },
@@ -12,12 +12,12 @@
   "$defs": {
     "uuid": { "type": "string", "format": "uuid" },
     "destinationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
-    "money": { "description": "Decimal amount as a string; sign carried explicitly.", "type": "string", "pattern": "^-?[0-9]{1,13}\\.[0-9]{2}$" },
-    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "money": { "description": "Decimal amount as a string, never a JSON number, with exactly two decimal places because 1.0 supports USD only; sign carried explicitly. It always travels with an ISO 4217 currency code (BAB-18, ruling 103).", "type": "string", "pattern": "^-?[0-9]{1,13}\\.[0-9]{2}$" },
+    "currency": { "description": "ISO 4217 alphabetic code. 1.0 supports USD only, so any other code is refused; a batch carries one currency (BAB-18).", "type": "string", "const": "USD" },
     "date": { "type": "string", "format": "date" },
     "neutralLabel": {
-      "description": "Fixed neutral financial labels. They never reveal the type of service, a diagnosis or a procedure. patient_services_revenue is the gross line; gross_to_net_deduction and gross_to_net_true_up bring it to the constrained expected entitlement (AI-12, ruling 30); credit_loss is an expense, never a revenue deduction. other_route_share is the part of an explained deposit that funds balances owned by another route (for example membership or retail obligations); it posts to the account mapped for it per destination and mode, and openPractice remains the single deposit poster.",
-      "enum": ["patient_services_revenue", "gross_to_net_deduction", "gross_to_net_true_up", "contractual_adjustment", "unbilled_to_billed", "credit_loss", "refund_liability", "contract_liability", "patient_responsibility_transfer", "write_off", "payment_received", "unapplied_payment", "payment_application", "refund", "chargeback", "returned_item", "payer_takeback", "payer_interest", "payer_forwarding_balance", "merchant_fee", "virtual_card_fee", "chargeback_fee", "bank_fee", "unidentified_receipt", "unidentified_receipt_reclassified", "legacy_collections", "other_route_share", "deposit_clearing_release"]
+      "description": "Fixed neutral financial labels. They never reveal the type of service, a diagnosis or a procedure. patient_services_revenue is the gross line; gross_to_net_deduction and gross_to_net_true_up bring it to the constrained expected entitlement (AI-12, ruling 30); credit_loss is an expense, never a revenue deduction. other_route_share is the part of an explained deposit that funds balances owned by another route (for example membership or retail obligations); it posts to the account mapped for it per destination and mode, and openPractice remains the single deposit poster. write_off is a write-off that reduces revenue; write_off_against_allowance realizes an amount the gross-to-net allowance already held back and has no revenue effect. bank_debit_clearing_release releases cash clearing against an explained bank debit line, such as a refund disbursement, a chargeback or a payer takeback taken from the bank, and is sent only to a destination whose AI-20 record says openPractice sends such lines. payer_responsibility_transfer moves an amount from one payer's receivable to the payer in the next coverage position, with no revenue effect; its line names the receiving payer class in payer_class and the giving one in counter_payer_class.",
+      "enum": ["patient_services_revenue", "gross_to_net_deduction", "gross_to_net_true_up", "contractual_adjustment", "unbilled_to_billed", "credit_loss", "refund_liability", "contract_liability", "patient_responsibility_transfer", "write_off", "payment_received", "unapplied_payment", "payment_application", "refund", "chargeback", "returned_item", "payer_takeback", "payer_interest", "payer_forwarding_balance", "merchant_fee", "virtual_card_fee", "chargeback_fee", "bank_fee", "unidentified_receipt", "unidentified_receipt_reclassified", "legacy_collections", "other_route_share", "deposit_clearing_release", "write_off_against_allowance", "bank_debit_clearing_release", "payer_responsibility_transfer"]
     },
     "mappingVersion": {
       "description": "Account mapping version, scoped to one destination AND one posting mode.",
@@ -47,7 +47,7 @@
     },
     "codedValue": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
     "estimateRef": {
-      "description": "Reference to the estimate version or close snapshot a revenue or deduction line applies (AI-12). The estimate itself stays in openPractice.",
+      "description": "Reference to the estimate version or close snapshot a gross-to-net line applies, meaning a patient-services revenue, gross-to-net deduction or gross-to-net true-up line (AI-12). The estimate itself stays in openPractice.",
       "type": "object", "additionalProperties": false,
       "required": ["estimator_version"],
       "properties": {
@@ -56,6 +56,7 @@
       }
     },
     "revenueLabel": { "enum": ["patient_services_revenue", "gross_to_net_deduction", "gross_to_net_true_up"] },
+    "revenueOrDeductionLabel": { "description": "Labels of lines that are revenue or a deduction from revenue. Each such line carries a service category, a payer class and a group level.", "enum": ["patient_services_revenue", "gross_to_net_deduction", "gross_to_net_true_up", "write_off"] },
     "payerClass": { "description": "Payer-class control-account dimension, as a coded value (for example medicare, commercial, self_pay).", "$ref": "#/$defs/codedValue" },
     "recipientProfile": {
       "description": "Reference, recorded on each customer-detail batch, to the recipientProfileDocument version that applied.",
@@ -189,6 +190,8 @@
         "amount": { "$ref": "#/$defs/money" },
         "currency": { "$ref": "#/$defs/currency" },
         "payer_class": { "$ref": "#/$defs/payerClass" },
+        "service_category": { "description": "Benign service category of a line that is revenue or a deduction from revenue, from the practice's versioned service-category mapping (define-revenue-cycle-core RT-03). Absent from every other line, and never present in customer-detail postings (AI-16).", "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+        "counter_payer_class": { "description": "On a payer_responsibility_transfer line, the payer class that gives up the amount; payer_class is the class that receives it (AI-15). Absent from every other line.", "$ref": "#/$defs/payerClass" },
         "group_level": { "description": "Span the group covers. A day-level group below the destination's minimum group size rolls up to week, then period (AI-15). A group never crosses an accounting-period boundary: a week spanning a period end is split there. Day-level detail stays in the detail manifest.", "enum": ["day", "week", "period"] },
         "late_charge": { "description": "True when posting_date is the first open date because the group's own date fell in a period the destination has closed (AI-11).", "type": "boolean" },
         "effective_date": { "$ref": "#/$defs/date" },
@@ -196,7 +199,12 @@
         "deposit_bank_line_ref": { "type": "string", "maxLength": 128 }
       },
       "if": { "properties": { "label": { "$ref": "#/$defs/revenueLabel" } }, "required": ["label"] },
-      "then": { "required": ["estimate_ref", "payer_class", "group_level"] }
+      "then": { "required": ["estimate_ref", "payer_class", "group_level"] },
+      "allOf": [
+        { "if": { "properties": { "label": { "$ref": "#/$defs/revenueOrDeductionLabel" } }, "required": ["label"] }, "then": { "required": ["service_category", "payer_class", "group_level"] }, "else": { "properties": { "service_category": false } } },
+        { "if": { "properties": { "label": { "const": "payer_responsibility_transfer" } }, "required": ["label"] }, "then": { "required": ["payer_class", "counter_payer_class"], "properties": { "amount": { "pattern": "^0*([1-9]|\\.(0[1-9]|[1-9]))" } } }, "else": { "properties": { "counter_payer_class": false } } },
+        { "if": { "properties": { "label": { "enum": ["patient_responsibility_transfer", "chargeback", "contractual_adjustment", "payment_application", "payment_received", "returned_item", "unbilled_to_billed", "write_off_against_allowance"] } }, "required": ["label"] }, "then": { "required": ["payer_class"] } }
+      ]
     },
     "customerDetailBatch": {
       "allOf": [ { "$ref": "#/$defs/batchHeader" }, {
@@ -208,20 +216,21 @@
     "summaryBatch": {
       "description": "Summary-journal batch, the default mode (ruling 28): balanced category totals to payer-class control accounts. It carries no customer record, name or per-person identifier. detail_manifest_digest identifies the openPractice detail manifest that traces every line.",
       "allOf": [ { "$ref": "#/$defs/batchHeader" }, {
-        "properties": { "posting_mode": { "const": "summary-journal" }, "mapping_version": { "properties": { "posting_mode": { "const": "summary-journal" } } }, "summary_lines": { "type": "array", "items": { "$ref": "#/$defs/summaryLine" } }, "detail_manifest_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" } },
-        "required": ["summary_lines"]
+        "properties": { "posting_mode": { "const": "summary-journal" }, "mapping_version": { "properties": { "posting_mode": { "const": "summary-journal" } } }, "summary_lines": { "type": "array", "items": { "$ref": "#/$defs/summaryLine" } }, "detail_manifest_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }, "service_category_map_version": { "description": "Version of the practice's whole effective-dated service-category mapping, which holds every remap with its effective date, so that one batch spanning a remap is covered by one version.", "type": "integer", "minimum": 1 } },
+        "required": ["summary_lines", "service_category_map_version"]
       } ],
       "unevaluatedProperties": false
     },
     "bankLinesResult": {
       "description": "Result of bank_lines.read: revenue-related lines (deposits, chargebacks, payer takebacks, processor fees and refund disbursements) read from the destination, or from an uploaded statement when the destination cannot supply them. Lines outside the revenue categories are labelled accounting_system and are never reconciled by openPractice.",
       "type": "object", "additionalProperties": false,
-      "required": ["contract", "contract_version", "destination_id", "source", "lines"],
+      "required": ["contract", "contract_version", "destination_id", "source", "currency", "lines"],
       "properties": {
         "contract": { "const": "openpractice-accounting-integration" },
         "contract_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
         "destination_id": { "$ref": "#/$defs/destinationId" },
         "source": { "enum": ["destination", "statement_upload"] },
+        "currency": { "description": "The one currency of every amount in lines (BAB-18).", "$ref": "#/$defs/currency" },
         "lines": {
           "type": "array",
           "items": {

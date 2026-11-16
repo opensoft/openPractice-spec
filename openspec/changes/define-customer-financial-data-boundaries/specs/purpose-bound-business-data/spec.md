@@ -43,8 +43,8 @@ The system SHALL scope outsourced accounting and billing actors to their actual 
 ### Requirement: Business metrics use reconciled source events and explicit semantics
 Authorized analytics SHALL combine selected customer, subscription, medical-billing, commerce and accounting facts without requiring chart replication. Each financial metric SHALL identify its version, source events, period, categories, exclusions and treatment of invoices, collections, recognition, refunds and fees. Aggregate access SHALL NOT automatically permit identifiable drill-down or export, and attributed campaign revenue SHALL NOT be presented as proven incremental lift without supporting analysis.
 
-#### Scenario: Owner compares medical and membership revenue
-- **WHEN** an authorized owner requests recognized revenue by offering category
+#### Scenario: The practice manager compares medical and membership revenue
+- **WHEN** the holder of the practice manager recipe, authorized for the view, requests recognized revenue by offering category
 - **THEN** the system applies the stated metric version and period, counts authoritative recognition events once and does not add invoice or receipt totals as extra recognized revenue
 
 #### Scenario: Manager can view totals but lacks customer detail

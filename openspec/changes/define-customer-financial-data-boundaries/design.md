@@ -17,7 +17,7 @@ and is not adopted by this change.
 ## Owner rulings that govern this change (2026-11-14)
 
 Source: **Brett Heap, 2026-11-14, authoring session.** The full table is in
-`define-mvp-practice-foundation` design.md; these rows govern this change.
+`define-mvp-practice-foundation` design.md; these rows govern this change. Row 193 has the source **Brett Heap, 2026-11-15, accepting the recommendations on decisions 152 to 194** ("accept your recs for 152-194"), and quotes the question and the accepted wording.
 
 | # | Ruling | Governs here |
 |---|---|---|
@@ -26,6 +26,7 @@ Source: **Brett Heap, 2026-11-14, authoring session.** The full table is in
 | 28 | `summary-journal` is the default; `customer-detail` is a per-destination opt-in behind the BAA gate. | design §4 |
 | 32 | One Party with roles. "Customer" is a party role only for membership and retail buyers; a medical-billing accounting customer is derived from the guarantor or payer role. | customer-role-boundaries, design §1 |
 | 33 | FD-5 governs sign-offs. A named human, or an opted-in named AI agent with an openWallet ID, may sign; tier 4 stays human-only. | customer-role-boundaries, financial-domain-routing, design §5 |
+| 193 | (2026-11-15) Question: Some rules give "the owner" a power, such as seeing full bank account numbers or setting the self-pay discount. The roster has no owner role, and ruling 145 records owners only as a fact. Who holds those powers? Accepted: "The practice manager role. A recorded owner grants nothing by itself and is used only to check independence, as in rulings 139 and 149. Otherwise anyone able to record an owner could give themselves those powers." | Decision 1 (where this change's requirements give the practice's owner a view, the practice manager recipe holds it, and an owner link grants nothing by itself); purpose-bound-business-data's revenue scenario; `define-mvp-practice-foundation` F-13 holds the details |
 
 ## Goals / Non-Goals
 
@@ -44,7 +45,7 @@ marketing or money movement, amend the constitution, or enlarge beta acceptance.
 The customer role applies only to membership and retail buyers (ruling 32). For
 medical billing, an accounting-side customer (a guarantor account or payer, in
 `customer-detail` mode only) is derived from the guarantor or payer role and is
-not a separate party role.
+not a separate party role. `define-mvp-practice-foundation` PR-15 states the one-party rule as a requirement, proposed on 2026-11-15, and its AI-10 withholds a restricted guarantor's billing address and contact (design call F-11, proposed the same day). Where this change's requirements give the practice's owner a view, it is the holder of the practice manager recipe, because a recorded owner grants nothing by itself (ruling 193, in the table above; `define-mvp-practice-foundation` design call F-13 holds the details, PROPOSED).
 
 Person identity, customer, patient, member, payer and representative are distinct
 concepts. Keep effective dates, evidence, legal-entity scope and domain identifiers
@@ -96,7 +97,10 @@ Extend the service catalog's financial contract with route, obligation owner,
 entity, category, currency, approved tax/accounting mapping, applicable entitlement
 and disclosure profile. A mixed order routes per line. These are internal
 contracts rendered through small-practice defaults, not new configuration
-workspaces.
+workspaces. For an insurance-billed or direct-pay healthcare service, the offering
+is the catalog item of `define-revenue-cycle-core` SC-01, which carries these facts (SC-06); that change
+is a draft not yet on `main`, and the sentence in "Offerings determine financial routing at line
+level" is its conforming amendment PA-4, PROPOSED until both changes are ratified.
 
 - Medical billing owns insurance-billed care and direct-pay healthcare
   receivable lineage, preserving the existing self-pay/GFE path.

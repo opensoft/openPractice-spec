@@ -25,7 +25,7 @@ Every operation a screen offers SHALL be available through the versioned API (co
 ### Requirement: AO-03 Agents act only within explicit, revocable scopes per action type, set by named humans, and read only their item's patient
 An agent SHALL act only on action types for which it holds an explicit grant. Each grant names the action type, the agent's roster entry, the granting person, the start date and an optional end date. No grant, at any rung, SHALL be made until the AH-01 gate is met.
 
-Only a named human SHALL make, widen or change a grant, change a rung (AO-04), change a limit (AO-08) or lift the pause (AO-09). That human SHALL be a roster entry holding the practice manager recipe or the controller or office manager recipe, and SHALL be recorded as a human actor; the schema refuses an agent or an integration identity as `granted_by`. No agent SHALL make any of these changes, for itself or for another agent, whatever its own grants. None of them SHALL be made because untrusted content asks for it (AH-05). Granting or widening a scope SHALL be a tier-2 action with notification to the sponsoring human. A grant SHALL be revocable at once by the granting person, the practice manager, or the controller or office manager. A grant SHALL NOT include any tier-4 action or the D8 or estimator approvals.
+Only a named human SHALL make, widen or change a grant, change a rung (AO-04), change a limit (AO-08) or lift the pause (AO-09). That human SHALL be a roster entry holding the practice manager recipe or the controller or office manager recipe, and SHALL be recorded as a human actor; the schema refuses an agent or an integration identity as `granted_by`. No agent SHALL make any of these changes, for itself or for another agent, whatever its own grants. None of them SHALL be made because untrusted content asks for it (AH-05). Granting or widening a scope SHALL be a tier-2 action with notification to the sponsoring human; when the granting person is that sponsor, the notification SHALL also go to every other named human who holds the practice manager or the controller or office manager recipe, and where there is none, the grant SHALL record that the agent's own sponsor made it (`define-practice-readiness` SR-03), which the readiness checklist lists under its RC-06. This tightening is ruling 148, and its details are design call D-40 (PROPOSED). A grant SHALL be revocable at once by the granting person, the practice manager, or the controller or office manager. A grant SHALL NOT include any tier-4 action or the D8 or estimator approvals.
 
 An agent's reads SHALL be limited to the target patient of the work item it is working, named by `work_item_ref` on every agent request. For an item that came through the patient gateway (change `define-patient-gateway-and-escalation`), the target patient is the patient bound to that gateway link. An agent SHALL NOT read any other patient's record under that item, whatever the item's text asks. An agent's patient search SHALL return only the exact identity match for the item's target patient (PR-08), and never a candidate list (design call D-17). A request outside this scope SHALL be refused with reason `patient_scope`, and the item SHALL go to a human owner.
 
@@ -44,6 +44,10 @@ An agent's reads SHALL be limited to the target patient of the work item it is w
 #### Scenario: A message asks about another person's balance
 - **WHEN** a patient's message leads an agent to read another patient's balance
 - **THEN** the read is refused with `patient_scope`, no data about the other patient is returned, and the item goes to a human owner
+
+#### Scenario: A sponsor widens their own agent's scope
+- **WHEN** the practice manager, who sponsors an agent, widens that agent's scope, and the practice also has a controller
+- **THEN** the sponsor is notified as before, and the controller is notified too
 
 ### Requirement: AO-04 The autonomy ladder never gives less friction than the FD-5 tier
 Each granted action type SHALL sit on one rung of the autonomy ladder (ruling 37):
@@ -80,15 +84,19 @@ The highest rung SHALL be capped so that an agent never acts with less friction 
 - **THEN** it starts at `propose`
 
 ### Requirement: AO-05 Every operation supports a dry run
-Every state-changing operation SHALL accept a dry-run mode. A dry run returns the effect the operation would have, its FD-5 tier, the rung that would apply and any sign-off it would need, and changes nothing. A dry run that reads PHI SHALL be audited as a read (PR-10).
+Every state-changing operation SHALL accept a dry-run mode. A dry run returns the effect the operation would have, its FD-5 tier, the rung that would apply and any sign-off it would need, and changes nothing. A dry run that reads PHI SHALL be audited as a read (PR-10). A dry run whose operation would be refused SHALL answer `refused`, with the refusal reason the live request would get, and changes nothing; `dry_run_result` carries no `refusal_reason`, and no `executes_at` for an action that would be scheduled (AO-07; the schema's response rules).
 
 #### Scenario: A dry run of a deactivation
 - **WHEN** an agent dry-runs a patient deactivation
 - **THEN** it receives the effect, tier 2 and the rung, and the patient stays active
 
-#### Scenario: A dry run that would be refused
+#### Scenario: A dry run of a tier-4 action
 - **WHEN** an agent dry-runs a hard delete
 - **THEN** the result states that a named human must sign at tier 4, and nothing changes
+
+#### Scenario: A dry run that would be refused
+- **WHEN** an agent dry-runs an action type for which it holds no grant
+- **THEN** the response is `refused` with `no_grant`, as the live request would be, and nothing changes
 
 ### Requirement: AO-06 Every state-changing request carries an idempotency key free of PHI
 Every state-changing request SHALL carry an idempotency key. The same key with the same payload SHALL produce the same single effect. The same key with a different payload SHALL be refused. Keys MUST NOT contain names, dates of birth, contact details, account numbers, member identifiers or any other per-person data.
@@ -152,7 +160,7 @@ The pause SHALL NOT block, delay or drop any urgent patient escalation, which ro
 - **THEN** each held action restarts its full delay window and can be cancelled within it; none executes at once
 
 ### Requirement: AO-10 A daily digest of agent actions enters the day close for the controller's signature
-Each day, openPractice SHALL produce a digest of every agent action and proposal outcome, by agent and action type, with references and no PHI in its summary lines. The digest SHALL enter the day close, and the controller or office manager, a named human, SHALL sign it. An unsigned digest SHALL NOT block practice operations or claims. It SHALL carry into the next day's close and raise work owned by the controller or office manager.
+Each day, openPractice SHALL produce a digest of every agent action and proposal outcome, by agent and action type, with references and no PHI in its summary lines. The digest SHALL enter the day close, and the controller or office manager, a named human, SHALL sign it. The lines for an agent whom that signer sponsors SHALL be signed by another named human who holds the practice manager or the controller or office manager recipe and does not sponsor that agent; where the practice has no such person, the signer SHALL sign those lines in both roles, each recorded, and the digest SHALL mark them as reviewed by the agent's own sponsor (`define-practice-readiness` SR-03). This tightening is ruling 148, and its details are design call D-40 (PROPOSED). An unsigned digest SHALL NOT block practice operations or claims. It SHALL carry into the next day's close and raise work owned by the controller or office manager.
 
 #### Scenario: The controller signs the digest
 - **WHEN** the controller signs the day close
@@ -162,13 +170,17 @@ Each day, openPractice SHALL produce a digest of every agent action and proposal
 - **WHEN** a day closes without the controller signing the digest
 - **THEN** operations continue, and the digest carries into the next close as owned work
 
+#### Scenario: The digest lists an agent its signer sponsors
+- **WHEN** the controller signs the daily digest, which lists actions of an agent the controller sponsors, and the practice manager does not sponsor that agent
+- **THEN** the practice manager signs that agent's lines, and the controller signs the rest
+
 ### Requirement: AO-11 The MVP builds the patient-registry operations and the read-only answer types; later features add theirs
 The MVP SHALL build the contract only for these operations:
 - the patient-registry operations of `define-mvp-practice-foundation` (PR-01 to PR-14): search, create, read, the field updates, guarantor and coverage changes, deactivation and reactivation;
 - the read-only answer types of AH-05 exception 1 (rulings 45 and 46): `patient_answer.coverage_on_file`, `patient_answer.balance`, `patient_answer.appointment_time` and `patient_answer.practice_information`;
 - the work-item operations of AO-13 (ruling 93): `work_item.read_text`, `work_item.propose_clinical_reroute`, `work_item.propose_urgency_raise`, `work_item.release_to_human` and `work_item.cancel_pending_answer`.
 
-In the MVP, Hermes answers routine administrative questions through the read-only answer types. Each answer type SHALL be available only once the openPractice data it reads exists under a ratified change: appointment times wait for a ratified scheduling change, and balances for the patient receivables of `define-mvp-practice-foundation` (design call D-15). Until then the practice cannot switch that answer type on. Each practice-approved answer type is a versioned document under the contract, with its template reference, allowlisted fields, topics and approvals. A hard delete is offered only as a proposal (tier 4). Every later feature SHALL add its operations to the contract as a MINOR version when it ships. A request for an operation the deployed version lacks SHALL be refused.
+In the MVP, Hermes answers routine administrative questions through the read-only answer types. Each answer type SHALL be available only once the openPractice data it reads exists under a ratified change: appointment times wait for the booking of `define-revenue-cycle-core` (AP-01 to AP-09), and balances for its guarantor-account balances (PS-01, PS-09); that change is a draft not yet on `main` (design calls D-15 and D-41, PROPOSED). Until then the practice cannot switch that answer type on. Each practice-approved answer type is a versioned document under the contract, with its template reference, allowlisted fields, topics and approvals. A hard delete is offered only as a proposal (tier 4). Every later feature SHALL add its operations to the contract as a MINOR version when it ships. A request for an operation the deployed version lacks SHALL be refused.
 
 #### Scenario: A registry update through the contract
 - **WHEN** an agent updates a coverage priority under contract 1.0
@@ -179,7 +191,7 @@ In the MVP, Hermes answers routine administrative questions through the read-onl
 - **THEN** openPractice assembles the reply from the approved template and the bound patient's coverage fields, and schedules it behind the lane's cancel window
 
 #### Scenario: An answer type whose data does not exist yet
-- **WHEN** a practice tries to switch on `patient_answer.appointment_time` before a ratified scheduling change supplies appointment data
+- **WHEN** a practice tries to switch on `patient_answer.appointment_time` before the booking of `define-revenue-cycle-core`, a draft not yet on `main`, is ratified and supplies appointment data
 - **THEN** the change is refused, and appointment questions go to staff
 
 #### Scenario: An operation not yet in the contract

@@ -231,7 +231,7 @@ Also: **openPractice must work with MSBC (no Frappe) as accounting**, so it cann
 
 openPractice emits **posting batches**, not invoices.
 
-> **Pointer (2026-11-14, ruling 26).** The posting contract is governed by `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, branch `change/define-mvp-practice-foundation`, not yet on main). Where this section differs, that contract governs. For example, its default `summary-journal` mode posts these summarized entries; its opt-in `customer-detail` mode posts invoices to guarantor-account and payer customers behind the BAA gate; and its idempotency keys are per posting or per summary line.
+> **Pointer (2026-11-14, ruling 26; updated 2026-11-15).** The posting contract is governed by `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, merged on `main`). Where this section differs, that contract governs. For example, its default `summary-journal` mode posts these summarized entries; its opt-in `customer-detail` mode posts invoices to guarantor-account and payer customers behind the BAA gate; and its idempotency keys are per posting or per summary line.
 
 | Event in openPractice | Posting concept (summarized) | Notes |
 |---|---|---|
@@ -600,7 +600,7 @@ Synthetic patient "Pat Example" (not a real person). Steps marked **[conditional
 
 ## 7. Minimal integration contract examples
 
-> **Pointer (2026-11-14, ruling 26).** For accounting, `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, branch `change/define-mvp-practice-foundation`, not yet on main) governs the batch, envelope and acknowledgement shapes and the money format, which is a decimal string with two places rather than integer minor units. Where the accounting examples below differ, that contract governs.
+> **Pointer (2026-11-14, ruling 26; updated 2026-11-15, ruling 103).** For accounting, `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, merged on `main`) governs the batch, envelope and acknowledgement shapes. For money in every `openpractice-*` contract, that change's BAB-18 governs, and so does it for the money bullet in §7.3: decimal text plus a currency code on the wire, as the accounting contract already does, and whole cents in storage (ruling 103). An amount is a JSON string with exactly the currency's minor-unit digits and an ISO 4217 code, never a JSON number. As proposed design calls under ruling 103, version 1.0 supports USD only, so two places; one rounding rule, stated in BAB-18, serves every contract, and a split amount is divided by cumulative rounding, so its parts equal the whole and each is within a cent of its exact share; and a batch carries one currency. Where the accounting examples below differ, that contract governs.
 
 ### 7.1 Common envelope (all messages)
 
@@ -726,7 +726,7 @@ Nothing above is ratified until Brett records a decision.
 - D1 and §5.3 ERPNext Customer → ruling 32.
 - D7 → ruling 33.
 - §5.1 demographics row → ruling 29. The row is amended above.
-- Posting contract (§5.4, §7) → governed by `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, branch `change/define-mvp-practice-foundation`, not yet on main) (ruling 26). See the pointer notes in §5.4 and §7.
+- Posting contract (§5.4, §7) → governed by `openpractice-accounting-integration/1.0` in change `define-mvp-practice-foundation` (opensoft/openPractice-spec, merged on `main`) (ruling 26). See the pointer notes in §5.4 and §7.
 - D3 matches that change's boundary decision to build the ERPNext adapter first. D4 and D6 remain unruled.
 
 ## 11. Future questions (only where genuinely needed, not blocking)

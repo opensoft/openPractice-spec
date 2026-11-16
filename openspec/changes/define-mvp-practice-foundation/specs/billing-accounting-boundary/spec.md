@@ -41,7 +41,7 @@ FD-3's export-batch freeze SHALL apply to every accounting destination. A releas
 - **THEN** the released batch is unchanged and the reversal appears in a later batch with a back-reference
 
 ### Requirement: BAB-06 The reason taxonomy is the join key, mapped per destination and posting mode
-Every openPractice ledger entry SHALL carry exactly one reason category, from a taxonomy defined before any entry posts. Each destination SHALL map reason categories to its existing accounts through an account mapping that is versioned per destination and per posting mode. A batch SHALL be refused release if any of its lines has no mapping in the batch's destination-and-mode mapping version.
+Every openPractice ledger entry SHALL carry exactly one reason category, from a taxonomy defined before any entry posts. Each destination SHALL map reason categories, and for summary-journal lines that are revenue or a deduction from revenue each pair of reason category and service category (design call F-14, PROPOSED), to its existing accounts through an account mapping that is versioned per destination and per posting mode. A customer-detail mapping SHALL name two payer receivable accounts: an unbilled one, to which a claim-billed invoice's receivable goes at finalization, and a billed one, to which the acceptance journal of `openpractice-accounting-integration/1.0` (AI-13) moves it, in which AI-13 places the claim's later postings while an acceptance stands, and to which goes the debit line of a payer-share transfer to a later payer, posted as a `journal.post` dated that payer's acceptance of the claim (ruling 165; design call F-20, PROPOSED). A batch SHALL be refused release if any of its lines has no mapping in the batch's destination-and-mode mapping version.
 
 #### Scenario: An unmapped reason category
 - **WHEN** a batch about to be released holds a line whose reason category has no mapping for that destination and mode
@@ -51,7 +51,7 @@ Every openPractice ledger entry SHALL carry exactly one reason category, from a 
 The accounting integration SHALL record financial events and MUST NOT instruct the destination, or any bank or processor, to originate a payment, transfer or refund. Refunds SHALL be decided in openPractice and posted to the destination only as records of issued refunds.
 
 #### Scenario: A refund is approved
-- **WHEN** the owner approves a patient refund in openPractice
+- **WHEN** the holder of the practice manager recipe approves a patient refund in openPractice
 - **THEN** the destination receives a refund record only after the refund is recorded as issued, and no payment instruction is sent
 
 ### Requirement: BAB-08 Legacy receivables are excluded, but a mixed deposit still balances
@@ -75,15 +75,19 @@ Register changes SHALL be dated, kept as history, and audited.
 - **THEN** the register holds it with label, bank, type, masked number, mapped accounting account, status `active` and its effective date
 
 ### Requirement: BAB-10 Full bank account and routing numbers are encrypted, restricted and never exported
-openPractice SHALL store full bank account and routing numbers encrypted at rest. They SHALL be visible only to the owner and billing-administrator roles, and masked everywhere else. Every view of a full number SHALL be audited. Full numbers MUST NOT appear in logs, error messages, exports, accounting postings, idempotency keys or diagnostic bundles.
+openPractice SHALL store full bank account and routing numbers encrypted at rest. They SHALL be visible only to holders of the practice manager recipe and of the controller or office manager recipe (change `define-actors-agents-and-work-inbox` AM-02), and masked everywhere else. Ruling 193 gives the practice manager role the powers a rule gives "the owner", such as seeing full bank account numbers, and a recorded owner grants nothing by itself, so ruling 23's "owner" is the practice manager recipe (ruling 193); reading its "billing-admin" as the controller or office manager recipe is design call F-13 (PROPOSED). Every view of a full number SHALL be audited. Full numbers MUST NOT appear in logs, error messages, exports, accounting postings, idempotency keys or diagnostic bundles.
 
 #### Scenario: A front-desk user opens the register
 - **WHEN** a front-desk user views the bank account register
 - **THEN** only masked numbers are shown
 
-#### Scenario: The owner reveals a full number
-- **WHEN** the owner reveals a full account number
+#### Scenario: The practice manager reveals a full number
+- **WHEN** the holder of the practice manager recipe reveals a full account number
 - **THEN** it is shown and the view is audited with actor and time
+
+#### Scenario: An owner who holds no such recipe opens the register
+- **WHEN** a physician recorded as an owner of the practice (PR-15), who holds the clinician recipe only, views the bank account register
+- **THEN** only masked numbers are shown, because an owner link grants no access
 
 #### Scenario: A posting is built for a deposit
 - **WHEN** a deposit posting for a register account is assembled
@@ -126,7 +130,7 @@ When a practice bank account is replaced or closed, openPractice SHALL create a 
 - **THEN** every payer linked to the old account appears on the re-enrollment worklist, and each item clears only when that payer's confirmation of the new account is recorded
 
 ### Requirement: BAB-14 openPractice reconciles deposits only, is the single poster of each deposit it explains, and leaves the bank reconciliation to the accounting system
-openPractice SHALL reconcile only revenue-related bank lines: deposits, chargebacks, payer takebacks, processor fees and refund disbursements. It SHALL label every other bank line "accounting system's" and SHALL NOT reconcile it. For each deposit it explains, openPractice SHALL post exactly one deposit entry to the destination, equal to the bank line, and SHALL be that deposit's single poster (ruling 5): no other route or system SHALL post a deposit entry for the same bank line. When the deposit also funds balances that another route owns, such as membership or retail obligations under change `define-customer-financial-data-boundaries`, that share SHALL post as an `other_route_share` line to the account mapped for it in the destination-and-mode mapping version (BAB-06). The owning route SHALL record only its own obligation allocation. Each refund disbursement line SHALL be matched to the issued refund it pays out (BAB-07). The accounting system SHALL own bank balances and the full bank reconciliation.
+openPractice SHALL reconcile only revenue-related bank lines: deposits, chargebacks, payer takebacks, processor fees and refund disbursements. It SHALL label every other bank line "accounting system's" and SHALL NOT reconcile it. For each deposit it explains, openPractice SHALL post exactly one deposit entry to the destination, equal to the bank line, and SHALL be that deposit's single poster (ruling 5): no other route or system SHALL post a deposit entry for the same bank line. When the deposit also funds balances that another route owns, such as membership or retail obligations under change `define-customer-financial-data-boundaries`, that share SHALL post as an `other_route_share` line to the account mapped for it in the destination-and-mode mapping version (BAB-06). The owning route SHALL record only its own obligation allocation. Each refund disbursement line SHALL be matched to the issued refund it pays out (BAB-07). Who books an explained bank debit in the destination SHALL follow that destination's confirmed record under AI-20; where the destination books it from its own bank feed, it SHALL code it against the account mapped to `cash_clearing`, so that the refund, fee and chargeback lines openPractice has already posted are not doubled (design call F-18, PROPOSED). The accounting system SHALL own bank balances and the full bank reconciliation.
 
 #### Scenario: A payer wire is explained
 - **WHEN** openPractice explains a payer wire by its remittance trace number
@@ -167,7 +171,7 @@ Before openPractice finalizes a charge for an invoice under AI-12, or for an ins
 - **THEN** it releases at tier 3 as medical billing, staff are notified with a cancel window, and the release records its provenance
 
 ### Requirement: BAB-17 Sign-offs follow the FD-5 tiers; a named AI agent signs only where opted in and never at tier 4
-Every action this change defines SHALL follow its FD-5 tier (ruling 33). Its tier decides whether it needs an approval, a notification or a delay-and-cancel release, including the deadline escapes. Automation SHALL only propose. Where a tier, or a gate this change defines, calls for an approval, a release decision or an attestation, the signer SHALL be a named human or a named AI agent identified by an openWallet ID (opensoft/openWallet). An agent MAY sign an action type only after that action type is opted in for agent signing, and no action type SHALL be opted in by default. Tier-4 actions SHALL be signed by a named human only. They are hard delete, enabling `customer-detail` mode, refunds leaving the practice, material adjustments and record merges. The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, and SHALL NOT be opted in for agent signing (accounting-integration AI-12, AI-20). Every sign-off SHALL record the signer's identity, including the openWallet ID for an agent, with the action, the time and the provenance. How an openWallet identity is verified SHALL be decided in planning.
+Every action this change defines SHALL follow its FD-5 tier (ruling 33). Its tier decides whether it needs an approval, a notification or a delay-and-cancel release, including the deadline escapes. Automation SHALL only propose. Where a tier, or a gate this change defines, calls for an approval, a release decision or an attestation, the signer SHALL be a named human or a named AI agent identified by an openWallet ID (opensoft/openWallet). An agent MAY sign an action type only after that action type is opted in for agent signing, and no action type SHALL be opted in by default. Tier-4 actions SHALL be signed by a named human only. They are hard delete, enabling `customer-detail` mode, refunds leaving the practice, material adjustments, and, in place of record merges, which version 1 does not have (ruling 150), recording or ending a same-person link and deactivating a duplicate patient record (PR-15). The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, and SHALL NOT be opted in for agent signing (accounting-integration AI-12, AI-20). Neither SHALL be self-approved (`define-practice-readiness` SR-04). The practice's accountant, wherever this change gives it an approval or a notice, is a roster entry of the outside-accountant type of change `define-actors-agents-and-work-inbox` AM-01 (ruling 141); who may hold that entry is set by change `define-practice-readiness` SR-04. Every sign-off SHALL record the signer's identity, including the openWallet ID for an agent, the role under which it was given (`define-practice-readiness` SR-02), the action, the time and the provenance. How an openWallet identity is verified SHALL be decided in planning.
 
 #### Scenario: An agent signs an action type that is not opted in
 - **WHEN** a named AI agent tries to release an export batch, and batch release is not opted in for agent signing
@@ -180,3 +184,41 @@ Every action this change defines SHALL follow its FD-5 tier (ruling 33). Its tie
 #### Scenario: An opted-in agent signs
 - **WHEN** batch release is opted in for agent signing and a named AI agent releases a batch
 - **THEN** the release is recorded with the agent's name, its openWallet ID, the time and the provenance
+
+### Requirement: BAB-18 Every openPractice contract carries money in one format
+Every `openpractice-*` contract SHALL carry an amount as decimal text plus a currency code, as `openpractice-accounting-integration/1.0` already does (AI-02): a JSON string with an explicit leading minus sign when negative, never a JSON number, together with the amount's ISO 4217 alphabetic currency code, which travels on the object that holds the amount or on the object that holds its lines. openPractice SHALL store amounts in whole cents (ruling 103).
+
+These rules are design calls under ruling 103 (F-8 to F-10, PROPOSED):
+- an amount carries exactly its currency's minor-unit digits, and is stored as a whole number of that currency's minor units. Version 1.0 of every contract supports USD only, so two decimal places and whole cents, and a 1.0 message in any other currency is refused. Supporting another currency needs a governed version change under AI-01, which states its minor-unit digits from ISO 4217; a currency with no minor unit carries no decimal point (F-8);
+- openPractice has one rounding rule, and each contract states that it uses it. An amount is rounded only when openPractice computes it, such as an estimate or an allocation, and only once, at computation, to the minor unit, half away from zero. When a fixed amount, such as a deposit, a payment, a fee or a bank line, is split into parts, the split SHALL use cumulative rounding: taking the parts in the split's stated order, each part is the rounded running total of the exact shares through that part, minus the rounded running total through the part before it. Where a split names no order, its parts are taken in ascending order of their own identifiers. Shares and running totals SHALL be computed in exact decimal or rational arithmetic, never in binary floating point. The parts then always equal the whole, each part is within one minor unit of its exact share, and no part has the opposite sign to the whole when every share has the whole's sign or is zero, so no part is negative when every share is non-negative. A fixed amount is never recomputed from rounded parts, and every other total is the sum of amounts already rounded (F-9);
+- a batch, and every message that holds several amounts, carries one currency, and a batch with a second currency is refused at release (F-10).
+
+A future contract that carries money, such as a claim, remittance or payment contract, SHALL meet this requirement and state that it uses the rounding rule of F-9.
+
+#### Scenario: An amount is sent as a number
+- **WHEN** a message carries an amount as the JSON number 123.45
+- **THEN** it fails the canonical schema
+
+#### Scenario: A batch holds two currencies
+- **WHEN** an assembled batch holds lines in USD and in another currency
+- **THEN** release is refused and the lines are named
+
+#### Scenario: An estimate has a fraction of a cent
+- **WHEN** openPractice computes an estimated amount of 33.335 USD
+- **THEN** it rounds it once, half away from zero, in exact decimal arithmetic, to 33.34, stores 3334 cents, and adds the rounded amount into every total; it never uses binary floating point, in which a half cent can land on either side of the midpoint
+
+#### Scenario: A fixed amount is split three ways
+- **WHEN** a deposit of 100.00 USD is split into three equal parts
+- **THEN** taking the parts in their stated order, or in ascending order of their identifiers where none is stated, the running totals round to 33.33, 66.67 and 100.00, so the first and third parts are 33.33 and the second is 33.34; they add to 100.00, each is within a cent of its exact share, and the deposit is still 100.00 against its bank line
+
+#### Scenario: An amount is split two ways at a half cent
+- **WHEN** 5.35 USD is split equally between two parts, with no order stated
+- **THEN** taking the parts in ascending order of their identifiers and computing in exact decimal, the running totals are 2.675, rounded half away from zero to 2.68, and 5.35, so the first part is 2.68 and the second 2.67
+
+#### Scenario: A small fee is split many ways
+- **WHEN** a processor fee of 1.10 USD is allocated equally across the 31 receipts of a settlement
+- **THEN** taking the receipts in ascending order of their identifiers, the 1st, 3rd, 5th, 7th, 9th, 11th, 12th, 14th, 16th, 18th, 20th, 21st, 23rd, 25th, 27th, 29th and 31st get 0.04 and the other 14 get 0.03; they add to 1.10, and no receipt gets a negative share
+
+#### Scenario: A batch in another currency
+- **WHEN** a 1.0 batch or bank-lines result carries a currency other than USD
+- **THEN** it fails the canonical schema, and release or reading is refused

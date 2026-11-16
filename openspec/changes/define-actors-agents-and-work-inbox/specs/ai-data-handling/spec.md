@@ -2,7 +2,9 @@
 
 ### Requirement: AH-01 These rules gate every agent grant at any rung, and a lapse suspends all agent PHI access
 No grant SHALL be made to any agent at any rung, `observe` and `propose` included (AO-03, AO-04), and no PHI SHALL reach an agent layer, until all of the following hold for that agent's operator and model-provider path:
-- AH-02's verified agreements, with the agent operator and with each model provider;
+- AH-02's verified agreements, with the agent operator and with each model provider, and each model provider's verified zero-data-retention arrangement;
+- for any path whose arrangement allows a cache of content, counsel's recorded confirmation of ruling 133, a go-live condition under ruling 138 (AH-02);
+- for any path that uses a model provider, counsel's recorded confirmation of ruling 97's answer (AH-06, ruling 102);
 - AH-03's recipient profiles;
 - AH-04's logging controls;
 - AH-05's untrusted-content controls.
@@ -31,12 +33,25 @@ The suspension SHALL lift only when a named human records the re-verified contro
 - **WHEN** a named human records the re-verified agreement
 - **THEN** the grants and rungs return, and each held delayed action restarts its full delay window
 
-### Requirement: AH-02 Verified BAAs are required with the agent operator and each model provider
-Before PHI reaches an agent layer or its model provider, an authorized person SHALL record and verify a HIPAA Business Associate Agreement (BAA) with each of these:
+### Requirement: AH-02 Verified BAAs are required with the agent operator and each model provider, and each model provider keeps no data
+Before PHI reaches an agent layer or its model provider, an authorized person, who is the practice manager (ruling 142), SHALL record and verify a HIPAA Business Associate Agreement (BAA) with each of these:
 - the agent operator, the company that runs the agent layer (for Hermes, the company that runs the Hermes layer);
 - each model provider on that agent's path.
 
-Where a model provider serves the operator rather than the practice, the record SHALL name both agreements in the chain, the provider's with the operator and the operator's with the practice, and each SHALL be verified. Each record follows the pattern of AI-14: counterparty, execution date, effective and renewal or expiry dates, scope statement, owner-local document reference, verifying person and time. Each operator and each provider SHALL be recorded separately. When any agreement on the path is missing or unverified, PHI SHALL NOT be sent anywhere on that path. The system MUST NOT assume that any operator or provider offers or has signed a BAA. This change asserts no legal rule; counsel confirms each agreement's form.
+Where a model provider serves the operator rather than the practice, the record SHALL name both agreements in the chain, the provider's with the operator and the operator's with the practice, and each SHALL be verified. Each record follows the pattern of AI-14: counterparty, execution date, effective and renewal or expiry dates, scope statement, owner-local document reference, verifying person, the role used (ruling 142) and time. Each operator and each provider SHALL be recorded separately. When any agreement on the path is missing or unverified, PHI SHALL NOT be sent anywhere on that path. The system MUST NOT assume that any operator or provider offers or has signed a BAA. This change asserts no legal rule; counsel confirms each agreement's form.
+
+**Zero data retention at every model provider (rulings 104 and 133).** A model provider keeps nothing but the short-lived in-memory cache that ruling 133 allows: besides its BAA, each model provider on a path that carries PHI SHALL be used only under a zero-data-retention arrangement, recorded and verified the way the BAA is (ruling 104). What the arrangement covers, and how it is kept current, are design calls under ruling 104 (D-30, PROPOSED):
+- *zero data retention* means that the provider keeps no prompt, no completion and no content derived from them, such as embeddings, caches, transcripts or copies for human review, once the request ends, for any purpose, abuse monitoring and model training included, except the in-memory cache below;
+- it does not forbid operational metadata that carries no content: request identifiers, timestamps, token counts, the model and endpoint used, latency, error codes and billing records. Any identifier, tag or label the caller supplies and the provider keeps SHALL be opaque and carry no PHI (AO-12), and a retained error record SHALL carry no content;
+- a short-lived cache of prompt or completion content at the provider does not fail zero data retention (ruling 133) when the verified arrangement states that the cache is held in memory only, is never written to disk or logs, is not readable by a person, and expires within a stated time limit. The limit SHALL be recorded in the verification record and SHALL NOT exceed one hour, a fixed value that no practice adjusts and only a later ruling changes (design call D-34, PROPOSED). Any other cache, or a cache whose terms the arrangement does not state, is retention and fails;
+- the practice manager records and verifies it on the pattern above (ruling 142): the provider, the party it is made with (the practice or the operator), the endpoints and models it covers, whether it allows a cache of content and, if it does, the cache's time limit, its effective and expiry dates, an owner-local document reference, and the verifying person, the role used and time;
+- it is re-verified before PHI goes to a different provider, endpoint or model, and when the provider changes its terms. A path whose exact provider, endpoint and model have no verified arrangement gets no PHI (AH-01).
+
+**The declared path (design call D-32, PROPOSED).** The agent operator SHALL declare on each agent's roster record (AM-04) the model provider, endpoint and model the agent uses, and SHALL declare again before any change. Its agreement SHALL forbid failing over to an endpoint or model it has not declared. openPractice SHALL send PHI to an agent only when a verified BAA and a verified zero-data-retention arrangement both cover that exact provider, endpoint and model on its declared path, and, where that arrangement allows a cache of content, counsel's confirmation of ruling 133 is recorded; when any of these is missing, it SHALL send none. Change `define-patient-gateway-and-escalation` ER-12 records the declared path.
+
+**Counsel's confirmation of the cache is a go-live condition (rulings 133 and 138).** Ruling 133 says "Counsel should confirm." Ruling 138 makes that confirmation a go-live condition: "Yes, as in ruling 102: no patient data goes to a caching model path until counsel's confirmation is recorded." No PHI SHALL go to a path whose arrangement allows a cache of content until an authorized person, who is the practice manager (ruling 142), has recorded counsel's confirmation that such a cache is acceptable (fail closed); a path whose arrangement allows no cache is not affected. How it is recorded is design call D-35 (PROPOSED): on the pattern ruling 102 set for AH-06, with the confirming counsel, the date, the scope (the providers, endpoints and models whose cache it covers, by their records above), an owner-local document reference, counsel's state bar, admission number, and the date and result of a check against that bar's public record (ruling 149), and the recording person, the role used and time. That confirmation SHALL NOT be self-approved (`define-practice-readiness` SR-04). Counsel SHALL be checked against the state bar's public record and matched against the practice's staff and owners (ruling 149); a match, or an admission that cannot be checked there or is not active, refuses it (`define-practice-readiness` SR-04). When counsel withdraws or narrows the confirmation, the recorded change is a lapse under AH-01 (D-35).
+
+The system MUST NOT assume that any provider offers zero data retention. Deletion with a receipt applies to the agent operator only (ruling 104; change `define-patient-gateway-and-escalation` ER-12).
 
 #### Scenario: Both agreements are verified
 - **WHEN** the operator's BAA and the provider's BAA are recorded and verified
@@ -50,6 +65,30 @@ Where a model provider serves the operator rather than the practice, the record 
 - **WHEN** an agent is configured on a provider with no verified BAA
 - **THEN** no PHI is sent to it, and no grant can be made to the agent (AH-01)
 
+#### Scenario: A provider endpoint without zero data retention
+- **WHEN** a provider's BAA is verified, but no zero-data-retention arrangement is verified for the endpoint and model an agent is configured on
+- **THEN** no PHI is sent to that endpoint, and no grant can be made to an agent on that path (AH-01)
+
+#### Scenario: A provider holds a short in-memory cache
+- **WHEN** a provider's verified arrangement states a cache held in memory only, never written to disk or logs, not readable by a person, with a 5-minute limit, and counsel's confirmation of ruling 133 is recorded
+- **THEN** PHI within the recipient profiles may reach that path, and the 5-minute limit is in the verification record
+
+#### Scenario: A cache without counsel's confirmation
+- **WHEN** a provider's arrangement allows an in-memory cache, and no counsel's confirmation of ruling 133 is recorded
+- **THEN** no PHI is sent to that path, and no grant can be made to an agent on it (AH-01)
+
+#### Scenario: A cache limit above the ceiling
+- **WHEN** a provider's arrangement states an in-memory cache with a 2-hour limit
+- **THEN** the arrangement does not meet zero data retention, because the limit may not exceed one hour, and no PHI is sent to that path
+
+#### Scenario: The operator wants to move an agent to another endpoint
+- **WHEN** the operator plans to move an agent to an endpoint it has not declared
+- **THEN** it declares the new path first, openPractice sends that agent no PHI until the new path is verified, and a failover without a declaration breaks the operator's agreement
+
+#### Scenario: The operator switches models
+- **WHEN** the operator moves an agent to another model of the same provider
+- **THEN** PHI stops on that path until the arrangement is verified for the new model
+
 ### Requirement: AH-03 Only the minimum necessary PHI reaches the agent layer
 For each agent and action type, the PHI that may reach the agent layer SHALL be defined by recipient-profile versions in the single shape of `define-mvp-practice-foundation` AI-23: one for the agent operator and one for each model provider, each with the action type as its purpose. Fields outside the profile SHALL NOT be sent, and nothing about any patient other than the work item's target patient SHALL be sent (AO-03). A profile SHALL NOT permit clinical content unless a later governed change allows it.
 
@@ -62,7 +101,7 @@ For each agent and action type, the PHI that may reach the agent layer SHALL be 
 - **THEN** the field is withheld, and the request is logged with a coded reason
 
 ### Requirement: AH-04 No PHI in agent logs
-Logs that openPractice writes about agent activity, and the agent layer's own logs that openPractice controls, MUST NOT contain names, dates of birth, contact details, identifier values or clinical content. They SHALL hold opaque references and coded reasons. What an operator or provider retains SHALL be governed by the AH-02 agreements and recorded in the risk analysis.
+Logs that openPractice writes about agent activity, and the agent layer's own logs that openPractice controls, MUST NOT contain names, dates of birth, contact details, identifier values or clinical content. They SHALL hold opaque references and coded reasons. A model provider retains nothing with content beyond the in-memory cache that AH-02 allows, which expires within the limit recorded for its arrangement (AH-02, rulings 104 and 133). What the agent operator retains SHALL be governed by its AH-02 agreement and by the deletion duty of change `define-patient-gateway-and-escalation` ER-12, and recorded in the risk analysis.
 
 #### Scenario: An agent action is logged
 - **WHEN** an agent updates a record
@@ -84,7 +123,7 @@ An action that untrusted content contributed to SHALL NOT exceed `propose` unles
 2. **Selection only.** The untrusted text only selects among the practice-approved answer types. It never changes the recipient, the target patient, the content template or the rung.
 3. **Assembled on the server.** openPractice assembles the reply on the server from an approved, versioned template and allowlisted fields of the bound patient's own record. The agent writes no free text.
 4. **Eligible items only.** All of these hold: the applied category is administrative; the applied urgency is `routine`; no source has marked any part clinical; the item is not part of a split question; the topic is on the practice's allowlist; and the patient asked on the patient's own link, not through a representative (design call D-14). Records requests, disputes and anything identity-revealing, such as identifiers, contact details or addresses, are excluded.
-5. **Human approval of content.** A named human approves each answer type and each template version. Anything health-adjacent also needs the medical director's sign-off. Neither approval SHALL be opted in for agent signing.
+5. **Human approval of content.** A named human approves each answer type and each template version. Anything health-adjacent also needs the medical director's sign-off, given as a separate sign-off; only where no other named human who may approve it is on the roster, a medical director who is also the approving named human gives both, each recording its role (`define-practice-readiness` SR-02, SR-03). Neither approval SHALL be opted in for agent signing. The separate sign-off is ruling 148, and its details are design call D-40 (PROPOSED).
 6. **Switched on by the practice.** Each answer type starts at `propose` and is switched on by the practice through its own BAB-17 opt-in, made by a named human (AO-03, AO-04).
 7. **Delay only.** The rung is `act_after_delay` only, with a practice-set window that the item's lane can cancel. `act_with_notice` is not allowed.
 8. **One patient.** During the conversation the agent reads only that one patient's data (AO-03).
@@ -152,7 +191,9 @@ The relay of an agent answer and the recording of a withdrawal SHALL be serializ
 
 **Scope (design call D-23, PROPOSED).** The check applies to every agent-authored reply that reaches a patient: the read-only answers of AH-05 exception 1 in contract 1.0, and, once a governed MINOR version of `openpractice-agent-operations` carries it, an agent-drafted reply that a human approves. A reply a staff member writes is not AI-authored and is not gated by this record.
 
-**What it does not gate (ruling 97).** This consent governs only AI answers that reach the patient directly. It does not gate an agent's processing of administrative data with a model provider for practice operations: the verified agreements with the agent operator and each model provider (AH-02) are enough for that, and counsel confirms it. Every other control of AH-01 to AH-05 still applies. This change asserts no legal rule; counsel confirms the consent's form and wording.
+**What it does not gate (ruling 97).** This consent governs only AI answers that reach the patient directly. It does not gate an agent's processing of administrative data with a model provider for practice operations: the verified agreements with the agent operator and each model provider (AH-02) are enough for that. This design rests on ruling 97's answer now (ruling 102). Every other control of AH-01 to AH-05 still applies. This change asserts no legal rule; counsel confirms the consent's form and wording.
+
+**Counsel's confirmation is a go-live condition (ruling 102).** Before any PHI reaches any model provider, an authorized person, who is the practice manager (ruling 142), SHALL record counsel's confirmation of ruling 97's answer, on the pattern of AH-02 and `define-mvp-practice-foundation` AI-14: the confirming counsel, the date, the scope (the processing for practice operations it covers, naming the agent operators and model providers by their AH-02 records), an owner-local document reference, counsel's state bar, admission number, and the date and result of a check against that bar's public record (ruling 149), and the recording person, the role used (ruling 142) and time (design call D-31, PROPOSED). That confirmation SHALL NOT be self-approved (`define-practice-readiness` SR-04). Counsel SHALL be checked against the state bar's public record and matched against the practice's staff and owners (ruling 149); a match, or an admission that cannot be checked there or is not active, refuses it (`define-practice-readiness` SR-04). Until it is recorded, AH-01's gate is not met for any path that uses a model provider: no PHI reaches a model provider, and no grant is made to an agent on such a path (fail closed). When counsel withdraws or narrows the confirmation, the recorded change is a lapse under AH-01.
 
 #### Scenario: No consent is recorded
 - **WHEN** an agent selects an eligible read-only answer type for a patient who has no recorded grant
@@ -177,6 +218,10 @@ The relay of an agent answer and the recording of a withdrawal SHALL be serializ
 #### Scenario: The patient tells the agent to stop
 - **WHEN** an agent releases an item with `ai_messaging_withdrawal_requested`
 - **THEN** every agent answer to that patient is held, new ones are refused with `consent_not_recorded`, and a staff member records the withdrawal or records that consent stands
+
+#### Scenario: Counsel has not yet confirmed
+- **WHEN** the operator's and the provider's agreements and the provider's zero-data-retention arrangement are verified, but counsel's confirmation of ruling 97's answer is not recorded
+- **THEN** no PHI reaches the model provider, and no grant can be made to an agent on that path
 
 #### Scenario: A representative withdraws
 - **WHEN** a parent whose authority on the patient's link is confirmed asks staff to stop AI-authored answers

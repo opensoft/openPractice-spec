@@ -5,11 +5,12 @@ A payment hold SHALL block only three things: non-urgent clinical messaging and 
 
 In openPractice's own scheduling, a hold SHALL refuse only a new non-urgent appointment for the held patient. This scheduling clause SHALL take effect only when a ratified scheduling change gives openPractice a booking function, and that change SHALL apply it with the exceptions below. Until then, a hold affects scheduling only through the gateway capability `scheduling_new_nonurgent`.
 
-A hold SHALL NOT cancel or change an appointment already booked (design call DC-26). An appointment SHALL NOT be blocked when either of these holds:
+A hold SHALL NOT cancel or change an appointment already booked (design call DC-26). The list of exceptions below is closed; ruling 178 adds its third member. An appointment SHALL NOT be blocked when any of these holds:
 - a clinician has marked it clinically needed: a valid `appointment_needed` marker, recorded and attributed in openChart and received through the clinical handoff contract (ER-18);
-- it arises from an urgent escalation: the booking carries that escalation's routing id, and openPractice's own routing record shows that id with applied urgency `urgent` for the same patient.
+- it arises from an urgent escalation: the booking carries that escalation's routing id, and openPractice's own routing record shows that id with applied urgency `urgent` for the same patient;
+- it records the arrival of a patient who is present, as the next paragraph states (ruling 178).
 
-No one in openPractice can mark an appointment clinically needed. Every other capability and function SHALL stay available, including administrative questions and demographic and coverage proposals.
+No one in openPractice can mark an appointment clinically needed. Recording the arrival of a patient who is present without a booking, a walk-in, is not new scheduling, and a hold SHALL NOT refuse it (ruling 178; `define-revenue-cycle-core` AP-05, AP-07, a draft not yet on `main`). Staff who record it see the hold (ruling 178). Every other capability and function SHALL stay available, including administrative questions and demographic and coverage proposals.
 
 #### Scenario: A held patient sends a routine clinical message
 - **WHEN** a patient on a hold submits a clinical inquiry with routine urgency
@@ -31,6 +32,10 @@ No one in openPractice can mark an appointment clinically needed. Every other ca
 - **WHEN** staff try to book a non-urgent appointment for a held patient by stating that it is clinically needed, with no valid marker and no urgent routing id
 - **THEN** the booking is refused, because only a clinician's marker or a verified urgent escalation lifts the block
 
+#### Scenario: A held patient walks in
+- **WHEN** a ratified scheduling change provides booking, and a patient on a hold who has no booking comes to the desk, and staff record their arrival
+- **THEN** the arrival is recorded, because recording a patient who is present is not new scheduling, and the hold is shown to the staff member
+
 #### Scenario: A hold is placed on a patient with a booked visit
 - **WHEN** a hold takes effect for a patient who already has a booked appointment
 - **THEN** the appointment stays booked and unchanged
@@ -51,7 +56,7 @@ A payment hold MUST NEVER block an urgent escalation, billing contact, or access
 - **THEN** the version is refused and cannot be approved
 
 ### Requirement: PH-03 No hold is placed without an approved, counsel-reviewed, versioned policy
-openPractice SHALL refuse every attempt to place a payment hold until the practice has an approved, versioned hold policy (ruling 41). The practice's medical director, a named human, SHALL approve each policy version. The approval SHALL NOT be opted in for agent signing (design call DC-28). Counsel's review SHALL be recorded on each version, by reference, before approval.
+openPractice SHALL refuse every attempt to place a payment hold until the practice has an approved, versioned hold policy (ruling 41). The practice's medical director, a named human, SHALL approve each policy version. The approval SHALL NOT be opted in for agent signing (design call DC-28). Counsel's review SHALL be recorded on each version, by reference, naming the counsel who gave it, with counsel's state bar, admission number, and the date and result of a check against that bar's public record, before approval, and SHALL NOT be self-approved (`define-practice-readiness` SR-04; ruling 149). The fields recorded are design call DC-65 (PROPOSED). Counsel SHALL be checked against the state bar's public record and matched against the practice's staff and owners (ruling 149); a match, or an admission that cannot be checked there or is not active, refuses it (`define-practice-readiness` SR-04).
 
 Each version SHALL state:
 - the coded criteria for placing a hold;
@@ -84,7 +89,7 @@ Placing and lifting a hold SHALL each be a logged, tiered action, with the actio
 
 Both action types SHALL start at `propose` for agents (ruling 37; change A AO-04). An agent can never act with less friction than the tier requires. Above `propose`, an agent may place a hold only at `act_after_delay`, so the countdown and cancel window always run, and may lift a hold at `act_with_notice` or `act_after_delay`. Each rung above `propose` is reached only through that action type's BAB-17 opt-in. Agent placement SHALL obey AO-08's rate and blast-radius limits.
 
-Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the signer where one signs (BAB-17), the time and the provenance. It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
+Every placement and lift SHALL record the policy version, the coded criteria met, the actor and actor type (AM-03), the named human who placed or lifted it where a human did, the signer where one signs (BAB-17), the time and the provenance. A named human SHALL NOT place or lift a hold on a patient who is their own party or in its same-person group, or whom their own party, or a party in that group, represents, or on a balance that their own party, or a party in that group, owes or guarantees, while another named human who may do so is on the roster, and an agent SHALL NOT do so where any of those holds for its sponsor's party or for the party of a person on whose request or behalf it acts (its principal, change A AM-03), or for either's group; `define-mvp-practice-foundation` PR-15's own-record rule and its one-person alternative govern, and the record then keeps both roles and that fact (its design call F-7, PROPOSED). Ruling 185 rules the case of lifting a hold on a balance the person owes: it needs a second person where one exists, and uses ruling 144's one-person alternative where none does (ruling 185); the other cases in this paragraph are F-7's. It MUST NOT log an amount. When a placement's criteria stop being met during the countdown, the placement SHALL be cancelled.
 
 #### Scenario: A staff member places a hold
 - **WHEN** a biller places a hold under an approved policy
@@ -102,12 +107,32 @@ Every placement and lift SHALL record the policy version, the coded criteria met
 - **WHEN** the balance a pending hold relies on is paid before the countdown ends
 - **THEN** the placement is cancelled and the patient is told
 
+#### Scenario: A staff member's own balance is on hold
+- **WHEN** a biller tries to lift a hold on a balance the biller owes as guarantor, and another named human may lift it
+- **THEN** the lift is routed to that other person, and the attempt is recorded with both roles
+
+#### Scenario: A staff member is the held patient but not the guarantor
+- **WHEN** a staff member who is an adult patient on a parent's guarantor account tries to lift the hold that blocks their own booking, and another named human may lift it
+- **THEN** it is an own-record act: the lift is routed to that other person
+
+#### Scenario: An agent lifts its sponsor's hold
+- **WHEN** an agent at `act_with_notice` for lifts tries to lift a hold on its sponsor's own patient record
+- **THEN** the lift is refused as an own-record act of the sponsor, and the item goes to another named human
+
+#### Scenario: An agent lifts the hold of the person who asked it
+- **WHEN** an agent sponsored by one staff member, acting at the request of another staff member, tries to lift the hold on the requesting staff member's own patient record
+- **THEN** the lift is refused as an own-record act of the person who asked, and the item goes to another named human
+
+#### Scenario: A staff member represents the held patient
+- **WHEN** a staff member who is the confirmed representative of a patient on hold tries to lift that hold, and another named human may lift it
+- **THEN** it is an own-record act: the lift is routed to that other person
+
 ### Requirement: PH-05 The patient is told, with no PHI in push or text content
 openPractice SHALL tell the patient when a hold's countdown starts and when a hold lifts (ruling 41), with a `patient.notice` of kind `hold_countdown_started` or `hold_lifted` through HealthLinc. Its template is the hold policy's approved notice wording (PH-03), and its `effective_at` is when the hold would take effect or when it lifted. The notice SHALL say what the hold blocks, what it never blocks (urgent help, billing contact and own records), and how to resolve it.
 
 The countdown SHALL start only when openPractice holds a `notice.ack` with outcome `delivered` for the countdown notice, or has recorded a delivery through another channel that the registry's contact rules allow (PR-05), with the channel, the time and who recorded it. Without either, the countdown does not start, nothing is withheld, and the placement becomes work owned by the biller lane (design call DC-41). The hold takes effect only after the full countdown has run from that delivery (design call DC-6).
 
-A hold notice SHALL go to the patient's own link, and to a representative only where the representative's proxy policy includes billing (PG-06, DC-34). Notices SHALL honor the patient's confidential-communication instructions (PR-05), carried as the notice's `restriction_codes`, and, for a representative link, the proxy policy (PG-06). Push-notification and text-message content MUST NOT contain PHI, an amount or the reason for the hold. The detail SHALL appear only after sign-in, or in a statement sent through a channel the instructions allow.
+A hold notice SHALL go to the patient's own link, and to a representative only where the representative's proxy policy includes billing (PG-06, DC-34). Notices SHALL honor the patient's confidential-communication instructions (PR-05), carried as the notice's `restriction_codes`, which include every restriction that crosses a same-person link (`define-mvp-practice-foundation` PR-15), as flags only, kept after the link ends until that change's end-of-link review decides the party's own, and, for a representative link, the proxy policy (PG-06). Where the instructions leave no permitted channel, nothing SHALL be sent: HealthLinc answers `failed` with `no_permitted_channel` (companion item), openPractice sends nothing by a channel the instructions bar, and the countdown does not start. Push-notification and text-message content MUST NOT contain PHI, an amount or the reason for the hold. The detail SHALL appear only after sign-in, or in a statement sent through a channel the instructions allow.
 
 #### Scenario: The countdown notice is delivered
 - **WHEN** HealthLinc answers a `hold_countdown_started` notice with `notice.ack` outcome `delivered`
@@ -130,7 +155,7 @@ A hold notice SHALL go to the patient's own link, and to a representative only w
 - **THEN** the patient receives a `hold_lifted` notice saying that every capability is restored
 
 ### Requirement: PH-06 Disputed balances and GFE dispute windows never count until the policy states their treatment
-A hold policy SHALL state how disputed balances, and balances inside an open GFE dispute window (FD-4), are treated (ruling 41). Until an approved policy states that treatment, a disputed amount SHALL never count toward a hold. An amount inside an open GFE dispute window SHALL count as disputed (design call DC-8). When a dispute opens on an amount that a hold relies on, openPractice SHALL re-evaluate the hold at once. When the remaining criteria are no longer met, the hold SHALL lift under PH-09.
+A hold policy SHALL state how disputed balances, and balances inside an open GFE dispute window (FD-4), are treated (ruling 41). Until an approved policy states that treatment, a disputed amount SHALL never count toward a hold. An amount inside an open GFE dispute window SHALL count as disputed (design call DC-8). When a dispute opens on an amount that a hold relies on, openPractice SHALL re-evaluate the hold at once, and SHALL do the same when a same-person reconciliation opens on an amount the hold relies on, which `define-revenue-cycle-core` PS-09, a draft not yet on `main`, leaves out of the balance it publishes (design call DC-68, PROPOSED). When the remaining criteria are no longer met, the hold SHALL lift under PH-09.
 
 #### Scenario: A disputed amount
 - **WHEN** a patient's only overdue amount is under dispute
@@ -144,8 +169,12 @@ A hold policy SHALL state how disputed balances, and balances inside an open GFE
 - **WHEN** a patient disputes the amount an active hold relies on
 - **THEN** the hold is re-evaluated at once and lifts if the criteria are no longer met
 
+#### Scenario: A same-person reconciliation opens on a held balance
+- **WHEN** a same-person reconciliation opens on the only overdue charge an active hold relies on
+- **THEN** the hold is re-evaluated at once and lifts under PH-09, because that charge no longer counts toward it
+
 ### Requirement: PH-07 A hold counts only medical-billing balances unless the policy says otherwise, and a lapsed membership is not a hold
-A hold SHALL count only balances that openPractice medical billing owns, including self-pay and direct-pay healthcare charges (FD-4). It MAY count membership obligations only when the approved policy explicitly includes them, and then only as change `define-customer-financial-data-boundaries` (PR #3, not yet on main) assigns their ownership. A lapsed or unpaid membership SHALL NOT by itself place a payment hold; membership affects access only through the entitlement check (PG-04, ruling 42) (design call DC-9). A hold SHALL NOT create, move or duplicate a collectible balance (AI-22).
+A hold SHALL count only balances that openPractice medical billing owns, including self-pay and direct-pay healthcare charges (FD-4). It MAY count membership obligations only when the approved policy explicitly includes them, and then only as change `define-customer-financial-data-boundaries`, merged on `main`, assigns their ownership. A lapsed or unpaid membership SHALL NOT by itself place a payment hold; membership affects access only through the entitlement check (PG-04, ruling 42) (design call DC-9). A hold SHALL NOT create, move or duplicate a collectible balance (AI-22).
 
 #### Scenario: An overdue self-pay balance
 - **WHEN** a self-pay patient's undisputed balance meets the approved policy's criteria
@@ -174,6 +203,7 @@ A payment hold SHALL stall no claim (FD-5). It SHALL NOT hold charge finalizatio
 A hold SHALL lift when its basis ends. openPractice SHALL lift a hold automatically, as a tier-2 action with notification, when any of these happens (design call DC-7):
 - the balance it relies on is paid or resolved;
 - a dispute leaves the policy's criteria unmet (PH-06);
+- a same-person reconciliation leaves the policy's criteria unmet (PH-06; `define-revenue-cycle-core` PS-09, a draft not yet on `main`; design call DC-68, PROPOSED);
 - the policy version it relied on is withdrawn or expires.
 
 Every hold SHALL carry a review date from its policy. At that date it SHALL become work owned by the biller lane. A hold SHALL NOT be extended past its review date without a recorded review.

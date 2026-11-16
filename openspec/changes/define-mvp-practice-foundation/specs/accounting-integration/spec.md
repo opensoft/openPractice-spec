@@ -23,6 +23,8 @@ This contract SHALL own posting mechanics (ruling 26): posting identity and idem
 ### Requirement: AI-02 The accounting contract has one canonical schema identified by digest
 The canonical schema SHALL be `openpractice-accounting-integration-1.0.schema.json` in this change's `contracts/` directory, identified by the SHA-256 digest of its bytes. It defines batch content, postings, summary lines, bank-line read results and recipient-profile documents (AI-23). Every adapter SHALL validate batch content against the schema with the recorded digest.
 
+Its amounts follow BAB-18 (ruling 103): decimal text with two places and an ISO 4217 code, USD only in 1.0, which the schema enforces, one currency per batch, and one currency per bank-lines result, which carries its `currency` once. Its rounding, including how a fixed amount is split, is BAB-18's one rule (design call F-9, PROPOSED), which this contract adopts as its statement of rounding.
+
 #### Scenario: A batch fails the schema
 - **WHEN** an assembled batch does not validate against the canonical schema
 - **THEN** release is refused and the failing postings are named
@@ -99,7 +101,7 @@ The system SHALL track delivery state separately from the frozen batch content, 
 - **THEN** the posting becomes `failed_permanent` work, the batch content is not edited, and the resolution is a redelivery or a superseding posting
 
 ### Requirement: AI-08 A reconciliation report proves the mirror
-After each delivery, and on demand as of any date, the system SHALL produce a reconciliation report for a destination. The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category, and in customer-detail mode also by customer. In `summary-journal` mode it SHALL also prove, for each payer-class control account, that openPractice's subledger total equals the destination's control-account balance as of the same cut-off, and that the gross-to-net allowance equals the sum of openPractice's current estimates. It SHALL list missing documents, unexpected documents, amount mismatches and destination-side edits. It SHALL state its exclusions: unidentified receipts held as liabilities, bank lines labelled "accounting system's", legacy collections, and other-route shares of explained deposits (BAB-14). Each exception SHALL become work owned by a Roster entry.
+After each delivery, and on demand as of any date, the system SHALL produce a reconciliation report for a destination. The report SHALL compare openPractice totals with the destination's totals for documents carrying openPractice keys: by reason category; in summary-journal mode also by service category, on lines that are revenue or a deduction from revenue (design call F-14, PROPOSED); and in customer-detail mode also by customer. In `summary-journal` mode it SHALL also prove, for each payer-class control account, that openPractice's subledger total equals the destination's control-account balance as of the same cut-off, and that the gross-to-net allowance equals the sum of openPractice's current estimates. It SHALL list missing documents, unexpected documents, amount mismatches and destination-side edits. It SHALL state its exclusions: unidentified receipts held as liabilities, bank lines labelled "accounting system's", legacy collections, and other-route shares of explained deposits (BAB-14). Each exception SHALL become work owned by a Roster entry.
 
 #### Scenario: The mirror ties
 - **WHEN** every posting of a delivered batch is posted and nothing was edited in the destination
@@ -135,13 +137,17 @@ The customers created by this contract derive from openPractice medical billing.
 - **Guarantor accounts**, for patient balances. These include self-pay and direct-pay healthcare charges (FD-4), which are medical billing. Each SHALL be keyed by its opaque guarantor account number.
 - **Payers**, for insurance balances. Each SHALL be identified by payer name and payer identifier.
 
-This contract SHALL create customer records only in `customer-detail` mode, which requires a satisfied BAA gate (AI-14). There, a guarantor-account customer MAY carry the guarantor's name, billing address and billing contact, the minimum necessary for billing. Each customer-detail destination SHALL have a versioned recipient profile, in the single shape AI-23 defines, that lists its permitted customer fields with their purpose, recipient and authority, and every customer-detail batch SHALL record the identifier and version of the profile it used. A field beyond name, billing address and billing contact SHALL be sent only after a new profile version documents that field's purpose, recipient and authority. No profile SHALL permit content that AI-16 excludes.
+This contract SHALL create customer records only in `customer-detail` mode, which requires a satisfied BAA gate (AI-14). There, a guarantor-account customer MAY carry the guarantor's name, billing address and billing contact, the minimum necessary for billing. Where any confidential-communication restriction (PR-05) applies to the guarantor's party, including one that crosses a same-person link or is kept after a link ends (PR-15), the customer SHALL carry no billing address, no billing contact and no profile field that holds an address, a telephone number or an email address; its account number and name may still be carried. When such a restriction starts to apply after the destination has received an address or contact for that customer, openPractice SHALL raise work, owned by a roster entry, to remove them from the destination (design call F-11, PROPOSED). Each customer-detail destination SHALL have a versioned recipient profile, in the single shape AI-23 defines, that lists its permitted customer fields with their purpose, recipient and authority, and every customer-detail batch SHALL record the identifier and version of the profile it used. A field beyond name, billing address and billing contact SHALL be sent only after a new profile version documents that field's purpose, recipient and authority. No profile SHALL permit content that AI-16 excludes.
 
 No guarantor or patient name, address or contact SHALL reach a destination whose BAA gate is not satisfied, and `summary-journal` mode SHALL create no customer record (AI-15). This requirement governs only the customers this contract creates. Customer and party roles, and the customer records that other routes create in the same destination, are governed by change `define-customer-financial-data-boundaries` (AI-22).
 
 #### Scenario: Self-guarantor patient after the BAA gate
 - **WHEN** a self-pay patient who is their own guarantor is invoiced on a destination in customer-detail mode with a satisfied BAA gate
 - **THEN** the destination customer carries the guarantor account number, name, billing address and billing contact, and nothing else about the person
+
+#### Scenario: A guarantor with a mail restriction
+- **WHEN** a guarantor whose party carries `no_home_mail` is invoiced on a destination in customer-detail mode
+- **THEN** the customer carries the guarantor account number and name, and no billing address or contact, so the destination holds no channel the restriction bars
 
 #### Scenario: Destination in summary-journal mode
 - **WHEN** the same patient's charge is posted to a destination in summary-journal mode
@@ -179,7 +185,7 @@ In both posting modes, the system SHALL recognize net revenue as the constrained
 
 Billing, adjudication, remittance, cash and disputes SHALL be evidence events that update the estimate, never revenue triggers. Each re-estimate or true-up, whether from evidence or from the estimate run at each close, SHALL be a new dated entry referencing the estimate version or close snapshot it applies, and MUST NOT edit an earlier entry (FD-3). A disputed amount SHALL stay out of the recognized amount until including it meets the constraint. Price concessions SHALL reduce revenue, while the later non-payment of an amount that was expected to be collected SHALL post as a credit loss, separately from revenue.
 
-Every estimate SHALL record its estimator version, input window, cohort and evidence references in openPractice. Close re-estimates SHALL post automatically from the approved estimator version, with no approval step at close (FD-3: month-end is printing, not a procedure), and each close SHALL store a reproducible snapshot automatically. Only estimator versions and the D8 policy items SHALL need approval. The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, and neither SHALL be opted in for agent signing (BAB-17).
+Every estimate SHALL record its estimator version, input window, cohort and evidence references in openPractice. Close re-estimates SHALL post automatically from the approved estimator version, with no approval step at close (FD-3: month-end is printing, not a procedure), and each close SHALL store a reproducible snapshot automatically. Only estimator versions and the D8 policy items SHALL need approval. The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, the outside-accountant roster entry of BAB-17 (ruling 141), and neither SHALL be opted in for agent signing (BAB-17). Neither SHALL be self-approved (`define-practice-readiness` SR-04).
 
 #### Scenario: Payer with history
 - **WHEN** a 200.00 charge is captured for a payer whose fee schedule allows 120.00 and whose history supports a constrained expected entitlement of 114.00
@@ -202,7 +208,7 @@ Every estimate SHALL record its estimator version, input window, cohort and evid
 - **THEN** it applies only after the practice's accountant approves it, from a stated effective date
 
 ### Requirement: AI-13 The contract posts every money event that touches a receivable or a deposit
-In customer-detail mode, the contract SHALL define the following postings. Each SHALL keep the deposit entry equal to its bank line.
+In customer-detail mode, the contract SHALL define the following postings. Each SHALL keep the deposit entry equal to its bank line. The payer-debit and provider-level-offset rows as revised, and every row after the one for an unidentified receipt identified later, are design call F-19, PROPOSED.
 
 | Event | Postings |
 |---|---|
@@ -210,10 +216,22 @@ In customer-detail mode, the contract SHALL define the following postings. Each 
 | A customer credit | Kept as an unapplied credit until it is applied with `payment.apply` or refunded with `refund.post` |
 | A chargeback | A `reversal.post` of the original payment, which reopens the receivable, plus a `journal.post` for the chargeback fee |
 | A returned item | A `reversal.post` of the original payment, plus a `journal.post` for the bank fee |
-| A payer debit or takeback | A `reversal.post`, in whole or in part, of the payment allocation it recovers |
-| Provider-level offsets inside a wire | Named `journal.post` lines in the deposit's composition, including interest, forwarding balances and takebacks |
+| A payer debit or takeback, except a takeback of an overpayment already owed back (below) | A `reversal.post`, in whole or in part, of the payment allocation it recovers |
+| Provider-level offsets inside a wire | Named `journal.post` lines in the deposit's composition, including interest and forwarding balances; a takeback in the wire is the posting its own row states, the payer-debit row's `reversal.post` or, for an overpayment already owed back, the `journal.post` against refund liability, shown in the deposit's composition; where the remittance moves no money, these postings are made on their own and net to zero in clearing |
 | A virtual-card payment | Booked net of a `journal.post` virtual-card fee line |
 | An unidentified receipt identified later | A `journal.post` that releases the unidentified-receipts liability, plus a `payment.post` on the identified customer, both linked by `applies_to` to the original unidentified-receipt posting. `supersedes` is reserved for replacing a posting. |
+| A prepayment that will not be applied | No posting where the destination's customer-detail mapping sends `prepayment` and `patient_payment_unapplied` to the same account, because the prepayment is already a customer credit; otherwise a `journal.post` with label `unapplied_payment` that moves the amount from the first account to the second |
+| A payment above what a charge line now owes | A `reversal.post` of that part of the payment's `payment.apply`, leaving it as the customer's unapplied credit |
+| A balance moved to another guarantor account | A `credit_note.post` on the first customer's invoice and an `invoice.post` to the second customer, both with label `patient_responsibility_transfer` and linked by `applies_to` |
+| A balance passed to the payer in the next coverage position | Nothing when the person bills that payer: the amount waits on the earlier payer's invoice (design call F-20, PROPOSED). The claim counts as billed when that payer or its clearinghouse accepts it (ruling 165): with the recording of that acceptance, the transfer posts as two `journal.post` lines dated the acceptance, both with label `payer_responsibility_transfer` and reason category `payer_share_transfer`: a credit on the earlier payer, with `applies_to` its invoice, and a debit on the later payer, linked by `applies_to` to that credit and placed in the later payer's billed receivable account; the later payer's postings for the claim then apply to that debit (design call F-20, PROPOSED). A rejected claim never became that payer's debt, and a rejection after acceptance reverses the move (ruling 165): a rejection with no earlier acceptance posts nothing; a rejection after acceptance is a `reversal.post` of both lines, for the part the later payer still owes, a share that payer's answer has already moved to the patient not moving again, and so is a finding, by that payer's answer or a recorded eligibility check, that its plan does not cover the service, where the transfer has posted; a replacement's acceptance posts only the difference from what the later claim has already moved, net of reversals, and an accepted void reverses what remains; and an answer from the later payer that decides the claim with no standing acceptance, including one for a claim the earlier payer forwarded that can be matched to the patient's later coverage, first posts both lines, before its own postings, once the earlier payer's answer that set the share has posted; before it, such an answer is work for a person, and an answer for a later claim whose last recorded status is a rejection, or a voided later claim, goes to a person first, as the revenue-cycle core's CL-12 says (design call F-20, PROPOSED). The alternative considered was the invoice pair, a `credit_note.post` on the earlier payer's invoice and an `invoice.post` to the later payer; it was not taken because the contract dates both at the date of service (design call F-20, PROPOSED) |
+| An unidentified receipt identified as a payer's payment | The remittance's own postings follow their own rows, as if its money had arrived with it: the payer's payment as a `payment.post` on the payer, a payer debit or takeback as its row states, and provider-level offsets as named `journal.post` lines, made on their own because each receipt's deposit entry is already posted. Each receipt linked to the remittance is released by a `journal.post` with label `unidentified_receipt_reclassified`, from the unidentified-receipts liability to clearing, linked by `applies_to` to that receipt's original unidentified-receipt posting and never more than remains of it. A remittance may release from several receipts: its releases total its payment total, or all that remains of its receipts where they hold less, so the receipts clear exactly whatever payer-level adjustments the remittance nets; where the linked receipts hold more than the payment total, the person who makes the links names the amount released from each, and what remains stays on its receipt, in the unidentified-receipts liability. A release is made with the remittance's postings or, for a receipt linked after the remittance has posted, at the link. Where the receipts hold less than the payment total, the shortfall stays in clearing for its bank line, or becomes work where that bank line was already explained. Each deposit entry stays the one posted for its receipt, equal to its bank line, and nothing of the remittance is matched to a bank line again, so no cash is counted twice (design call F-23, PROPOSED) |
+| A takeback that recovers an overpayment already owed back to the payer | A `journal.post` against the refund-liability account, with label `payer_takeback`, and never a `reversal.post`, which would reopen the receivable in the destination |
+| A bank debit that openPractice has matched | Only where the destination's record under AI-20 says openPractice sends them: a `journal.post` releasing the clearing account, with label `bank_debit_clearing_release` |
+| A write-off against the allowance | No posting where the gross-to-net credit notes holding the amount are on the same customer's invoice (self-pay, and every payer-side write-off, including one of an amount still unbilled because no claim for it was accepted, since the payer's invoice carries it from finalization: design call F-25, PROPOSED); where they are on the payer's invoice and the write-off is of the patient's share, a `credit_note.post` on the guarantor's invoice and a `debit_note.post` on the payer's invoice, both with label `write_off_against_allowance`, linked by `applies_to` |
+| A balance written off as a credit loss, under the allowance method or the direct method | A `credit_note.post` on the guarantor's invoice, with label `credit_loss`; for a receivable that has no invoice, such as a refunded payment later charged back (`define-revenue-cycle-core` PY-09, a draft not yet on `main`), a `journal.post` with label `credit_loss` for that customer, linked by `applies_to` to the `reversal.post` that reopened it; the provision and its reversal stay `journal.post` lines |
+| A claim accepted | A `journal.post` on the payer, with label `unbilled_to_billed` and reason category `claim_accepted`, `applies_to` the payer's invoice and dated the acceptance, moving the claim's receivable from the payer's unbilled receivable account to the billed one (ruling 165). A rejection after acceptance reverses the move (ruling 165). A rejection after acceptance, or an accepted void, moves the amount back as a `reversal.post` of the acceptance journals, in whole or in part, and any amount beyond them as a further `journal.post` of the same label and reason category with the opposite sign; and a replacement's acceptance is a further `journal.post` of the same label and reason category, applied to the corrected invoice (design call F-20, PROPOSED). In customer-detail mode each move under CL-12's rules (acceptance, a rejection after acceptance, a replacement's acceptance, an accepted void) carries the amount the revenue-cycle core's `claim_accepted` entry moves, less the gross-to-net notes on that amount as they then stand. A charge-line correction (CG-08) lands in the payer's unbilled account, as the revenue-cycle core's service entry does. Every other posting for the claim (a gross-to-net note, a contractual adjustment, a payment, a takeback, a transfer) lands in the billed account while an acceptance stands, and in the unbilled account otherwise. CL-12 and CG-08 are those of `define-revenue-cycle-core`, a draft not yet on `main`, and the gross-to-net notes that post with a corrected charge are part of the correction (design call F-20, PROPOSED). An answer from the payer that decides a claim with no standing acceptance (a payment, an adjustment or a denial) first posts the acceptance move, and the answer's postings then land in the billed account, except that an answer for a claim whose last recorded status is a rejection, or a voided claim, goes to a person first, as the revenue-cycle core's CL-12 says; an answer that returns the claim as not that payer's counts as a rejection (design call F-20, PROPOSED). A claim to a later coverage position posts no journal of its own: its amount moves as the row for a balance passed to the payer in the next coverage position states (design call F-20, PROPOSED) |
+| A contractual adjustment realized against the allowance | No posting: the gross-to-net credit notes already took the expected adjustment off the payer's invoice, and any difference posts as a `gross_to_net_true_up` note |
+| A patient credit moved to refund liability | No posting: it stays a customer credit until `refund.post` |
 
 #### Scenario: Payment collected at the desk before the invoice
 - **WHEN** a patient pays 40.00 at check-in and the invoice is finalized two days later
@@ -223,12 +241,60 @@ In customer-detail mode, the contract SHALL define the following postings. Each 
 - **WHEN** a payer wire of 400.00 pays 450.00 on new claims and takes back 50.00 from a prior claim
 - **THEN** the deposit entry equals 400.00, and the 50.00 reverses the prior payment allocation with a back-reference
 
+#### Scenario: The money for a remittance that nets a takeback arrived first
+- **WHEN** a 400.00 payer EFT was explained as an unidentified receipt, its deposit entry posted equal to the bank line, and the remittance then arrives paying 450.00 on new claims and taking back 50.00 from a prior claim
+- **THEN** the 450.00 posts as a `payment.post` on the payer, the 50.00 reverses the prior payment allocation, and one `journal.post` releases 400.00 from the unidentified-receipts liability, linked by `applies_to` to the original posting; clearing and the liability both end at zero, no second deposit entry is posted, and releasing 450.00 instead would leave 50.00 in each
+
+#### Scenario: Two deposits for one remittance
+- **WHEN** deposits of 600.00 and 400.00 were each explained as an unidentified receipt, each with its deposit entry equal to its bank line, and a person links both to one remittance that pays 1000.00
+- **THEN** the 1000.00 posts as a `payment.post` on the payer, and two `journal.post` releases of 600.00 and 400.00 move the money from the unidentified-receipts liability to clearing, each linked by `applies_to` to its own receipt's posting; clearing and the liability both end at zero, and no further deposit entry is posted
+
+#### Scenario: A receipt linked after its remittance posted
+- **WHEN** a 1000.00 remittance posted with no receipt linked, so its `payment.post` left 1000.00 in clearing, and a person then links to it a 600.00 deposit explained earlier as an unidentified receipt
+- **THEN** a `journal.post` releases 600.00 at the link, linked by `applies_to` to that receipt's posting, and the other 400.00 stays in clearing for its bank line, whose deposit entry clears it when that line is explained; had that bank line already been explained, the 400.00 would be work
+
+#### Scenario: A claim accepted and then rejected, in customer-detail mode
+- **WHEN** a 200.00 claim-billed invoice with an 86.00 gross-to-net note was posted to the payer at finalization, its receivable in the payer's unbilled account, the clearinghouse accepts the claim a week later, and the payer later rejects it
+- **THEN** at acceptance a `journal.post` on the payer, applied to the invoice and dated the acceptance, moves 114.00 to the payer's billed receivable account, and at the rejection a `reversal.post` of that journal moves it back, so the payer shows no billed debt for a claim it did not accept
+
+#### Scenario: A note after acceptance, then a rejection, in customer-detail mode
+- **WHEN** a 200.00 claim-billed invoice with an 86.00 gross-to-net note is accepted, a close true-up then takes a further 10.00 off the invoice, and the payer rejects the claim
+- **THEN** the acceptance moves 114.00 to the payer's billed account, the true-up lands there and leaves 104.00, and the rejection moves 104.00, the claim's 200.00 less the 96.00 of notes then on it, back to the unbilled account, so the payer shows 104.00 unbilled and nothing billed, as summary-journal mode shows 200.00 unbilled with 96.00 in the gross-to-net allowance
+
+#### Scenario: A corrected charge and its accepted replacement, in customer-detail mode
+- **WHEN** a 200.00 claim with an 86.00 gross-to-net note is accepted, moving 114.00 to the billed account, the charge is then corrected to 250.00 with a 106.00 note, and the replacement claim is accepted
+- **THEN** the correction's reversal and its new invoice, each with its note, land in the unbilled account, which then holds 30.00, and the replacement's acceptance moves 30.00, the 50.00 difference less the 20.00 of further notes on it, so the billed account holds 144.00 and the unbilled account nothing, as summary-journal mode shows 250.00 billed with 106.00 in the allowance
+
+#### Scenario: A payment, then an accepted void, in customer-detail mode
+- **WHEN** a 200.00 claim with an 86.00 gross-to-net note is accepted, moving 114.00 to the billed account, the payer pays 100.00, a void of the claim is accepted, and the charge is then reversed
+- **THEN** the payment lands in the billed account and leaves 14.00, the void moves 114.00 back to the unbilled account and leaves -100.00 billed, and the charge's reversal with its note takes the unbilled account to nothing, so the 100.00 the payer paid stays against the billed account, as summary-journal mode shows -100.00 billed
+
+#### Scenario: An estimate increase after acceptance, then a rejection or a void, in customer-detail mode
+- **WHEN** a 200.00 claim with an 86.00 gross-to-net note is accepted, moving 114.00 to the billed account, a close true-up then gives back 10.00 of the note, and the payer rejects the claim, or a void of it is accepted
+- **THEN** the true-up lands in the billed account and leaves 124.00 there, and the move back is 124.00, the claim's 200.00 less the 76.00 of notes then on it: a `reversal.post` of the 114.00 acceptance journal and a further `journal.post` of 10.00, of the same label and reason category with the opposite sign; the payer shows 124.00 unbilled and nothing billed, as summary-journal mode shows 200.00 unbilled with 76.00 in the allowance
+
+#### Scenario: A payment arrives with no acceptance recorded, in customer-detail mode
+- **WHEN** a 200.00 claim with an 86.00 gross-to-net note has no recorded acceptance, and the payer's payment of 100.00 arrives
+- **THEN** the acceptance move of 114.00 posts first, and the payment then lands in the billed account, leaving 14.00 billed and nothing unbilled
+
+#### Scenario: A claim to the later payer is rejected and then accepted, in customer-detail mode
+- **WHEN** the primary payer's answer leaves 30.00 on its invoice for the patient's secondary coverage, the person bills the secondary payer, the secondary payer rejects that claim, and it accepts a corrected one
+- **THEN** nothing posts when the claim is sent or rejected, and the 30.00 stays on the primary payer's invoice; at the acceptance two `journal.post` lines of 30.00, dated the acceptance, post: a credit on the primary payer, applied to its invoice, and a debit on the secondary payer, in its billed receivable account
+
+#### Scenario: The later payer's transfer is dated its acceptance, in customer-detail mode
+- **WHEN** a service on March 3, in a period the destination has since closed, leaves 30.00 for the secondary payer, which accepts its claim on May 20, in an open period
+- **THEN** the two transfer lines are dated May 20 and are not flagged as a late charge, and a report as of April 30 shows the 30.00 owed by the primary payer, as summary-journal mode does; an invoice pair would have been dated March 3, posted on the first open date and flagged as a late charge
+
+#### Scenario: A later payer answers a claim the earlier payer forwarded, in customer-detail mode
+- **WHEN** the primary payer forwards a claim to the secondary payer, the practice never sends one, and the secondary payer's payment of 30.00 arrives and can be matched to the patient's secondary coverage
+- **THEN** the two transfer lines post first, with that answer, and the payment then applies to the secondary payer's debit line, in its billed account; an answer that cannot be matched, or that arrives before the primary payer's answer has set the share, posts nothing and becomes work for a person
+
 #### Scenario: Chargeback
 - **WHEN** a card payment of 75.00 is charged back with a 15.00 fee
 - **THEN** the payment is reversed, the receivable reopens, and the 15.00 fee posts to its mapped account, with each debit equal to its explained bank line
 
 ### Requirement: AI-14 Customer-detail mode requires a verified BAA or an operator attestation
-Customer-detail mode SHALL NOT be enabled for a destination until an authorized person records, and verifies, one of the following:
+Customer-detail mode SHALL NOT be enabled for a destination until an authorized person, who is the practice manager (ruling 142), records, and verifies, one of the following:
 - an executed HIPAA Business Associate Agreement (BAA) with the destination's vendor;
 - for a destination the practice operates itself, such as self-hosted ERPNext, an attestation naming the operator. The operator is either the practice itself or an existing business associate whose BAA covers the accounting site.
 
@@ -238,14 +304,14 @@ The record SHALL capture:
 - effective and renewal or expiry dates;
 - a scope statement covering the accounting service;
 - an owner-local document reference;
-- the verifying person and the verification time.
+- the verifying person, the role in which they verified it (ruling 142), and the verification time.
 
 The record SHALL be kept in openPractice's accounting destination register. It is the single BAA-gate record for that destination, and every route that writes PHI-bearing customer records into the destination SHALL consult it, including routes that change `define-customer-financial-data-boundaries` defines.
 
-Enabling customer-detail mode SHALL be a governance tier-4 hard stop. When the BAA expires or is revoked, or the attestation is withdrawn, customer-detail delivery SHALL halt, pending work SHALL be held unconverted, and an authorized person SHALL be given the work. The system MUST NOT assume that any vendor offers or has signed a BAA.
+Enabling customer-detail mode SHALL be a governance tier-4 hard stop. When the BAA expires or is revoked, or the attestation is withdrawn, customer-detail delivery SHALL halt, pending work SHALL be held unconverted, and the practice manager SHALL be given the work (ruling 142). The system MUST NOT assume that any vendor offers or has signed a BAA.
 
 #### Scenario: Self-hosted ERPNext
-- **WHEN** a practice running its own ERPNext records an attestation naming itself as the operator, and an authorized person verifies it
+- **WHEN** a practice running its own ERPNext records an attestation naming itself as the operator, and the practice manager verifies it
 - **THEN** the BAA gate is satisfied for that destination
 
 #### Scenario: Nothing recorded
@@ -255,13 +321,15 @@ Enabling customer-detail mode SHALL be a governance tier-4 hard stop. When the B
 ### Requirement: AI-15 Summary-journal mode posts balanced category totals to payer-class control accounts, creates no customer records and carries no PHI
 `summary-journal` mode, the default (ruling 28), SHALL post balanced category totals to payer-class control accounts, summarized by period, payer class, benign service category and account. Patient-level receivable detail SHALL stay in openPractice, in a detail manifest from which every summary line can be traced. The summary SHALL cover:
 - services performed: a gross line with its gross-to-net deduction at the constrained estimate (AI-12);
-- claim submission: reclassification from unbilled to billed receivable, with no revenue effect;
+- claim acceptance by the payer or clearinghouse: reclassification from unbilled to billed receivable, with no revenue effect (ruling 165); a rejection reverses any reclassification an earlier acceptance of the same claim made (ruling 165), and otherwise causes none; the acceptance of a replacement reclassifies only the difference from what the claim has already reclassified, net of reversals, and an accepted void reverses what it has reclassified; an answer from the payer that decides a claim with no standing acceptance (a payment, an adjustment or a denial) first posts the acceptance, except that an answer for a claim whose last recorded status is a rejection, or a voided claim, goes to a person first, as the revenue-cycle core's CL-12 says, and an answer that returns the claim as not that payer's counts as a rejection (design call F-20, PROPOSED); a claim to a later coverage position reclassifies nothing, and counts as billed when that payer or its clearinghouse accepts it, a rejected one never becoming that payer's debt and a rejection after acceptance reversing the move (ruling 165): billing that payer posts nothing, the amount waiting in the earlier payer class's receivable, the later claim's acceptance moves it as a payer-responsibility-transfer line, and a rejection after acceptance moves back what is still in the later payer class's receivable, a replacement and a void following the rules above for a first claim; an answer from the later payer that decides the claim with no standing acceptance, including one for a claim the earlier payer forwarded that can be matched to the patient's later coverage, first posts the transfer, once the earlier payer's answer that set the share has posted, and before it is work for a person, as is an answer for a later claim whose last recorded status is a rejection, or a voided later claim, as the revenue-cycle core's CL-12 says (design call F-20, PROPOSED);
 - adjudication: the contractual adjustment realized against the allowance, and any estimate difference trued up;
 - payer and patient payments: cash clearing against the payer-class or patient receivable;
-- patient-share transfers between control accounts, with no revenue effect;
+- patient-share and payer-share transfers between control accounts, with no revenue effect (payer-share transfers: design call F-15, PROPOSED);
 - disputes, credit losses, refund liabilities and reversals, each as a new entry.
 
-Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference, and SHALL carry a payer class where it touches a receivable or revenue. A revenue or deduction line SHALL carry the estimate version or close snapshot it applies, by reference. Deposits SHALL be grouped per explained bank line. The contract SHALL NOT create or update any customer record in this mode. Summary postings MUST NOT contain any of the following:
+The practice's accountant SHALL confirm the claim-acceptance treatment (ruling 165), as part of the receivable classification they approve under AI-20, including the treatment of a claim to a later coverage position and, in customer-detail mode, the amounts AI-13 moves and where its later postings land (design call F-20, PROPOSED).
+
+Each line SHALL carry a reason category, a neutral label, an amount, a posting date and a batch reference; SHALL carry a payer class where it touches a receivable or revenue; and SHALL carry its benign service category and its group level where it is revenue or a deduction from revenue, and a service category on no other line (ruling 125; its details are design call F-14, PROPOSED). A payer-responsibility-transfer line SHALL carry the payer class that receives the amount as its payer class and the payer class that gives it up as its counter payer class, and no other line SHALL carry a counter payer class; its amount SHALL be greater than zero, so a reversed payer-share transfer SHALL be sent as a new payer-responsibility-transfer line with its two classes swapped (design call F-15, PROPOSED). A patient-responsibility-transfer, chargeback, contractual-adjustment, payment-application, payment-received, returned-item, unbilled-to-billed or write-off-against-allowance line SHALL always carry its payer class, because it always touches a receivable; a credit-loss, payer-takeback, refund-liability, unapplied-payment or unidentified-receipt-reclassified line SHALL carry it where its reason category touches a receivable (design call F-17, PROPOSED). A write-off-against-allowance line of an amount still unbilled, because no claim for it was accepted, carries the reason category `unbilled_write_off_against_allowance` of `define-revenue-cycle-core`, a draft not yet on `main` (its design call CR-101), with its payer class, and the destination's summary-journal mapping (BAB-06) SHALL map that reason category to the unbilled receivable control account of the line's payer class, never to the billed one (design call F-25, PROPOSED). A gross-to-net line, meaning a patient-services revenue, gross-to-net deduction or gross-to-net true-up line, SHALL carry the estimate version or close snapshot it applies, by reference (design call F-14, PROPOSED). Each batch SHALL record the version of the practice's whole effective-dated service-category mapping that it used (design call F-14, PROPOSED). Deposits SHALL be grouped per explained bank line. The contract SHALL NOT create or update any customer record in this mode. Summary postings MUST NOT contain any of the following:
 - customer records or customer names, or account numbers of patients or guarantors;
 - member, claim or subscriber identifiers;
 - a per-visit or per-person date of service;
@@ -270,9 +338,25 @@ Each line SHALL carry a reason category, a neutral label, an amount, a posting d
 
 Each destination SHALL have a minimum group size, which defaults to 11 underlying visits. A day-level group for a payer class and category that falls below it SHALL roll up to the week. If the week group is still below it, the group SHALL roll up to the accounting period. A rolled-up group SHALL record its group level and SHALL NOT cross an accounting-period boundary. A week that spans a period end SHALL be split at the boundary, and each part SHALL be re-tested against the minimum group size within its own period. A part that meets the minimum SHALL be dated on its last day inside its own period. A part still below the minimum SHALL roll up to its own period, dated on that period's last day. When that date falls in a period the destination has closed, the group SHALL be dated on the first open date and flagged late (AI-11). Day-level detail SHALL stay in openPractice's detail manifest.
 
+#### Scenario: A claim rejected after the clearinghouse accepted it
+- **WHEN** a claim that the clearinghouse accepted is then rejected by the payer, and its corrected replacement is accepted
+- **THEN** the summary reverses the reclassification the first acceptance made, and the replacement's acceptance reclassifies the amount once, so the billed receivable is not booked twice
+
+#### Scenario: A claim to a later payer is rejected before any acceptance
+- **WHEN** after the Medicare class's answer 30.00 waits for a Medigap plan, the person bills the plan, and the plan rejects the claim
+- **THEN** no summary line posts when the claim is sent or rejected, and the 30.00 stays in the Medicare class's billed receivable; when a later claim to the plan is accepted, a payer-responsibility-transfer line of 30.00 moves it, with the Medigap class as its payer class and the Medicare class as its counter payer class
+
+#### Scenario: A later payer rejects a claim it had accepted
+- **WHEN** a Medigap plan accepted a claim for 30.00, which moved that amount from the Medicare class, and then rejects it, its answer having moved none of it to the patient
+- **THEN** a new payer-responsibility-transfer line of 30.00 moves it back, with the Medicare class as its payer class and the Medigap class as its counter payer class
+
+#### Scenario: A payer's answer arrives with no acceptance recorded
+- **WHEN** a payer's payment for a claim arrives, and no acceptance of that claim was recorded
+- **THEN** the summary first reclassifies the claim's amount from unbilled to billed receivable, and the payment then clears against the billed receivable
+
 #### Scenario: A summary batch is inspected
 - **WHEN** a reviewer inspects a summary-journal batch
-- **THEN** it holds only reason categories, neutral labels, payer classes, amounts, dates, estimate or snapshot references and batch references, and no customer record
+- **THEN** it holds no customer record, customer name, account number, member, claim or subscriber identifier, per-visit or per-person date of service, or anything else AI-15 says summary postings MUST NOT contain; any service category is a benign code
 
 #### Scenario: A day's charges are posted
 - **WHEN** a practice captures twenty Medicare-class office visits on one day
@@ -286,9 +370,13 @@ Each destination SHALL have a minimum group size, which defaults to 11 underlyin
 - **WHEN** a week from October 28 to November 3 has 12 commercial-class office visits in October and 4 in November, with fewer than eleven on any day
 - **THEN** the week splits at October 31: the October part posts as a week-level group dated October 31, the November part rolls up to November's period-level group dated November 30, and no October revenue is dated in November
 
+#### Scenario: A partial payer-share reversal
+- **WHEN** 14.00 of a payer-share transfer from the Medicare class to a Medigap plan's class is reversed
+- **THEN** it is sent as a new payer-responsibility-transfer line of 14.00, with the Medicare class as its payer class and the Medigap class as its counter payer class, and never as a negative line
+
 ### Requirement: AI-16 Customer-detail postings carry the minimum necessary, with neutral labels
 Customer-detail postings created by this contract SHALL contain only:
-- the opaque guarantor account number and, for guarantor-account customers, the name, billing address and billing contact (AI-10);
+- the opaque guarantor account number and, for guarantor-account customers, the name, billing address and billing contact, except where AI-10 withholds the address and contact (AI-10);
 - fields that the batch's recipient profile adds under AI-10;
 - payer name and identifier;
 - opaque `posting_id` and source references;
@@ -362,9 +450,15 @@ Before any destination goes live, its adapter SHALL verify and record whether th
 - a service date on each invoice line;
 - cash-basis reporting over the postings this contract makes.
 
-A destination that cannot carry line service dates SHALL NOT go live in customer-detail mode until the owner decides how to proceed.
+A destination that cannot carry line service dates SHALL NOT go live in customer-detail mode until the product owner decides how to proceed.
 
-No destination SHALL go live until the practice's accountant has approved, and openPractice has recorded, the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (ruling 30). The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, and neither SHALL be opted in for agent signing (BAB-17).
+No destination SHALL go live until the practice's accountant has approved, and openPractice has recorded, the reporting basis, the estimator, the receivable classification, the materiality approach and the reopening policy (ruling 30). The D8 approval and every estimator-version approval SHALL be given by the practice's accountant only, the outside-accountant roster entry of BAB-17 (ruling 141), and neither SHALL be opted in for agent signing (BAB-17). Neither SHALL be self-approved (`define-practice-readiness` SR-04).
+
+No destination SHALL go live, and openPractice SHALL NOT send a summary that needs a service category, a counter payer class or one of the three labels the amendment of 2026-11-15 adds, while the contract version it sends under cannot carry them (ruling 164).
+
+Before any destination goes live, in either posting mode, openPractice SHALL also record, per destination, who books the bank debits that openPractice explains: either openPractice sends explained-bank-debit lines, with label `bank_debit_clearing_release`, or the destination books bank debits from its own bank feed and codes each against the account mapped to `cash_clearing`. The practice manager SHALL record it, keeping the role used, and the practice's accountant SHALL confirm it, beside the D8 record; that confirmation is part of accounting policy, within what ruling 141 lets the outside accountant approve (ruling 197). The record, and every change to it, SHALL take effect only once the accountant confirms it; until then the last confirmed record stands, and where none was ever confirmed there is none. Until a confirmed record exists, no explained-bank-debit line SHALL be sent. If a confirmed change makes openPractice the sender, only debits explained after the change's effective date SHALL be sent, and that date is never earlier than the accountant's confirmation (design call F-18, PROPOSED).
+
+Before a destination goes live in customer-detail mode, its adapter SHALL also verify and record that the destination can carry ruling 165's moves as AI-13 states them: that its mapping names both payer receivable accounts (BAB-06), and that it can place each later posting for a claim where AI-13 says, a charge-line correction, with the notes posted with it, in the payer's unbilled receivable account, and a gross-to-net note, a contractual adjustment, a payment, a takeback or a transfer in the billed one while an acceptance stands and in the unbilled one otherwise, a later payer's postings applying to the debit line of its payer-share transfer. A destination that cannot SHALL NOT go live in customer-detail mode (ruling 165; design call F-20, PROPOSED).
 
 #### Scenario: ERPNext verification
 - **WHEN** the ERPNext adapter is prepared for go-live
@@ -373,6 +467,18 @@ No destination SHALL go live until the practice's accountant has approved, and o
 #### Scenario: The accountant has not approved the policy
 - **WHEN** a destination is otherwise ready but no accountant approval of the revenue-recognition policy is recorded
 - **THEN** go-live is refused
+
+#### Scenario: No record of who books the bank debits
+- **WHEN** a destination is otherwise ready, but no confirmed record says who books the bank debits openPractice explains
+- **THEN** go-live is refused, and no `bank_debit_clearing_release` line is sent to it
+
+#### Scenario: A change to the bank-debit record that the accountant has not confirmed
+- **WHEN** the practice manager changes a destination's confirmed record from the destination booking bank debits from its own feed to openPractice sending them, and the accountant has not yet confirmed the change
+- **THEN** the last confirmed record stands and no `bank_debit_clearing_release` line is sent; once the accountant confirms, only debits explained after the change's effective date, never earlier than the confirmation, are sent
+
+#### Scenario: A destination that cannot place a later posting where AI-13 says
+- **WHEN** a destination credits every payment applied to a claim-billed invoice to the invoice's own receivable account, the payer's unbilled one, and its adapter has no way to place a payment in the billed account while the claim's acceptance stands
+- **THEN** it does not go live in customer-detail mode
 
 #### Scenario: Someone other than the accountant tries to approve
 - **WHEN** a named AI agent, or a person who is not the practice's accountant, tries to approve the D8 policy or an estimator version
@@ -419,6 +525,8 @@ Each adapter SHALL pass contract tests covering:
 - dates and late-charge flagging, including close re-estimate dating;
 - constrained-estimate revenue, evidence-driven true-ups and the absence of any gross-then-adjust fallback;
 - summary-journal control-account reconciliation by payer class;
+- the service category on every summary-journal line that is revenue or a deduction from revenue, its absence from every other line and from every customer-detail posting, the counter payer class on every payer-responsibility-transfer line and on no other line, a payer class on every patient- or payer-responsibility-transfer line and on every chargeback, contractual-adjustment, payment-application, payment-received, returned-item, unbilled-to-billed and write-off-against-allowance line, a payer class on every credit-loss, payer-takeback, refund-liability, unapplied-payment and unidentified-receipt-reclassified line whose reason category touches a receivable, tested by reason category, no payer-responsibility-transfer amount of zero or less, and the mapping version on every batch (design calls F-14, F-15 and F-17, PROPOSED);
+- no explained-bank-debit line sent to a destination without its confirmed AI-20 record saying that openPractice sends them, or for a bank debit explained before that record's effective date; an unconfirmed record or change taking no effect (design call F-18, PROPOSED);
 - the AI-13 events;
 - reconciliation;
 - the absence of PHI in keys and diagnostics;
