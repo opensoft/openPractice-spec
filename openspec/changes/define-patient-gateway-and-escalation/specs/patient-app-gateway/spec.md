@@ -38,17 +38,23 @@ openPractice SHALL answer each `entitlement.request` with an `entitlement.result
 
 In this change, "non-urgent" means applied urgency `routine` only (ruling 41; design call DC-30). Anything above `routine` goes through `urgent_escalation`. `medical_ai_consult` covers non-urgent consults with medXfactory's medical AI, which HealthLinc connects the patient to (rulings 51 and 52; design call DC-38). HealthLinc's coach is HealthLinc's own: it has no capability, the result never gates it, and HealthLinc SHALL NOT derive any restriction on it from the result.
 
-For every linked patient, the result SHALL always grant `urgent_escalation`, `billing_contact` and `own_records_access`, whatever the registry status, membership or payment hold. The schema SHALL make those three impossible to withhold. A patient who is active (PG-04) and not on a payment hold SHALL be granted every capability the link's scope allows. A payment hold SHALL withhold only `clinical_messaging_nonurgent`, `scheduling_new_nonurgent` and `medical_ai_consult` (PH-01; rulings 41 and 52), and the schema SHALL refuse the reason `payment_hold` on any other capability. The result SHALL state the link kind.
+For every linked patient, the result SHALL always grant `urgent_escalation`, `billing_contact` and `own_records_access`, whatever the registry status, membership or payment hold. The schema SHALL make those three impossible to withhold. A patient who is active (PG-04) and not on a payment hold SHALL be granted every capability the link's scope allows, except `clinical_messaging_nonurgent` where PG-10 or the paragraph below withholds it. A payment hold SHALL withhold only `clinical_messaging_nonurgent`, `scheduling_new_nonurgent` and `medical_ai_consult` (PH-01; rulings 41 and 52), and the schema SHALL refuse the reason `payment_hold` on any other capability. The result SHALL state the link kind.
 
 `own_records_access` covers the patient's records in openPractice. The result MUST NOT carry an amount, a balance or any detail beyond the codes. HealthLinc SHALL apply the result as given and SHALL NOT derive any other restriction from it, including on records another backend holds; this is a HealthLinc companion-change item. When the request names a registered relying party, the result also carries an assertion that the relying party verifies itself (PG-16).
 
+**Routine clinical questions before practitioner sign-off works (design call DC-70, PROPOSED; Open Question 28).** A clinician's reply to a patient needs the practitioner's sign-off (ruling 158), and no real decision is recorded until openWallet and openSig can do their part (ruling 152). Until the practice manager records, keeping the role used, that openChart records the practitioner's sign-off for the practice with openWallet and openSig, routine clinical questions from the patient app SHALL stay switched off, as a go-live condition: the result SHALL withhold `clinical_messaging_nonurgent` with reason `clinical_routing_unavailable`, because the route by which a clinician's reply reaches the patient is not yet available, and PG-10 and ER-12 state what happens to a routine clinical question meanwhile. The record is audited (PR-10). This SHALL NOT disable clinical routing: `urgent_escalation` stays granted, and an inquiry above `routine` still routes to openChart under ER-07 to ER-09. `scheduling_new_nonurgent`, `administrative_questions`, `billing_contact`, `own_records_access`, the two proposal capabilities and `medical_ai_consult` are unaffected, so the app still books, bills and answers administrative questions.
+
 #### Scenario: An active patient with no hold
-- **WHEN** HealthLinc asks for the capabilities of an active, linked patient with no payment hold
+- **WHEN** HealthLinc asks for the capabilities of an active, linked patient with no payment hold, at a practice whose clinical routing is enabled and whose practitioner sign-off works
 - **THEN** every capability in the link's scope is granted and nothing is withheld
 
 #### Scenario: A patient on a payment hold
 - **WHEN** HealthLinc asks for the capabilities of an active patient on a payment hold
 - **THEN** only `clinical_messaging_nonurgent`, `scheduling_new_nonurgent` and `medical_ai_consult` are withheld, each with reason `payment_hold`, and the three always-granted capabilities are present
+
+#### Scenario: Routine clinical questions before practitioner sign-off works
+- **WHEN** HealthLinc asks for the capabilities of an active, linked patient with no payment hold, at a practice for which no record yet says that openChart records the practitioner's sign-off with openWallet and openSig
+- **THEN** `clinical_messaging_nonurgent` is withheld with reason `clinical_routing_unavailable`, and every other capability in the link's scope is granted, `scheduling_new_nonurgent`, `administrative_questions` and the three always-granted capabilities included
 
 #### Scenario: A hold reason on another capability
 - **WHEN** an `entitlement.result` withholds `administrative_questions` with reason `payment_hold`
@@ -68,7 +74,7 @@ A linked patient who is not active SHALL keep the three always-granted capabilit
 When openPractice cannot evaluate the status, because a dependency is unavailable or a membership entitlement cannot be resolved, the result SHALL still grant the three. It SHALL withhold every other capability with reason `evaluation_unavailable` or `membership_entitlement_unresolved` (fail closed for everything except safety), subject to ruling 50's safeguards below.
 
 Cut-offs other than a payment hold get safeguards too (ruling 50). They apply to `clinical_messaging_nonurgent` and, because ruling 52 gates medical-AI consults like non-urgent clinical messaging, to `medical_ai_consult` (design call DC-31):
-- When the status cannot be evaluated, neither SHALL be withheld for `evaluation_unavailable`. Routine clinical messages still route to openChart, wherever clinical routing is enabled (PG-10).
+- When the status cannot be evaluated, neither SHALL be withheld for `evaluation_unavailable`. Routine clinical messages still route to openChart, wherever clinical routing is enabled (PG-10) and routine clinical questions are switched on under PG-03 (design call DC-70, PROPOSED).
 - A deactivation or a lapsed membership SHALL withhold them only after the patient has been told and a grace period set by an approved, versioned messaging-continuity policy has passed. The medical director approves that policy, and the approval is never opted in for agent signing (DC-28). Until a version is approved, a deactivation or a lapse SHALL NOT withhold them.
 - The grace period SHALL start only when openPractice holds a `notice.ack` with outcome `delivered` for the `access_grace_started` notice, or has recorded a delivery through another channel that the registry's contact rules allow (PR-05), with the channel, the time and who recorded it. Without either, nothing SHALL be withheld, and the office manager owns the undelivered notice as work. The grace period runs its full length from that delivery; when that moves its end, openPractice sends a corrected notice (design call DC-41).
 - A clinician MAY keep them open for continuity of care with a `messaging_continuity` marker recorded in openChart (ER-18). While the marker is valid, neither SHALL be withheld for a deactivation or a lapse.
@@ -274,7 +280,7 @@ Each inquiry needs one capability, judged on its applied urgency (ruling 41; des
 - A routine clinical inquiry needs `clinical_messaging_nonurgent`.
 - A routine administrative inquiry with topic `billing_statement`, `payment` or `coverage` needs `billing_contact`, and one with topic `records_request` needs `own_records_access`. Any other routine administrative inquiry needs `administrative_questions`.
 
-An inquiry that needs a withheld capability SHALL be rejected with `capability_withheld` and coded reasons, and HealthLinc SHALL show the patient its emergency guidance and the paths that are always available (companion item). An inquiry with applied urgency above `routine` SHALL never be rejected for a withheld capability (ER-09).
+An inquiry that needs a withheld capability SHALL be rejected with `capability_withheld` and coded reasons, and HealthLinc SHALL show the patient its emergency guidance and the paths that are always available (companion item). An inquiry with applied urgency above `routine` SHALL never be rejected for a withheld capability (ER-09). While PG-03 keeps routine clinical questions switched off until practitioner sign-off works, a routine clinical inquiry SHALL be rejected with `capability_withheld` and reason `clinical_routing_unavailable`, and HealthLinc shows the patient that the practice does not yet take clinical questions in the app, its emergency guidance, and the paths that stay available, booking and administrative questions included (companion item; design call DC-70, PROPOSED).
 
 An inquiry with `human_requested` set, because the patient asked for a person or said an answer did not answer the question, SHALL route to the lane's staff and never to a read-only answer (ER-10; design call DC-36).
 
@@ -307,6 +313,10 @@ Clinical inquiry intake, and intake of any inquiry whose applied urgency is `urg
 #### Scenario: Clinical routing is disabled
 - **WHEN** an urgent clinical inquiry arrives at a deployment whose clinical routing is disabled
 - **THEN** it is refused with `clinical_routing_unavailable`, HealthLinc receives `guidance.instruct` with that cause for the inquiry, and the office manager owns an exception that holds no PHI
+
+#### Scenario: A routine clinical question before practitioner sign-off works
+- **WHEN** an active patient with no hold submits a routine clinical inquiry at a practice whose clinical routing is enabled but for which no record yet says that openChart records the practitioner's sign-off
+- **THEN** openPractice rejects it with `capability_withheld` and reason `clinical_routing_unavailable`, and HealthLinc shows that the practice does not yet take clinical questions in the app, its emergency guidance and the paths that stay available; a priority or urgent clinical inquiry from the same patient is accepted and routed to openChart
 
 ### Requirement: PG-11 Administrative replies are relayed to HealthLinc with attribution
 openPractice SHALL relay each administrative reply to HealthLinc as `reply.relay`, into the reply path the inquiry named. It SHALL track the reply until HealthLinc answers `reply.ack` with `delivered`.
