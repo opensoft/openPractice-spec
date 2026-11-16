@@ -109,7 +109,7 @@ When the payer or clearinghouse accepts a claim, openPractice SHALL post `claim_
 
 A charge line's correction under CG-08 SHALL NOT reverse a `claim_accepted` entry; only these rules move it.
 
-For a claim recorded through the manual path, these entries SHALL post when staff record its acceptance or rejection (CP-04). A claim to a later coverage position SHALL post nothing on acceptance or rejection, because the amount it asks for already moved to that coverage's payer receivable as `payer_share_transfer` (RM-07). None of these events SHALL create revenue (AI-12).
+For a claim recorded through the manual path, these entries SHALL post when staff record its acceptance or rejection (CP-04). A claim to a later coverage position SHALL post nothing on acceptance or rejection, because the amount it asks for already moved to that coverage's payer receivable as `payer_share_transfer` (RM-07). None of these events SHALL create revenue (AI-12). Ruling 165 covers both accounting modes: in customer-detail mode the destination's acceptance journal carries the payer invoice's receivable net of its gross-to-net notes, not this entry's gross amount, because those notes already took the estimate off the invoice, so the receivable net of the estimate is the same in both modes (`define-mvp-practice-foundation` AI-13 as PR #8 amends it; design call CR-15, PROPOSED; PA-7).
 
 #### Scenario: A claim is accepted
 - **WHEN** the clearinghouse accepts a 200.00 claim

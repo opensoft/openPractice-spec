@@ -81,7 +81,7 @@ An amount under dispute, such as a denied amount under appeal or an amount insid
 - **THEN** an `estimate_increase` of 8.00 is recorded when the outcome arrives, and the upheld 4.00 is written off against the allowance by a person under PS-11
 
 ### Requirement: RE-08 Estimates are checked against outcomes, and large misses become work
-At each close, openPractice SHALL compare each cohort's estimates with the final entitlements of the threads that closed in the period. A cohort whose difference exceeds the threshold the approved version states SHALL raise a work item, owned under AM-06 and notifying the practice's accountant (design call CR-18, PROPOSED). The check SHALL change no estimate by itself.
+At each close, openPractice SHALL compare each cohort's estimates with the final entitlements of the threads that closed in the period, leaving out the estimate of any line reversed under CG-08, so that a corrected service is counted once (design call CR-102, PROPOSED). A cohort whose difference exceeds the threshold the approved version states SHALL raise a work item, owned under AM-06 and notifying the practice's accountant (design call CR-18, PROPOSED). The check SHALL change no estimate by itself.
 
 #### Scenario: A cohort runs high
 - **WHEN** a payer-class cohort's estimates exceed what closed threads actually received by more than the version's threshold
