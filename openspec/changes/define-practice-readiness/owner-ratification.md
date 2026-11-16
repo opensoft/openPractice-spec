@@ -38,7 +38,7 @@ Each amendment belongs to the owning change. Its disposition is recorded here; t
 - Handoff shape: _pending owner confirmation; design call RD-15 proposes exactly one Speckit feature, with SR-02 and SR-04 built into the shared sign-off record before any sign-off is recorded in production_
 - Design-call dispositions (RD-1 to RD-20, each accepted, changed or rejected): _pending_
 - Tension dispositions (T-1 to T-10): _pending_
-- Rulings 136 to 150, and 161, 164, 165, 184, 185 and 191 to 193, as recorded in `design.md`'s Owner rulings table, checked word for word against the questions and recommendations as they were put to the owner: _pending_
+- Rulings 136 to 150, 161, 164, 165, 184, 185, 191 to 193 and 195 to 197, as recorded in `design.md`'s Owner rulings table, checked word for word against the questions and recommendations as they were put to the owner: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
 Required owner statement:
