@@ -29,7 +29,7 @@ The 20 design calls in `design.md` under "Design calls for owner review" have no
 Each amendment belongs to the owning change. Its disposition is recorded here; this change edits no other change.
 
 - RA-1 (AO-10), RA-2 (ER-09), RA-3 (AO-03), RA-4 (AH-05 exception 1, condition 5) and RA-6 (PR-15) confirmed as adopted in the merged revision of the corrections change, under rulings 148, 143 and 145; RA-5a to RA-5c as carried by PR-15's design call F-7 (PG-05, PG-06, PH-04), with the owner's disposition of F-7; RA-5d covered by F-7: _pending_
-- CA-1 to CA-4, CA-9 and CA-10, applied in the corrections change at `0439321`, confirmed in its merged revision; CA-5 to CA-8, each accepted, changed or rejected, only if their owners come to record counsel's part: _pending_
+- CA-1 to CA-4, CA-9 and CA-10, applied in the corrections change at `0439321`, confirmed in its merged revision; CA-5 to CA-8, each accepted, changed or rejected, only if their owners come to record counsel's part; CA-11, proposed for PR-15, accepted, changed or rejected: _pending_
 
 ## Required Owner Decision
 

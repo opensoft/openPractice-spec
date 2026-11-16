@@ -111,6 +111,7 @@ Each row SHALL state, in the words of its enforcing requirement, what the gate k
 The checklist SHALL show, for each authority its rows name, the named people who hold it, and SHALL show together every authority one person holds (`signer-roles` SR-01). It SHALL mark:
 - each row whose sign-offs were given by one person in more than one role, with the role each sign-off recorded (SR-02);
 - each row whose authority is the practice's accountant or a counsel sign-off that SR-04 covers, as needing a person engaged from outside the practice (SR-04), and, while the accountant's attestation is reopened under SR-04, each accountant row as waiting on its renewal;
+- each accountant or counsel sign-off whose signer matches a party named by an owner link withdrawn as `recorded_in_error` within the last 24 months, with that withdrawal, and each sign-off that SR-04 flags because a tie came to light after it was given (SR-04; design call RD-11, PROPOSED);
 - each rule that needs two different people, or that loses its meaning when one person signs both sides, where one person now holds both sides, and whether a one-person alternative is in force for it (SR-03);
 - each chain that collapses onto one person, as a warning that changes nothing at runtime: wherever ER-09's escalation of a tracked alert can reach nobody but the alert's own recipient, as ER-09 records it (its design call DC-64 in the corrections change): the medical director can be the recipient, as an on-call clinician or as ER-13's recipient for an hour with no on-call clinician rostered, and the routing-clock policy names no covering clinician, or the covering clinician it names is that recipient too, or everyone the escalation would add cannot be reached at all, being offboarded or having no registered mobile approver device, or no medical director assignment is in effect and the only active entry of the clinician or medical director type is the alert's own recipient (ER-08, ER-09, ER-13, and ER-09's design call DC-67 in the corrections change; ruling 143 orders this warning); or an owner of work whose named cover under WI-05 does not exist.
 
@@ -131,6 +132,10 @@ The checklist SHALL also list each use of a one-person alternative and each sign
 #### Scenario: A reopened attestation
 - **WHEN** an owner link is ended after the outside accountant attested
 - **THEN** each accountant row shows that the accountant's attestation is reopened and that new accountant sign-offs wait until the accountant confirms the owners again (SR-04)
+
+#### Scenario: A sign-off flagged when a tie comes to light
+- **WHEN** an owner link that names the outside accountant who approved the D8 policy is recorded after the approval, dated from before it
+- **THEN** the D8 row shows that approval as flagged, with the tie and the exception it raised (SR-04; design call RD-11, PROPOSED)
 
 #### Scenario: The covering clinician is the medical director
 - **WHEN** the only clinician on the on-call roster is the medical director, and the routing-clock policy names the medical director as the covering clinician
