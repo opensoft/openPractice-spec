@@ -101,9 +101,9 @@ The snapshot's confidential-communication instructions SHALL stay in the snapsho
 ### Requirement: EB-07 Publication is reliable, idempotent and version-ordered per link
 openPractice SHALL write each `demographics.updated` message to an outbox in the same transaction as the change that caused it, and deliver it asynchronously. Every retry SHALL reuse the original `message_id`. The receiver SHALL compare `demographic_version` with the last version applied on that `link_id`, and SHALL acknowledge with exactly one result:
 - `applied` when the version is greater than the last applied version;
-- `duplicate` when the `message_id` was already applied, or when the same version arrives with identical content under a new `message_id`;
+- `duplicate` when the `message_id` was already applied, or when the same version arrives with an identical `snapshot` under a new `message_id`, whatever its provenance, because a republish carries a different `provenance.reason` (design call F-24, PROPOSED);
 - `stale` when the version is lower, in which case nothing changes;
-- `rejected` when the same version arrives with different content, when the MAJOR version is unsupported, or when the link is revoked, superseded or unknown;
+- `rejected` when the same version arrives with a different `snapshot`, when the MAJOR version is unsupported, or when the link is revoked, superseded or unknown;
 - `identity_review` when the link is in review or the update is held.
 
 openPractice SHALL record every acknowledgement and SHALL show staff any `rejected` or `identity_review` result on the patient record. An undelivered message SHALL become work owned by a Roster entry once the retry policy is exhausted. An EHR outage SHALL NOT block or delay any openPractice registry operation.
@@ -121,11 +121,11 @@ When the receiver acknowledges an update as `identity_review` because it is hold
 - On `link.review_resolved` with outcome `confirmed`, the receiver will have applied the latest held snapshot. openPractice SHALL resume, publishing the current snapshot if it is newer than the applied version.
 - On `demographics.hold_rejected`, openPractice SHALL keep the link suspended, record the rejection, and present it as work. Delivery resumes only after an authorized user either corrects the field, which publishes a new version, or re-asserts the value with reason `reassertion_after_hold_rejected`, which publishes the current snapshot for a fresh review.
 
-Whether or not openPractice suspended delivery for a held update, on any `link.review_resolved` with outcome `confirmed` whose `applied_version` is lower than openPractice's current demographic version for that patient, or that carries no `applied_version`, openPractice SHALL publish the current snapshot on that link with reason `republish_after_review`, so that a version that arrived while the review was open, such as a corrected date of birth, is not left unapplied until the patient next changes (design call F-24, PROPOSED).
+Whether or not openPractice suspended delivery for a held update, and unless delivery on that link is suspended after a `demographics.hold_rejected`, on any `link.review_resolved` with outcome `confirmed` whose `applied_version` is lower than openPractice's current demographic version for that patient, or that carries no `applied_version`, openPractice SHALL publish the current snapshot on that link with reason `republish_after_review`, so that a version that arrived while the review was open is not left unapplied until the patient next changes. Where the republished snapshot differs from the one applied in a field the EHR holds for review, such as the date of birth, the EHR holds it and answers `identity_review`, and delivery is suspended as above (design call F-24, PROPOSED).
 
 #### Scenario: A newer version arrives while a review is open
-- **WHEN** a link is in identity review, the EHR's reviewer confirms it against version 3, the snapshot they read, while openPractice has since recorded version 4 with a corrected date of birth, and `link.review_resolved` `confirmed` carries `applied_version` 3
-- **THEN** openPractice publishes version 4's snapshot on that link with reason `republish_after_review`, and the EHR applies it
+- **WHEN** a link is in identity review, the EHR's reviewer confirms it against version 3, the snapshot they read, while openPractice has since recorded version 4 with a corrected legal name, and `link.review_resolved` `confirmed` carries `applied_version` 3
+- **THEN** openPractice publishes version 4's snapshot on that link with reason `republish_after_review`, and the EHR applies it; had version 4 corrected the date of birth instead, the EHR would hold it and answer `identity_review`, and openPractice would suspend delivery on that link
 
 #### Scenario: Two versions are held and then confirmed
 - **WHEN** the EHR holds version 5, which changes the date of birth, and also receives version 6 before the review ends, and the reviewer then confirms
