@@ -60,6 +60,7 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
   - zero or more coverages, prioritized and versioned.
 
   It also defines exact-match search before create; a tamper-evident audit of every change and read; deactivation that still lets services already given be charged; and a tier-4 hard delete limited to records created in error with no linked activity. Such records sit outside every retention record family, and the removal scope is stated exactly. Fixtures are synthetic only.
+- **Feature 1 PR-15 scope.** Includes the shared party and role model, verified exact-match reuse, confidentiality and role-scoped audit, and the guarded same-person link, unlink and duplicate-deactivation operations together. It includes the human authority and owned review those paths need. The registry's synthetic acceptance exercises conflicting and indeterminate dependency states. Each later owning feature qualifies its live connection before activation.
 - **`ehr-boundary`.** Adds:
   - links as (issuer, namespace, value) triples with a configured issuer on each side;
   - one canonical schema per EHR contract, identified by digest;

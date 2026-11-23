@@ -10,6 +10,8 @@ The ⚑ design calls were ruled by Brett Heap on 2026-11-14 and are recorded in 
 
 ## Required Validation Evidence
 
+[Prepared technical validation and paired revision evidence](ratification-evidence.md).
+
 - OpenSpec version: _pending_
 - Validation command: `openspec validate define-mvp-practice-foundation --strict`
 - Validation timestamp: _pending_
@@ -39,6 +41,7 @@ The ⚑ design calls were ruled by Brett Heap on 2026-11-14 and are recorded in 
 - Proposed call F-23, conforming to `define-revenue-cycle-core` CR-58, a draft not yet on `main` (an unidentified receipt identified as a payer's payment: the remittance's own postings and the release of its payment total from one or more receipts, at its posting or at a later link, with any shortfall left in clearing or made work, AI-13), accepted, changed or rejected: _pending_
 - Proposed call F-24, a republish of the current snapshot with reason `republish_after_review` after any confirmed review that applied an older version (EB-08), accepted, changed or rejected: _pending_
 - Proposed call F-25, conforming to `define-revenue-cycle-core` CR-101, a draft not yet on `main` (a write-off of an amount no accepted claim billed reaches the unbilled control account in summary-journal mode, and needs no posting of its own in customer-detail mode; AI-15, AI-13), accepted, changed or rejected: _pending_
+- Proposed calls F-26 to F-28 for Feature 1 (active-edge and split protection, scoped patient-role hard deletion, and first-release authority and dependency handling) accepted, changed or rejected: _pending_
 - Decision: _pending; must be exactly `APPROVED UNCONDITIONALLY`_
 
 Required owner statement:

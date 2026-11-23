@@ -15,6 +15,10 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 
 ## Product Acceptance Evidence
 
+- Feature 1 evidence for tier-4 link, unlink and duplicate deactivation, alternate-path and split behavior, persistent own-record conflicts, independently authorized pair-specific release, and refusal of generic mutation paths: _pending_
+- Patient-role hard-delete evidence for separately authorized shared facts, redacted patient audit and tombstone, identity history and indeterminate evidence refusal: _pending_
+- Registry role and review-work evidence, plus linked synthetic tests and later owning-feature activation evidence for EHR, gateway, appointments, charge and claim effects: _pending_
+
 - Requirement and scenario traceability for `patient-registry`: _pending_
 - One party per person (PR-15): roles and links, never a second person record; agents and integrations not parties; no automatic merge, and no merge at all, only a reversible same-person link; matching evidence before an existing party gains the patient role; confidential-communication instructions for every role; review work after a death; own-record money, coverage and sign-off actions decided by another human roster entry or an agent the actor does not sponsor, or under the recorded one-person alternative with its notice to the outside accountant, which waits while the roster holds no outside accountant (rulings 141 and 144); same-person groups that move nothing and can be ended, with restrictions crossing them and reaching the EHR snapshot and gateway notices as flags only, alternate channels never crossing, own-record treatment of link acts, the double-billing safeguard from the moment of linking, and a second signer for a duplicate deactivation, duplicate deactivation only under its preconditions, nothing retired while the EHR has its own duplicate, one encounter never charged on both records, crossing restrictions kept until the end-of-link review, the safeguard's hold escalating at the filing threshold, and the practice's owners recorded as dated links: _pending_
 - Requirement and scenario traceability for `ehr-boundary`: _pending_
