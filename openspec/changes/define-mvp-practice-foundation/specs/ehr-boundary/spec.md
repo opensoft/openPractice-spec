@@ -18,12 +18,12 @@ Each openPractice deployment, and each EHR deployment that links to openPractice
 - **WHEN** two openChart deployments each have a patient `OC-PAT-00001` and both are linked to one openPractice deployment
 - **THEN** openPractice holds two distinct links, distinguished by their openChart issuers, and never treats them as the same patient
 
-### Requirement: EB-03 Each EHR contract has one canonical schema identified by digest
+### Requirement: EB-03 Each EHR contract version has one canonical schema identified by digest
 The canonical message schemas SHALL be these two files in this change's `contracts/` directory:
 - `openpractice-ehr-patient-link-1.0.schema.json`
 - `openpractice-ehr-clinical-facts-1.0.schema.json`
 
-Each SHALL be identified by the SHA-256 digest of its bytes. Both sides SHALL validate every message against the schema with the recorded digest. Any schema change SHALL produce a new digest, recorded in both this change and the companion openChart change before either side implements it. When this change is archived, the files move to the spec repository's `contracts/` directory, and their digests do not change.
+Each SHALL be identified by the SHA-256 digest of its bytes. Each peer SHALL select the canonical schema by the exact admitted contract name and wire version (EB-10) and validate the complete message against that schema before applying or retaining its content. A digest mismatch, an unavailable schema, or a field outside the selected schema SHALL be a validation failure. Both owning changes SHALL record matching schema digests before either side uses a version. When this change is archived, the files move to the spec repository's `contracts/` directory with their digests intact.
 
 #### Scenario: A message violates the schema
 - **WHEN** a receiver gets a message that fails validation against the canonical schema
@@ -99,11 +99,11 @@ The snapshot's confidential-communication instructions SHALL stay in the snapsho
 - **THEN** the snapshot carries status `inactive` without the reason, and openPractice does not deactivate the EHR's record
 
 ### Requirement: EB-07 Publication is reliable, idempotent and version-ordered per link
-openPractice SHALL write each `demographics.updated` message to an outbox in the same transaction as the change that caused it, and deliver it asynchronously. Every retry SHALL reuse the original `message_id`. The receiver SHALL compare `demographic_version` with the last version applied on that `link_id`, and SHALL acknowledge with exactly one result:
+openPractice SHALL write each `demographics.updated` message to an outbox in the same transaction as the change that caused it, and deliver it asynchronously. Every retry SHALL reuse the original `message_id`. The sender SHALL check the link at dispatch and on retry. Once a terminal transition is recorded, undelivered demographics SHALL be suppressed and no further demographic dispatch authorized for that link. The receiver SHALL compare `demographic_version` with the last version applied on that `link_id`, and SHALL acknowledge with exactly one result:
 - `applied` when the version is greater than the last applied version;
 - `duplicate` when the `message_id` was already applied, or when the same version arrives with an identical `snapshot` under a new `message_id`, whatever its provenance, because a republish carries a different `provenance.reason` (design call F-24, PROPOSED);
 - `stale` when the version is lower, in which case nothing changes;
-- `rejected` when the same version arrives with a different `snapshot`, when the MAJOR version is unsupported, or when the link is revoked, superseded or unknown;
+- `rejected` when the same version arrives with a different `snapshot`, on an admission or validation error under EB-03 and EB-10, or when the link is revoked, superseded or unknown;
 - `identity_review` when the link is in review or the update is held.
 
 openPractice SHALL record every acknowledgement and SHALL show staff any `rejected` or `identity_review` result on the patient record. An undelivered message SHALL become work owned by a Roster entry once the retry policy is exhausted. An EHR outage SHALL NOT block or delay any openPractice registry operation.
@@ -118,22 +118,31 @@ openPractice SHALL record every acknowledgement and SHALL show staff any `reject
 
 ### Requirement: EB-08 A held update suspends publication on its link until it is resolved
 When the receiver acknowledges an update as `identity_review` because it is holding that update, openPractice SHALL suspend demographic delivery on that link. It SHALL keep recording changes and versions locally while suspended.
-- On `link.review_resolved` with outcome `confirmed`, the receiver will have applied the latest held snapshot. openPractice SHALL resume, publishing the current snapshot if it is newer than the applied version.
-- On `demographics.hold_rejected`, openPractice SHALL keep the link suspended, record the rejection, and present it as work. Delivery resumes only after an authorized user either corrects the field, which publishes a new version, or re-asserts the value with reason `reassertion_after_hold_rejected`, which publishes the current snapshot for a fresh review.
 
-Whether or not openPractice suspended delivery for a held update, and unless delivery on that link is suspended after a `demographics.hold_rejected`, on any `link.review_resolved` with outcome `confirmed` whose `applied_version` is lower than openPractice's current demographic version for that patient, or that carries no `applied_version`, openPractice SHALL publish the current snapshot on that link with reason `republish_after_review`, so that a version that arrived while the review was open is not left unapplied until the patient next changes. Where the republished snapshot differs from the one applied in a field the EHR holds for review, such as the date of birth, the EHR holds it and answers `identity_review`, and delivery is suspended as above (design call F-24, PROPOSED).
+- A `link.review_resolved` message with outcome `confirmed` can resume delivery only if the authenticated sender is the current resolver under EB-05, the issuer, subject, `link_id` and `review_id` match the outstanding review, and the link is not terminal. The EHR applies only the exact snapshot the reviewer compared and reports its `applied_version`. A newer snapshot the reviewer has not compared is handled only through normal publication and hold rules.
+- On the first valid confirmation, openPractice SHALL publish its current snapshot once with reason `republish_after_review` if `applied_version` is absent or lower than its current demographic version. This rule applies whether or not a held update suspended delivery. An identical snapshot already applied under the same version deduplicates under EB-07, regardless of provenance.
+- On `demographics.hold_rejected`, openPractice SHALL keep the link suspended, record the rejection and present it as work. Delivery resumes only after an authorized user either corrects the field or re-asserts the value with reason `reassertion_after_hold_rejected` for a fresh review. A confirmation or replay alone cannot lift this suspension.
+- A replay, an obsolete or mismatched review or resolver, and a confirmation on a revoked or superseded link SHALL cause no demographic state change or publication. EB-05's revocation precedence applies to both the resolution and its outbox effects. Commit the resolution and any republication outbox entry together, and suppress undelivered demographic entries under EB-07 if the link becomes terminal before dispatch.
 
 #### Scenario: A newer version arrives while a review is open
-- **WHEN** a link is in identity review, the EHR's reviewer confirms it against version 3, the snapshot they read, while openPractice has since recorded version 4 with a corrected legal name, and `link.review_resolved` `confirmed` carries `applied_version` 3
-- **THEN** openPractice publishes version 4's snapshot on that link with reason `republish_after_review`, and the EHR applies it; had version 4 corrected the date of birth instead, the EHR would hold it and answer `identity_review`, and openPractice would suspend delivery on that link
+- **WHEN** the EHR confirms the exact version 3 snapshot the reviewer compared, while openPractice has since recorded version 4
+- **THEN** version 3 is applied by the confirmation, openPractice republishes version 4 once with `republish_after_review`, and the EHR handles it through the normal checks, holding a changed date of birth for review
 
-#### Scenario: Two versions are held and then confirmed
-- **WHEN** the EHR holds version 5, which changes the date of birth, and also receives version 6 before the review ends, and the reviewer then confirms
-- **THEN** the EHR applies version 6, openPractice resumes delivery, and no deadlock occurs
+#### Scenario: Two versions are held and only one is compared
+- **WHEN** the reviewer compares a held version 5 and confirms it while a newer held version 6 was not compared
+- **THEN** the EHR applies only version 5 in the confirmation and reports `applied_version` 5. Version 6 can only apply through its ordinary publication path and its applicable review checks
+
+#### Scenario: A valid confirmation has no applied version
+- **WHEN** a matching valid confirmation omits `applied_version` and publication is otherwise allowed
+- **THEN** openPractice republishes its current snapshot once and the EHR deduplicates it if that version and snapshot were already applied
+
+#### Scenario: A late, repeated or terminal confirmation arrives
+- **WHEN** a confirmation names a completed or different review, is repeated, or arrives after the link was revoked or superseded
+- **THEN** it does not resume delivery or enqueue an additional snapshot, and queued undelivered demographics on a terminal link stay suppressed
 
 #### Scenario: A held date of birth is rejected
-- **WHEN** the EHR sends `demographics.hold_rejected` for held versions 5 and 6
-- **THEN** openPractice keeps the link suspended and shows the rejection to staff, and delivery resumes only after a correction or an explicit re-assertion
+- **WHEN** the EHR sends `demographics.hold_rejected` and a subsequent confirmation arrives without an authorized correction or re-assertion
+- **THEN** openPractice keeps the link suspended and shows the rejection to staff
 
 ### Requirement: EB-09 Correction requests from the EHR are received and resolved, never auto-applied
 openPractice SHALL accept `demographics.correction_requested` messages from a linked EHR, proposing a change to legal name or date of birth that originated from EHR staff or an intake submission. It SHALL answer each with `correction.ack` result `received`, and present it as work to authorized staff. It MUST NOT apply a correction request automatically.
@@ -166,12 +175,28 @@ A correction request that arrives through a link openPractice holds in identity 
 - **WHEN** the work item of a correction request held with an open identity review reaches its due time before the review resolves
 - **THEN** the item is raised to the owner's cover and to the controller as any other is, the review not having paused its clock, and still no one can accept or decline the request until the review resolves the link
 
-### Requirement: EB-10 The EHR contracts are versioned and compatible within a MAJOR version
-The contracts `openpractice-ehr-patient-link` and `openpractice-ehr-clinical-facts` SHALL carry a `MAJOR.MINOR` version, starting at `1.0`. Implementations are compatible exactly when they share the same MAJOR version. Additive changes SHALL increment MINOR. A breaking change SHALL require a new MAJOR version, a new schema digest, and a documented migration path. A receiver SHALL refuse a message whose MAJOR version it does not support, with reason `unsupported_major_version`, rather than partially applying it.
+### Requirement: EB-10 Peers admit exact EHR wire versions and schema digests
+The `openpractice-ehr-patient-link` and `openpractice-ehr-clinical-facts` contracts SHALL carry a `MAJOR.MINOR` wire version. Version `1.0` is initially the only admitted version of each contract. For every peer, each side SHALL record the enabled contract name, exact version and verified canonical schema digest. Send only a version with a matching digest explicitly admitted by both peers. The version and digest pairing may be configured for the authenticated peer. A matching MAJOR alone gives no admission.
+
+The receiver SHALL authenticate the peer, select the agreed version and digest before applying or retaining the message content, and validate the whole message under EB-03. It SHALL refuse a structurally valid version marker with an unsupported MAJOR as `unsupported_major_version`. A malformed marker, unadmitted MINOR of a supported MAJOR, missing or mismatched digest pairing, or invalid payload SHALL be refused as `schema_invalid`. Refusals SHALL produce no domain effect or retention of rejected clinical content. An open value in an otherwise valid, admitted version, such as EB-15's `retraction_reason`, follows that field's documented fallback and does not admit any new wire version.
+
+An additive change SHALL introduce a new MINOR and a newly pinned schema. A breaking change SHALL introduce a new MAJOR, a newly pinned schema and a documented migration path. Keep the mutually admitted old version available for continuity until both peers explicitly admit a replacement, including the ability to send the older admitted retraction shape where it conveys the same withdrawal safely.
 
 #### Scenario: An unsupported major version arrives
-- **WHEN** a receiver that supports only `1.x` receives a `2.0` message
-- **THEN** it rejects the message with `unsupported_major_version` and changes nothing
+- **WHEN** a peer sends `2.0` and the receiver supports only MAJOR 1
+- **THEN** it rejects the version with `unsupported_major_version` and changes nothing
+
+#### Scenario: An additive version was not admitted for this peer
+- **WHEN** a peer admitted only for `1.0` sends `1.1`, with or without any new field
+- **THEN** the receiver rejects it as `schema_invalid` and changes nothing
+
+#### Scenario: A peer version lacks matching schema bytes
+- **WHEN** the version marker is supported but the authenticated peer has no matching admitted digest or the canonical bytes fail their digest check
+- **THEN** neither side uses that pairing, and an incoming message is rejected as `schema_invalid` before domain processing
+
+#### Scenario: A pinned version gains an unrecognized field
+- **WHEN** an admitted `1.0` retraction contains an extra envelope or payload field outside its canonical schema
+- **THEN** it is rejected as `schema_invalid` without preserving that field or applying the retraction
 
 ### Requirement: EB-11 No direct database access across the EHR boundary
 openPractice and the EHR SHALL exchange links, demographic messages and clinical facts only through the versioned contracts. Neither system SHALL read or write the other's database or tables, even when both run on the same Frappe site.
@@ -223,9 +248,9 @@ openPractice SHALL apply a retraction only to facts it received under the same `
 
 openPractice SHALL treat both codes alike. For each retraction it SHALL record a dated event citing the EHR as its source, stop using every referenced fact for any new charge, hold any unfinalized charge built from them as work owned by a Roster entry, and, for a claim already submitted with them, make a corrected-claim or voided-claim action available to staff, who decide which applies (F-4). It SHALL drive any corrected or voided claim through its own claim workflow, and MUST NOT edit the frozen copy of a claim as submitted. For the two defined codes only, it SHALL keep the code as given and show `withdrawn` as "withdrawn by the EHR" with no reason. It MUST NOT infer, record or show a cause the code does not state. An undefined value is never kept: it SHALL appear in no record, log, diagnostic or stored copy of the message, and where openPractice keeps a copy of a received message, `withdrawn` replaces the undefined value before the copy is kept.
 
-`retraction_reason` is an open code: any lowercase code is schema-valid, and this version defines two. A code openPractice does not define, which a later MINOR version could add, SHALL be applied as `withdrawn`, never refused or dropped, and the retraction SHALL be recorded exactly as a `withdrawn` one, so nothing marks which retraction carried it (F-2, PROPOSED). Such a message validates against the pinned schema, so openPractice never applies a message that fails it, and EB-03 keeps no exception. Refusing the retraction would leave openPractice billing a fact the EHR has withdrawn, while `withdrawn` has the same billing effect as every other code and reveals nothing. The schema still refuses `entered_in_error` on a retraction that names an Encounter or more than one resource.
+`retraction_reason` is an open code: an otherwise valid message in an admitted wire version may carry a schema-valid code outside the two defined values. A code openPractice does not define for that version SHALL be applied as `withdrawn`, never refused or dropped, and the retraction SHALL be recorded exactly as a `withdrawn` one, so nothing marks which retraction carried it (F-2, PROPOSED). Such a message validates against the pinned schema, so openPractice never applies a message that fails it, and EB-03 keeps no exception. Refusing the retraction would leave openPractice billing a fact the EHR has withdrawn, while `withdrawn` has the same billing effect as every other code and reveals nothing. The schema still refuses `entered_in_error` on a retraction that names an Encounter or more than one resource.
 
-**Undefined codes are reported in aggregate (F-2, PROPOSED).** openPractice SHALL raise one integration exception for each period in which it received at least one undefined code. The exception SHALL hold only the period and the number of such retractions: no message, patient, link, encounter or fact identifier, and not the code's value, so it cannot single out the encounters whose retractions carried the code. It SHALL be routed only to the integration operator, the person the practice names to run its EHR integration, and never to a staff work queue, a patient record or a report. It means the publisher is sending codes outside the contract. The operator checks whether a governed MINOR version has defined a new code, in which case openPractice re-pins to that version, and otherwise tells the publisher's operator to stop sending it. The period is a policy value, PROPOSED as one calendar day.
+**Undefined codes are reported in aggregate (F-2, PROPOSED).** openPractice SHALL raise one integration exception for each period in which it received at least one undefined code. The exception SHALL hold only the period and the number of such retractions: no message, patient, link, encounter or fact identifier, and not the code's value, so it cannot single out the encounters whose retractions carried the code. It SHALL be routed only to the integration operator, the person the practice names to run its EHR integration, and never to a staff work queue, a patient record or a report. It means the publisher is sending codes outside the contract. The operator checks the publisher's use of the admitted code set. A later MINOR, if applicable, may be adopted only by the explicit paired version and digest admission in EB-10. The period is a policy value, PROPOSED as one calendar day.
 
 **Companion expectation.** The publisher, openChart under `opensoft/openChart-spec` change `define-openpractice-boundary`, SHALL send only the two defined codes until a governed MINOR version defines another, and never a code that states a cause. It adopts this when it re-pins to this contract's digest.
 
@@ -255,7 +280,7 @@ openPractice SHALL treat both codes alike. For each retraction it SHALL record a
 - **WHEN** the EHR delivers a retraction of a fact published under a link that has since been revoked
 - **THEN** openPractice accepts it as pointers only, applies it, and requests no read on that link (ruling 88)
 
-#### Scenario: A reason code from a later MINOR version
+#### Scenario: An admitted retraction carries an undefined reason code
 - **WHEN** a retraction carries a well-formed reason code that openPractice does not define
 - **THEN** the message validates, openPractice applies and records it exactly as a `withdrawn` retraction, bills nothing the EHR withdrew, keeps the code's value in no record, log, diagnostic or stored copy, and counts it only in that period's aggregate exception to the integration operator
 

@@ -63,7 +63,7 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
 - **Feature 1 PR-15 scope.** Includes the shared party and role model, verified exact-match reuse, confidentiality and role-scoped audit, and the guarded same-person link, unlink and duplicate-deactivation operations together. It includes the human authority and owned review those paths need. The registry's synthetic acceptance exercises conflicting and indeterminate dependency states. Each later owning feature qualifies its live connection before activation.
 - **`ehr-boundary`.** Adds:
   - links as (issuer, namespace, value) triples with a configured issuer on each side;
-  - one canonical schema per EHR contract, identified by digest;
+  - a canonical schema per exact admitted EHR version, identified by digest and explicitly paired for each peer;
   - explicit links, with `link_existing` confirmed by a person at tier 2;
   - identity review with a single resolver, where revocation wins;
   - demographic publication under `openpractice-ehr-patient-link/1.0`, with a link-level suspension while the EHR holds an update;

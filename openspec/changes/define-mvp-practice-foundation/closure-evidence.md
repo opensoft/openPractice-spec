@@ -15,6 +15,10 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 
 ## Product Acceptance Evidence
 
+- Paired exact EHR version and digest admission, rejected extra fields, and current-review and terminal-link dispatch tests: _pending_
+- Queued and retried customer-detail confidentiality checks, delivery-status reconciliation and single-posting evidence: _pending_
+- Owning core handoff or a separately ratified replacement, covering prerequisites and unchanged later acceptance obligations: _pending_
+
 - Feature 1 evidence for tier-4 link, unlink and duplicate deactivation, alternate-path and split behavior, persistent own-record conflicts, independently authorized pair-specific release, and refusal of generic mutation paths: _pending_
 - Patient-role hard-delete evidence for separately authorized shared facts, redacted patient audit and tombstone, identity history and indeterminate evidence refusal: _pending_
 - Registry role and review-work evidence, plus linked synthetic tests and later owning-feature activation evidence for EHR, gateway, appointments, charge and claim effects: _pending_

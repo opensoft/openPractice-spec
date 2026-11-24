@@ -2,7 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:openpractice:contract:openpractice-ehr-patient-link:1.0",
   "title": "openpractice-ehr-patient-link 1.0",
-  "description": "Canonical message schema for the patient-link contract between openPractice and a linked EHR. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation; referenced by digest from opensoft/openChart-spec change define-openpractice-boundary. Every reason is a code; no field carries free text except the patient-reported gender-identity and pronoun text inside a snapshot or correction proposal. A receiver accepts any 1.x message and rejects any other MAJOR with reason unsupported_major_version.",
+  "description": "Canonical message schema for the patient-link contract between openPractice and a linked EHR. Owned by opensoft/openPractice-spec change define-mvp-practice-foundation; referenced by digest from opensoft/openChart-spec change define-openpractice-boundary. Every reason is a code; no field carries free text except the patient-reported gender-identity and pronoun text inside a snapshot or correction proposal. This schema describes exact wire version 1.0. The sending and receiving peers must admit that version with this schema digest before use. EB-10 defines version admission and rejection.",
+  "unevaluatedProperties": false,
   "oneOf": [
     { "$ref": "#/$defs/linkRequest" },
     { "$ref": "#/$defs/linkResult" },
@@ -41,7 +42,7 @@
       "required": ["contract", "contract_version", "message_id", "message_type", "issued_at", "issuer", "link_id", "subject"],
       "properties": {
         "contract": { "const": "openpractice-ehr-patient-link" },
-        "contract_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+        "contract_version": { "const": "1.0" },
         "message_id": { "$ref": "#/$defs/uuid" },
         "message_type": { "type": "string" },
         "issued_at": { "type": "string", "format": "date-time" },
@@ -211,7 +212,7 @@
             "properties": {
               "acked_message_id": { "$ref": "#/$defs/uuid" },
               "demographic_version": { "type": "integer", "minimum": 1 },
-              "result": { "description": "applied: version greater than the last applied on this link. duplicate: message_id already applied, or the same version with identical content under a new message_id. stale: version lower than the last applied; nothing changes. rejected: same version with different content, unsupported MAJOR, or a revoked, superseded or unknown link. identity_review: the link is in review or this update is held; review_id names the review.", "enum": ["applied", "duplicate", "stale", "rejected", "identity_review"] },
+              "result": { "description": "applied: version greater than the last applied on this link. duplicate: message_id already applied, or the same version with an identical snapshot under a new message_id, regardless of provenance. stale: version lower than the last applied; nothing changes. rejected: same version with a different snapshot, version admission or schema failure under EB-03 and EB-10, or a revoked, superseded or unknown link. identity_review: the link is in review or this update is held; review_id names the review.", "enum": ["applied", "duplicate", "stale", "rejected", "identity_review"] },
               "review_id": { "$ref": "#/$defs/uuid" },
               "review_reason": { "$ref": "#/$defs/reviewReason" },
               "reject_reason": { "$ref": "#/$defs/rejectReason" }

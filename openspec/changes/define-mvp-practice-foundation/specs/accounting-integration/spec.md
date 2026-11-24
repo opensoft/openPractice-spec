@@ -60,7 +60,7 @@ Delivering the same posting or line again SHALL leave exactly one destination do
 
 #### Scenario: A delivery times out
 - **WHEN** posting an invoice times out without a response
-- **THEN** the adapter queries the destination by the key, records the existing document if one exists, and creates one only if none exists
+- **THEN** the adapter queries the destination by the key, records the existing document if one exists, and creates one only if none exists and dispatch passes AI-10
 
 #### Scenario: A period-lock refusal is corrected
 - **WHEN** a released posting is refused because the destination closed its period
@@ -94,7 +94,8 @@ The system SHALL track delivery state separately from the frozen batch content, 
 - The recorded or sync timestamp SHALL be stored only as delivery state and MUST NOT be used as an accounting date.
 - Transient failures retry with backoff and the same key.
 - Indeterminate outcomes are resolved by lookup.
-- A permanent failure becomes work owned by a Roster entry. It is resolved by redelivering the unchanged posting after the destination-side cause is fixed, or by a superseding posting in a later batch.
+- A permanent failure becomes work owned by a Roster entry. It is resolved by redelivering the unchanged posting after the destination-side cause is fixed, or by a superseding posting in a later batch. Either delivery remains subject to AI-10.
+- A dispatch hold under AI-10 SHALL be recorded in delivery state separately from the frozen batch and its recorded outcome. A held posting SHALL NOT be dispatched while the hold stands. Record the posting, decision time, coded reason, and any lookup and resolution without storing restricted field values in work or diagnostics.
 
 #### Scenario: The destination rejects a posting
 - **WHEN** the destination permanently rejects a posting because its target account was archived there
@@ -137,17 +138,40 @@ The customers created by this contract derive from openPractice medical billing.
 - **Guarantor accounts**, for patient balances. These include self-pay and direct-pay healthcare charges (FD-4), which are medical billing. Each SHALL be keyed by its opaque guarantor account number.
 - **Payers**, for insurance balances. Each SHALL be identified by payer name and payer identifier.
 
-This contract SHALL create customer records only in `customer-detail` mode, which requires a satisfied BAA gate (AI-14). There, a guarantor-account customer MAY carry the guarantor's name, billing address and billing contact, the minimum necessary for billing. Where any confidential-communication restriction (PR-05) applies to the guarantor's party, including one that crosses a same-person link or is kept after a link ends (PR-15), the customer SHALL carry no billing address, no billing contact and no profile field that holds an address, a telephone number or an email address; its account number and name may still be carried. When such a restriction starts to apply after the destination has received an address or contact for that customer, openPractice SHALL raise work, owned by a roster entry, to remove them from the destination (design call F-11, PROPOSED). Each customer-detail destination SHALL have a versioned recipient profile, in the single shape AI-23 defines, that lists its permitted customer fields with their purpose, recipient and authority, and every customer-detail batch SHALL record the identifier and version of the profile it used. A field beyond name, billing address and billing contact SHALL be sent only after a new profile version documents that field's purpose, recipient and authority. No profile SHALL permit content that AI-16 excludes.
+This contract SHALL create customer records only in `customer-detail` mode, which requires a satisfied BAA gate (AI-14). There, a guarantor-account customer MAY carry the guarantor's name, billing address and billing contact, the minimum necessary for billing. Where any confidential-communication restriction (PR-05) applies to the guarantor's party, including one that crosses a same-person link or is kept after a link ends (PR-15), the outgoing customer representation SHALL carry no billing address, no billing contact and no profile field that holds an address, a telephone number or an email address; its account number and name may still be carried (design call F-11). Each customer-detail destination SHALL have a versioned recipient profile, in the single shape AI-23 defines, that lists its permitted customer fields with their purpose, recipient and authority, and every customer-detail batch SHALL record the identifier and version of the profile it used. A field beyond name, billing address and billing contact SHALL be sent only after a new profile version documents that field's purpose, recipient and authority. No profile SHALL permit content that AI-16 excludes.
+
+Before every customer-detail send or retry, openPractice SHALL check each posting against the current effective confidential-communication restrictions on every applicable guarantor. Check applicability and restrictions from current authoritative state at dispatch authorization. The authorization and handoff to transport SHALL be ordered with effective restriction changes so that a restriction effective before handoff blocks the fields it bars, including after release or retry scheduling. If applicability or the effective state cannot be established, or the posting contains fields that have become restricted, openPractice SHALL hold the affected posting without dispatching it. If a transport request may already have left openPractice, its outcome SHALL be resolved before deciding how to proceed.
+
+For a held posting containing barred fields, openPractice SHALL preserve the frozen content, its digest and its key. It SHALL handle the outcome as follows:
+- If authoritative evidence establishes that the original was never delivered and no prior attempt can still take effect, an authorized signer MAY release a redacted replacement in a later batch under AI-06. The replacement SHALL use a new posting identifier and idempotency key and a `supersedes` link under AI-05. The original SHALL remain held until supersession is recorded and SHALL never be dispatched after supersession.
+- An indeterminate outcome SHALL be checked by opaque key as required by AI-05 and AI-07. Until the original's outcome is established, neither the original nor a replacement SHALL be sent. A lookup that cannot exclude a still-pending or late commit does not establish non-delivery.
+- If the destination already received fields that are now barred, including when lookup confirms an indeterminate posting took effect, openPractice SHALL record the destination reference where available and raise tracked removal work owned by a Roster entry. The work SHALL track removal of the barred fields to a confirmed outcome or an unresolved exception. The same financial posting SHALL NOT be replaced or replayed to remove fields.
 
 No guarantor or patient name, address or contact SHALL reach a destination whose BAA gate is not satisfied, and `summary-journal` mode SHALL create no customer record (AI-15). This requirement governs only the customers this contract creates. Customer and party roles, and the customer records that other routes create in the same destination, are governed by change `define-customer-financial-data-boundaries` (AI-22).
 
-#### Scenario: Self-guarantor patient after the BAA gate
-- **WHEN** a self-pay patient who is their own guarantor is invoiced on a destination in customer-detail mode with a satisfied BAA gate
+#### Scenario: Unrestricted self-guarantor patient after the BAA gate
+- **WHEN** an unrestricted self-pay patient who is their own guarantor is invoiced on a destination in customer-detail mode with a satisfied BAA gate
 - **THEN** the destination customer carries the guarantor account number, name, billing address and billing contact, and nothing else about the person
 
 #### Scenario: A guarantor with a mail restriction
 - **WHEN** a guarantor whose party carries `no_home_mail` is invoiced on a destination in customer-detail mode
 - **THEN** the customer carries the guarantor account number and name, and no billing address or contact, so the destination holds no channel the restriction bars
+
+#### Scenario: A restriction takes effect after release and before dispatch
+- **WHEN** a released customer-detail posting contains guarantor contact fields and a confidentiality restriction takes effect before its first send or scheduled retry
+- **THEN** the send or retry is blocked, the affected posting is held with its frozen content, digest and key intact, and a redacted replacement can be released with a new key and a supersedes link only if the original cannot take effect
+
+#### Scenario: A restricted posting has an indeterminate outcome
+- **WHEN** a customer-detail request with guarantor contact fields has timed out and a new restriction applies
+- **THEN** openPractice looks up the original by its opaque key, sends neither posting while the outcome is unresolved, and, if delivery is confirmed, records the destination reference and raises tracked removal work without duplicating the financial posting
+
+#### Scenario: A new restriction affects contact fields already delivered
+- **WHEN** a new restriction applies after a destination received the guarantor's contact fields
+- **THEN** removal work records the affected destination and tracks the outcome without sending the barred values or replaying the financial posting
+
+#### Scenario: Restriction state cannot be established at dispatch
+- **WHEN** a customer-detail send or retry cannot establish a guarantor's current effective restrictions
+- **THEN** it is held without transmitting the posting, with the hold recorded separately from the frozen content
 
 #### Scenario: Destination in summary-journal mode
 - **WHEN** the same patient's charge is posted to a destination in summary-journal mode
@@ -406,7 +430,7 @@ Unless the batch's recipient profile adds the field under AI-10, customer-detail
 - **THEN** the line sent to the destination carries the neutral label `patient_services_revenue`, and the internal category name stays out of the posting
 
 #### Scenario: A parent is guarantor for a child's visit
-- **WHEN** a child's visit is invoiced to a parent's guarantor account in customer-detail mode
+- **WHEN** a child's visit is invoiced to a parent's unrestricted guarantor account in customer-detail mode
 - **THEN** the customer carries the parent's name and billing contact, and no customer field or line carries the child's name
 
 #### Scenario: A recipient profile lists a diagnosis
@@ -530,7 +554,7 @@ Each adapter SHALL pass contract tests covering:
 - the AI-13 events;
 - reconciliation;
 - the absence of PHI in keys and diagnostics;
-- the AI-10 and AI-16 customer-field rules: the BAA gate, the recipient-profile version and the exclusions;
+- the AI-10 and AI-16 customer-field rules: the BAA gate, the recipient-profile version, the exclusions, current-restriction checks at first dispatch and retry, holds when state is unknown, redacted supersession only after established non-delivery, indeterminate lookup and tracked removal after delivery;
 - the absence of customer records in summary-journal mode (AI-15);
 - the AI-22 rules against posting to records the contract does not own and against a second collectible balance;
 - the single deposit poster and `other_route_share` composition (BAB-14), and refund-disbursement matching (AI-17);
