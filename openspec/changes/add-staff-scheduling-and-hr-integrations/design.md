@@ -110,3 +110,43 @@ D365 Human Resources commercial pricing (2026): full license $135/user/month, mi
 Microsoft AI Cloud Partner Program benefit packages (Launch $350, Core $925, Advanced $3,000, Expanded $4,125/year) contain NO D365 HR licenses. Relevant contents: Teams Enterprise seats (Launch 5 / Core 15) include Shifts; Business Central Premium seats (Launch 4 / Core 15) include BC's light built-in HR (employee records, qualifications, absence registration). Partner licenses are internal-use only and lapse with membership. Conclusion: partner packages are a cheap integration testbed for the Shifts/Graph adapter, not a production HR path.
 
 Comparison anchor: Frappe HRMS self-hosted is infrastructure-only (~$40/month VPS or Frappe Cloud from $5/site/month) with no per-user fees - the openHR path is ~30x cheaper than D365 HR at 150 staff, which is why it is the primary reference implementation.
+
+## 8. Seam and degraded operation
+
+The seam rule: openPractice owns everything operational and patient-facing; the connected HR system owns everything employment-facing; openPractice caches the minimum employment data needed to run a clinic day. The HR system can be down for days and the visit book, room assignments and gap detection keep working, flagged as stale. openPractice MUST keep operating when the staff-schedule provider is unreachable.
+
+### 8.1 Internal to openPractice
+
+| Data / function | Rationale |
+|---|---|
+| Visit book and visit-type resource model (staff-minutes per role/skill, equipment windows, room turnover) | Patient-facing scheduling never depends on HR availability; this is openPractice-owned mathematics. |
+| Coverage requirements (computed) | Derived from the visit book; no HR read needed to compute demand. |
+| Staff reference cache: worker id, name, role, skill level, certifications with expiry, home clinic | Needed to render the schedule, validate assignments and block credential-expired work even offline. It is a cache, never a master. |
+| Roster and leave snapshot: rolling 28 days roster, 90 days approved leave | A clinic must open Monday morning on Friday's sync. |
+| Staff-to-visit/room assignments | Mirrors ruling 31 of `define-mvp-practice-foundation` (openPractice owns the administrative appointment): assignment to operational work is openPractice data, not HR data. |
+| Gap detection, resolution ladder and triage records | Operational decisions with patient-care consequences; the audit trail lives with the visit book. |
+| Provisional records: manual staff additions, staff-present fallback attendance | Offline survival data, marked provisional and reconciled later. |
+
+### 8.2 External to the HR system
+
+| Data / function | Rationale |
+|---|---|
+| Worker master, employment records, departments | Employment is an HR fact. |
+| Skills and certifications master (source of the cached copy) | Expiration and verification authority sits in HR. |
+| Leave/PTO request and approval workflow | An HR policy decision, not an operational one. |
+| Roster publishing (as-designed), revisions, open-shift fills, swaps | The whole point of the boundary. |
+| Clock events and payroll hours | openPractice consumes as-built for variance; HR/payroll owns pay truth. |
+
+### 8.3 Degradation tiers
+
+- **Tier 0 - connected.** Live reads; `postOpenShift` write-backs land immediately. Sync cadence: polls every 15 minutes, webhooks where the vendor supports them, full reconcile nightly.
+- **Tier 1 - stale cache.** Provider unreachable: run from the snapshot with a staleness badge and timestamp. Gap detection still fires but results carry an uncertainty flag once cache age exceeds TTL (4 hours). Writes queue in an outbox, following the `ehr-boundary` demographic-outbox pattern, and drain on reconnect.
+- **Tier 2 - extended outage (> 24 hours).** Provisional mode: front desk records staff present and walk-in coverage manually, behind a tiered sign-off. Visits never block. Nothing provisional auto-becomes permanent.
+
+### 8.4 Reconciliation on reconnect
+
+1. **HR wins on employment facts.** Worker master, skills, leave, roster and clock events silently overwrite the cache.
+2. **Provisional records never vanish.** They persist as audit entries marked superseded; any provisional record touching patient-care documentation or pay goes to human review, never auto-merge.
+3. **Pay truth is never openPractice's.** Provisional as-built attendance is advisory for variance analytics during the outage; payroll-relevant hours reconcile in the HR/payroll system.
+
+Inverted credential rule: a credential check that silently passes on stale data is worse than one that fails loudly. When the cache is stale beyond TTL, credential validation becomes STRICTER (warns on anything near expiry), never looser.
