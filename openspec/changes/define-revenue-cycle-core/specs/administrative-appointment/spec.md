@@ -111,3 +111,28 @@ In this change, appointment booking SHALL NOT include reminders, a waitlist or s
 #### Scenario: A plan adds reminders
 - **WHEN** a feature plan proposes automatic appointment reminders
 - **THEN** it is out of scope for this change and needs a governed change
+
+### Requirement: AP-10 The demand engine computes timed staffing requirements from appointments
+The scheduler SHALL implement a demand module that expands each booked appointment into staffing requirements by location, role, qualification and time window. It SHALL use the visit-type requirements in effect for the booking, including distinct staff windows within a visit and any defined pre-visit work windows. It SHALL calculate simultaneous requirements from the individual start and end times. Summaries by reporting interval SHALL preserve peak simultaneous requirements as well as staff-minutes.
+
+#### Scenario: Two procedures need the same qualification at the same time
+- **WHEN** two booked procedures at the same site each require one procedure-qualified RN from 09:10 to 09:20
+- **THEN** the demand engine reports two procedure-qualified RNs for that ten-minute window and twenty RN-minutes of work
+
+### Requirement: AP-11 The variance engine compares demand with published, revised and actual staffing
+The scheduler SHALL implement a variance module that consumes the demand module's results and the practice's roster and attendance records. It SHALL track three staffing records for the same location and period:
+
+- **As designed** is the frozen roster published for the period.
+- **As revised** is the current coverage plan, with dated, attributed revisions for callouts, substitutions and other assignments.
+- **As built** is actual attendance reconciled against the coverage plan, with approved worked intervals and any unresolved attendance exceptions.
+
+The variance engine SHALL report revised coverage gaps by time window and qualification and identify the affected visits. It SHALL match replacements against roster eligibility, qualifications, location, availability and other commitments. The practice's coverage policy SHALL order eligible float, per-diem and overtime candidates. A designated staff member SHALL confirm the assignment. The engine SHALL show the change from the published roster to the revised roster and the variance from revised to approved actual hours separately.
+
+#### Scenario: An RN calls out during overlapping procedures
+- **GIVEN** the two procedures in AP-10 have two procedure-qualified RNs on the published roster
+- **WHEN** one assigned RN calls out and one available RN lacks the required procedure qualification
+- **THEN** the variance engine reports a shortage of one qualified RN from 09:10 to 09:20, identifies the competing procedures and excludes the ineligible RN from the candidates
+- **WHEN** the manager assigns an eligible float RN for the whole window
+- **THEN** the revised plan covers the demand and the published roster still shows the original assignment
+- **WHEN** the replacement's approved attendance shows a 09:12 arrival
+- **THEN** the as-built record and variance show the two-minute shortfall against the revised plan, with the original callout and replacement both traceable
