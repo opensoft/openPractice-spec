@@ -292,12 +292,27 @@ openPractice SHALL treat both codes alike. For each retraction it SHALL record a
 - **WHEN** a retraction on one `link_id` references a fact openPractice received under another link or for another subject
 - **THEN** that reference changes nothing, and an integration exception with identifiers only is raised
 
-### Requirement: EB-16 openPractice keeps references and submitted copies, not clinical truth
-openPractice SHALL store references to EHR clinical facts, and SHALL freeze only the copies that a third party will judge, namely the claim as submitted. The EHR SHALL remain the source of truth for every clinical fact. openPractice MUST NOT present a stored copy as the current clinical record.
+### Requirement: EB-16 openPractice retains billing codes and traces charges to EHR facts
+openPractice SHALL retain the diagnosis codes, procedure codes and modifiers it uses to prepare and submit claims. It SHALL handle patient-linked codes as PHI under billing access controls. The EHR SHALL remain the source of truth for the clinical record.
+
+Before making an 837P file available for upload, openPractice SHALL freeze the redacted billing data and the PHI in separate, access-controlled records for that submission. The redacted submission record SHALL hold an opaque pointer to the exact frozen PHI snapshot. openPractice SHALL assemble the complete 837P from those records and retain the values and serialization details needed for byte-for-byte reconstruction, including the envelope control values, ordering and encoding. It SHALL record the SHA-256 digest of the outbound bytes and associate upload evidence with the same frozen submission. Authorized, audited reconstruction SHALL use the frozen records and verify the resulting file against the recorded digest.
+
+For each billing line that relies on EHR facts, openPractice SHALL record the line identifier and the issuer-qualified references and versions of the facts it relied on. This relationship provides provenance for billing review and claim investigation. From a billing line, authorized staff SHALL be able to retrieve the supporting facts under EB-13 through a short-lived, audited read. From a chart fact reference, openPractice SHALL be able to identify every affected billing line and related claim version. Access to the clinical facts and access to the billing record SHALL each follow their own permissions. General logs and diagnostics SHALL observe EB-12.
+
+#### Scenario: A submitted 837P is reconstructed after changes
+- **GIVEN** an 837P was uploaded from frozen billing and PHI records and its outbound digest was recorded
+- **WHEN** an authorized biller reconstructs the submission after patient data has changed or the exporter has been upgraded
+- **THEN** the redacted record resolves to the original frozen PHI snapshot and the reconstructed file matches the uploaded bytes and recorded digest
+
+#### Scenario: A biller reviews the clinical basis of a line
+- **GIVEN** a filed claim line links to a procedure and a supporting diagnosis in openChart through an active patient link
+- **WHEN** an authorized biller requests the supporting facts
+- **THEN** the billing-scoped read resolves the referenced facts for a limited time, records the access, and shows the filed claim values separately from the clinical view
 
 #### Scenario: A clinical fact changes after use
-- **WHEN** an EHR diagnosis is later corrected
-- **THEN** openPractice shows the original as submitted and the correction separately, and overwrites neither
+- **GIVEN** two billing lines relied on the same diagnosis version
+- **WHEN** openChart corrects or retracts that version
+- **THEN** openPractice identifies both lines and their related claim versions, applies EB-15 to the affected work, and preserves each claim as submitted
 
 ### Requirement: EB-17 Manual charge entry is allowed without EHR facts and is marked manual
 openPractice SHALL let authorized staff enter a visit's billing codes manually in three cases:
