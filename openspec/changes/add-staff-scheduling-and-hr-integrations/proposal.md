@@ -4,7 +4,7 @@ Status: draft
 
 openPractice must schedule patient visits against real staffing, but owning staff scheduling inside openPractice duplicates mature HR systems and adds nothing to the product's core value. A research session with the product owner on 2026-11-26, framed around the MedxMSO operating model (10 clinics, roughly 15 staff each), established four facts that this change records as governed requirements:
 
-- **Coverage demand comes from the visit book.** Staffing requirements must be derived from the patient visit calendar: each visit type is converted into staff-minutes per 30-minute interval per role and skill level. Fixed staffing templates are insufficient.
+- **Coverage demand comes from the visit book.** Staffing requirements are derived from each appointment's exact resource windows by location, role and qualification. The 30-minute summaries show both staff-minutes and peak simultaneous demand (AP-10).
 - **Staff rosters have three states, not one.** As-designed (the published roster), as-revised (the day-of coverage plan after callouts), and as-built (reconciled attendance). The variance between states is the signal that feeds gap resolution, payroll and forecasting accuracy.
 - **Staff scheduling lives in external systems.** The worker master, skills and certifications, leave, the roster and the time clock are owned by HR and scheduling systems. openPractice consumes them through one vendor-neutral contract and never owns roster editing.
 - **Reference implementations are our own open-source forks.** openHR (fork of frappe/hrms, GPL-3.0, verified from `license.txt`) and openBooks (fork of frappe/books, AGPL-3.0, verified from `LICENSE`) are companion products, integrated via API only, consistent with the openPractice model of integrating to Frappe apps through their REST APIs.
@@ -13,9 +13,9 @@ Decisions recorded here are research outcomes, not ratification: the change stay
 
 ## What Changes
 
-- **`staff-schedule-provider-contract`.** One versioned contract, `openpractice-staff-schedule-provider/1.0`, defines the boundary to any staff system: worker master with role and skill level, skills and certifications with expirations, leave and PTO, the roster by location and time range, open shifts, and clock events. Adapters reach systems through their public APIs only — no direct database access.
-- **`coverage-requirement-engine`.** openPractice owns demand: appointment types carry duration per staff role, skill-mix requirement, equipment usage windows and room turnover buffers; the engine converts the visit calendar into coverage requirements per interval per role and skill. This is the only scheduling mathematics openPractice owns.
-- **`roster-variance-tracking`.** The three-state model with gap detection: callouts are compared against coverage requirements to produce a concrete deficit (role, skill, interval, minutes), and a resolution ladder is suggested in cost order — float pool, per-diem or cross-trained staff, overtime, then appointment triage as the last resort.
+- **`staff-schedule-provider-contract`.** One versioned contract, `openpractice-staff-schedule-provider/1.0`, defines the boundary to any staff system: worker master with role and skill level, skills and certifications with expirations, leave and PTO, published and revised rosters, open shifts, clock events and HR-approved worked intervals. Adapters reach providers through public APIs.
+- **`coverage-requirement-engine`.** openPractice derives exact staffing demand from visit-type resource windows, including skill requirements and pre-visit work. The demand module can compute its results during an HR outage (AP-10).
+- **`roster-variance-tracking`.** A separate variance module compares demand with as-designed, as-revised and as-built staffing. openHR confirms a replacement and returns the revised roster and approved attendance to openPractice for the MVP callout workflow (AP-11).
 - **`staff-adapter-portfolio`.** Ten built-in integrations, five open source and five commercial, in a defined build order (see `design.md`, section "Adapter portfolio").
 - **`companion-forks`.** openHR and openBooks governance: AGPL/GPL notices preserved, forks kept thin with companion Frappe apps holding MedxMSO-specific doctypes, and generic improvements contributed upstream.
 
@@ -38,13 +38,13 @@ Decisions recorded here are research outcomes, not ratification: the change stay
 - `staff-adapter-portfolio`: the ten-system integration plan and build order.
 - `companion-forks`: openHR (GPL-3.0) and openBooks (AGPL-3.0) fork governance and update cadence.
 
-### Modified Capabilities
+### Dependencies
 
-None. This change references appointment scheduling and the EHR boundary from `define-mvp-practice-foundation` without modifying them.
+The integration builds on the [AP-10 and AP-11 scheduler requirements](https://github.com/opensoft/openPractice-spec/blob/bf9ae403a8195c418f63d0a56b02bbcdd7d14386/openspec/changes/define-revenue-cycle-core/specs/administrative-appointment/spec.md#L115) and the EHR boundary in `define-mvp-practice-foundation`.
 
 ## Impact
 
 - **New external contract:** `openpractice-staff-schedule-provider/1.0` with canonical schema in `contracts/` when authored.
-- **Data:** staff party records in openPractice are links to external systems of record, not copies; visit-type resource requirements are new owned data.
+- **Data:** staff references link to the external system of record, with the minimum operational data cached under the seam rules. openPractice owns visit-type resource requirements.
 - **Licensing:** openHR and openBooks inherit upstream copyleft; fork-compliance obligations are listed in `design.md` and repeated in `tasks.md`.
 - **Runtime:** no runtime code is added by this change.

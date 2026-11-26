@@ -7,8 +7,8 @@ Research conducted 2026-11-26 with the product owner. Sources: Microsoft Learn a
 Staff scheduling in a medical practice is three data states, not one schedule:
 
 1. **As-designed (roster).** The published staff plan, built from forecast visit volume and frozen some window before the shift. Maps to Shifts' shared schedule and Frappe HRMS Shift Assignments/Roster.
-2. **As-revised (coverage plan).** The roster after day-of edits: who picked up a callout, who floated in, who was sent home. Comparing as-designed vs as-revised measures forecasting quality.
-3. **As-built (actual).** Reconciled clock-in/out versus roster. Feeds payroll and cost analysis. Comparing as-revised vs as-built surfaces attendance problems.
+2. **As-revised (coverage plan).** The roster after day-of edits: who picked up a callout, who floated in, who was sent home. Comparing it with as-designed shows the coverage changes made after publication.
+3. **As-built (actual).** HR-approved worked intervals and unresolved attendance exceptions. Comparing approved worked intervals with as-revised shows attendance variance. The HR or payroll system owns payroll hours.
 
 Variance metric: hours variance % = (actual - scheduled) / scheduled. Recurring shortfalls on the same weekdays mean schedule-to-demand failures; recurring overtime tails mean coverage gaps.
 
@@ -19,7 +19,7 @@ Implication for openPractice: the EHR/practice-management layer needs all three 
 Coverage requirements are computed, not templated. Method:
 
 - Each appointment type carries: total duration; duration per staff role (physician, RN, MA, tech — these overlap and differ); skill-mix requirement (minimum nurse level, required certifications); equipment + usage sub-window; room type + turnover buffer; and upfront work (pre-visit labs, eligibility checks) consumed before the slot starts.
-- The engine converts the visit calendar into required staff-minutes per 30-minute interval per role and skill level. This is the timed-task approach from the nursing staffing literature; industry practice assigns processing times per task per visit type.
+- The demand module computes simultaneous staffing requirements from exact start and end times by location, role and qualification (AP-10). Thirty-minute reporting buckets show both staff-minutes and peak simultaneous demand. Two procedures each needing an RN from 09:10 to 09:20 require two qualified RNs during those ten minutes, with twenty RN-minutes in the reporting bucket.
 - Demand is left-skewed and bursty. Staffing exactly to mean demand fails on heavy days, so the model pairs a fixed baseline with a flexible reserve (float pool, per-diem). Research on rostering shows a baseline at average demand is only cost-effective when paired with flexible capacity.
 - Skill mixing: a staff member splits time across visit types in one interval, and the scheduler accounts each piece against the right appointment.
 
@@ -34,15 +34,17 @@ When a callout lands, gap detection compares confirmed staffing against the cove
 
 Backfill is skill-aware: a shortfall of a procedure-trained RN is not covered by any RN. The contract therefore requires skills-and-certifications with expirations so the engine can reject ineligible backfill and block scheduling credential-dependent work after a license lapses.
 
+For the MVP, openPractice can post the open shift. The authorized manager confirms the replacement in openHR, which publishes a roster revision. The variance module applies the confirmed assignment from that revision and later compares it with HR-approved actual attendance (AP-11).
+
 ## 4. Boundary: openPractice never owns rostering
 
 The worker master, skills, leave, roster and clock events are owned by external systems. All scheduling UX (open shifts, swaps, time-off approvals, clock-in) stays there too. openPractice exposes one vendor-neutral contract, `openpractice-staff-schedule-provider/1.0`:
 
 - `getWorkers(location, dateRange)` - master with role, skill level, certifications + expirations.
 - `getLeave(location, dateRange)` - approved PTO, subtracted from capacity before gap detection.
-- `getRoster(location, dateRange, state)` - as-designed and as-revised rosters.
-- `getClockEvents(location, dateRange)` - as-built attendance feed.
-- `getOpenShifts(location, dateRange)` and `postOpenShift(shift)` - write-back for the resolution ladder.
+- `getRoster(location, dateRange, state)` returns the published baseline and revised assignments with source revision identity and effective intervals.
+- `getClockEvents(location, dateRange)` supplies clock events and the HR reconciliation state, including approved worked intervals when available.
+- `getOpenShifts(location, dateRange)` and `postOpenShift(shift)` support the resolution ladder. A posted request remains pending until the provider returns a confirmed assignment in the revised roster.
 
 Conformance tests use synthetic fixtures only. Adapters reach vendors through public APIs (REST/OData/Graph); no direct database access, matching the accounting-integration boundary in `define-mvp-practice-foundation`.
 
@@ -127,7 +129,7 @@ The seam rule: openPractice owns everything operational and patient-facing; the 
 | Gap detection, resolution ladder and triage records | Operational decisions with patient-care consequences; the audit trail lives with the visit book. |
 | Provisional records: manual staff additions, staff-present fallback attendance | Offline survival data, marked provisional and reconciled later. |
 
-### 8.2 External to the HR system
+### 8.2 Owned by the HR system
 
 | Data / function | Rationale |
 |---|---|
@@ -145,7 +147,7 @@ The seam rule: openPractice owns everything operational and patient-facing; the 
 
 ### 8.4 Reconciliation on reconnect
 
-1. **HR wins on employment facts.** Worker master, skills, leave, roster and clock events silently overwrite the cache.
+1. **HR wins on employment facts.** Authoritative worker master, skills, leave, current roster and attendance replace the corresponding cache entries. Preserve the published roster and source revision references for variance. Count an open-shift replacement toward planned coverage once the authoritative roster shows the confirmed assignment.
 2. **Provisional records never vanish.** They persist as audit entries marked superseded; any provisional record touching patient-care documentation or pay goes to human review, never auto-merge.
 3. **Pay truth is never openPractice's.** Provisional as-built attendance is advisory for variance analytics during the outage; payroll-relevant hours reconcile in the HR/payroll system.
 
