@@ -19,6 +19,7 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 - Requirement and scenario traceability for `ehr-boundary`: _pending_
 - Requirement and scenario traceability for `billing-accounting-boundary`: _pending_
 - Requirement and scenario traceability for `accounting-integration`: _pending_
+- Requirement and scenario traceability for `practice-onboarding`: [Feature 5 evidence](#feature-5--practice-onboarding).
 - Administrative sex, gender identity and pronoun independence, with no payer leakage: _pending_
 - Deactivation semantics, and hard-delete refusal on linked activity and active holds: _pending_
 - Every change and every PHI read audited, with no PHI in logs: _pending_
@@ -40,6 +41,18 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 - Date-of-birth hold suspension, correction requests and single-resolver identity review: _pending_
 - Messages validated against canonical schemas at their recorded digests (`contracts/SHA256SUMS`): _pending_
 - Hard-delete removal scope (live data and audit values, PHI-free tombstone, tamper-evident redaction evidence), and verification flagging any audit value missing without a redaction event: _pending_
+
+### Feature 5 — Practice Onboarding
+
+**PracticeLab QA onboarding complete (2026-11-27).** AKS browser job `practicelab-onboarding-browser-cc435355` passed on the public New Practice page using synthetic practices. The browser used normal TLS verification, and the page redirected signed-out users to sign-in. The hosted run used openPractice source `a114558fb97567079b56dc0f2f9452775d04638b`. [PracticeLab New Practice](https://practicelab.opensoft.dev/new-practice) · [Public HTTPS rollout](https://github.com/opensoft/Opensoft-Tenant/pull/474) · [Onboarding rollout](https://github.com/opensoft/Opensoft-Tenant/pull/476)
+
+| Scenario | Requirement | Observed result |
+| --- | --- | --- |
+| Solo create | PO-01, PO-02 | Saved one office and one legal entity as Single practitioner, created its openHR Company, and showed the saved Company identifier after reload. |
+| Existing group link | PO-01, PO-02 | Saved one office and one legal entity as Group, linked the existing openHR Company, and showed the same identifier after reload. The native Company record remained unchanged. |
+| Lost-response retry | PO-03 | The test dropped the response after openHR committed the create. New Practice showed the unresolved connection. Retry recovered the original Company identifier and showed it as connected after reload. Independent native openHR readback found **exactly one Company** by legal entity name and exactly one by stable request ID. Both matched the recovered identifier. |
+
+The connector unit test `test_an_unresolved_retry_does_not_issue_another_create` passed at the deployed source revision. It verifies that a retry makes no second create when reconciliation finds no Company. Acceptance evidence for two overlapping create submissions remains pending.
 
 ## Boundary and Merge Evidence
 

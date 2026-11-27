@@ -425,6 +425,8 @@ Agent signing is opt-in per action type and off by default. Every sign-off recor
 8. Rollback disables a destination or link and holds undelivered work. It never deletes postings, audit records or links.
 9. Archive only after the features land, the root pin bump lands, and `closure-evidence.md` is complete.
 
+Feature 5 (office onboarding and openHR Company setup, Slice 0) may proceed after step 1 in parallel with the other MVP features.
+
 ## Open Questions
 
 Every remaining question is routed in `tasks.md` §3.5 to the feature or gate it blocks.

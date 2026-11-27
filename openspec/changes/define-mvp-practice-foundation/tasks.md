@@ -4,7 +4,7 @@
 - [ ] 1.2 Obtain the owner's unconditional ratification before any Speckit feature is created. On 2026-11-14 the owner ruled for handoff shape A: the ordered multi-feature handoff in section 2, as a stated exception to the workflow protocol's one-feature handoff. The ratification record must still confirm that choice. Acceptance evidence: the owner, not an agent, completes `owner-ratification.md`. That means identity, timestamp, exact revision, strict-validation evidence, the confirmed handoff shape, and the unqualified decision `APPROVED UNCONDITIONALLY`. In the same revision, the owner changes the proposal's `Status` to `ratified`.
 - [ ] 1.3 Compare this change with `opensoft/openChart-spec` change `define-openpractice-boundary` on four things: the canonical schema digests (`sha256sum -c contracts/SHA256SUMS`, matched against the digests openChart cites), the contract identifiers, the namespaces, and the issuer requirements. Acceptance evidence: both revisions compared, each digest pair, and the result, all recorded in `owner-ratification.md`. Any mismatch blocks feature creation.
 
-## 2. Speckit Features That May Follow, In Order (Handoff Shape A)
+## 2. Speckit Feature Handoff (Shape A)
 
 Each feature is gated on task 1.2 and is created from the assembly root `opensoft/openPractice` on its base branch.
 
@@ -35,7 +35,13 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - contract tests run against the clinical-facts canonical schema at its recorded digest;
   - manual entry is marked manual while the capability result is false;
   - the deadline escape is tested, including manual entry only after the EB-17 staff attestation and refusal without it.
-- [ ] 2.5 **Post-MVP: QuickBooks Online adapter, then Business Central adapter.** Each is a separate feature against `openpractice-accounting-integration/1.x` (same MAJOR). Each starts only after the vendor's authentication, API, rate limits, idempotency, data residency, line service dates, cash-basis reporting and BAA availability have been verified and recorded. Gate: task 1.2 and Feature 3 merged. These features are excluded from this change's closure.
+- [ ] 2.5 **Feature 5: office onboarding and openHR Company setup (Slice 0).** Owns PO-01 to PO-03. Gate: task 1.2. This feature can proceed in parallel with Features 1 to 4. Acceptance evidence:
+  - synthetic solo and group setups each save one office and one legal entity, and a group connects to one operating Company;
+  - creating a Company for a new legal entity records the verified identifier, and linking an existing Company records its verified identifier without creating or modifying a Company;
+  - concurrent submissions and a retry after a lost create response resolve to the original Company identifier and leave exactly one Company for the request. An unresolved result retains the setup and prevents another create until reconciliation can determine the outcome.
+  - [x] **PracticeLab QA onboarding complete.** The public HTTPS browser run passed solo create, existing group link, and lost-response retry. Native openHR readback confirmed exactly one Company for the retry request. See [Feature 5 acceptance evidence](closure-evidence.md#feature-5--practice-onboarding).
+  - [ ] Record acceptance evidence for two overlapping submissions of the same create request.
+- [ ] 2.6 **Post-MVP: QuickBooks Online adapter, then Business Central adapter.** Each is a separate feature against `openpractice-accounting-integration/1.x` (same MAJOR). Each starts only after the vendor's authentication, API, rate limits, idempotency, data residency, line service dates, cash-basis reporting and BAA availability have been verified and recorded. Gate: task 1.2 and Feature 3 merged. These features are excluded from this change's closure.
 
 ## 3. Planning Gates For Every Feature
 
@@ -58,4 +64,4 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
 - [ ] 4.2 Re-verify cross-repository consistency at landing. Acceptance evidence: `closure-evidence.md` records that the schema digests, contract identifiers, namespaces and issuer handling in the landed code match openChart's landed implementation, or records openChart's work as pending.
 - [ ] 4.3 Land each feature's leg pull requests and the assembly root pin bump. Acceptance evidence: pull-request identifiers, exact heads, check results and review dispositions are recorded.
 - [ ] 4.4 Run final strict validation on the final revision. Acceptance evidence: the command, version, timestamp, revision and output are recorded, with exit code 0.
-- [ ] 4.5 Archive only after 4.1 to 4.4 are complete for Features 1 to 4, and move the canonical schemas to the spec repository's `contracts/` directory with their digests unchanged. Acceptance evidence: the archive date and path, the schema move with matching digests, and the delta-spec sync disposition are recorded.
+- [ ] 4.5 Archive only after 4.1 to 4.4 are complete for Features 1 to 5, and move the canonical schemas to the spec repository's `contracts/` directory with their digests unchanged. Acceptance evidence: the archive date and path, the schema move with matching digests, and the delta-spec sync disposition are recorded.

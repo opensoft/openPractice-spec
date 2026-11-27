@@ -36,6 +36,7 @@ The openPractice MVP SHALL include the following, in addition to whatever beta s
 2. **A defined openChart/EHR boundary.** Each system owns its own patient record, and the two are linked by issuer-qualified cross-references that each side stores. openPractice publishes administrative demographic changes through a versioned contract with a canonical schema. The clinical facts that charge capture needs come from the EHR through a versioned, FHIR R4-compatible contract.
 3. **A defined billing-versus-accounting boundary.** openPractice owns billing, the receivables and the explanation of deposits. The accounting system is the books of record, including bank balances and the full bank reconciliation. openPractice never becomes a general ledger or an ERP.
 4. **An accounting integration contract.** One versioned contract with a canonical schema covers ERPNext Accounts, QuickBooks Online and Microsoft Dynamics 365 Business Central. The MVP builds only the ERPNext adapter, and that adapter reaches ERPNext through its REST API only.
+5. **Office onboarding in openPractice.** An administrator sets up one office and one legal operating entity, selects Single practitioner or Group, and uses the openHR connector to create or link the entity's Company. Retrying the same setup reuses the Company.
 
 ### How it maps onto the beta slices
 
@@ -48,6 +49,7 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
 | (b) EHR boundary: clinical facts for charge capture | defined here, **consumed in Slice 3** | Slice 3 creates charges from EHR references, and R-7 asks for the boundary to be settled before Slice 3. |
 | (c) billing-versus-accounting boundary, including the bank register and payer deposit links | **Slice 0** (taxonomy, register) and **Slice 4** (deposit reconciliation) | The reason taxonomy is "the join key to the general ledger" and must exist before anything posts. Slice 4 is where the money ties out. |
 | (d) accounting contract and ERPNext adapter | **Slice 4** | This replaces Slice 4's "Accounting Export, QuickBooks-Shaped". |
+| (e) office onboarding and openHR Company setup | **Slice 0** | The office and legal entity are registered during initial practice setup. |
 
 ## What Changes
 
@@ -95,6 +97,7 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
   - revenue bank lines read from the destination;
   - per-destination verification before go-live;
   - contract tests.
+- **`practice-onboarding`.** Adds guided office setup and a verified, retry-safe link between the legal entity and its openHR Company.
 - **Ownership split with `define-customer-financial-data-boundaries` (ruling 26).** This change owns the posting mechanics of `openpractice-accounting-integration/1.0`: posting identity and idempotency, batches and their freeze, release, retries, the reconciliation report, the posting modes and the BAA gate. Change `define-customer-financial-data-boundaries` (`openspec/changes/define-customer-financial-data-boundaries/`, with its brainstorm packet `ideation/brainstorm/openpractice-customer-financial-separation-overview.md` and companions) owns customer and party roles, routing by offering (insurance-billed healthcare, direct-pay healthcare, membership, retail), obligation ownership and purpose-bound business views. It references this contract for posting. That change and its packet are on branch `define-customer-financial-data-boundaries`, not yet on main.
 - **Framework document.** `ideation/brainstorm/openpractice-domain-framework.md`, on branch `docs/ideation-domain-framework-revenue-recognition` and not yet on main, is a proposal-status brainstorm. Rulings 28 to 31 adopt its Option A and D5/D8, keep demographics with openPractice, and settle appointments. Its posting contract (§5.4, §7) is governed by this change's accounting contract (ruling 26).
 - **Companion change.** `opensoft/openChart-spec` change `define-openpractice-boundary` is openChart's side of both EHR contracts. It references this change's canonical schemas by path and digest.
@@ -132,6 +135,7 @@ The slicing in [`ideation/brainstorm/openpractice-small-practice-beta-scope-and-
 - `ehr-boundary` (EB-01 to EB-20): linked records, issuers, canonical schemas, identity review, demographic publication and suspension, correction requests, clinical facts, manual entry, deadline escape and no-PHI diagnostics.
 - `billing-accounting-boundary` (BAB-01 to BAB-17): billing ownership, the books of record, FD-3, the taxonomy, the bank register and deposit links, deposit-only reconciliation with a single deposit poster, legacy and other-route shares, late charges and the offering-route check.
 - `accounting-integration` (AI-01 to AI-23): the contract and schema, ownership of posting mechanics, adapters, keys, batches, mode, customers created by this contract and their recipient profile, dates, accrual, money events, BAA gate, PHI minimization, bank lines, verification, tests, no posting to records the contract does not own, and the one recipient-profile definition.
+- `practice-onboarding` (PO-01 to PO-03): one-office setup, solo or group selection, and create or link an openHR Company without duplicates on retry.
 
 ### Modified Capabilities
 
@@ -140,6 +144,7 @@ None. This change depends on, and does not modify, `add-reimbursement-retention-
 ## Impact
 
 - **New openPractice data contracts:** patient, guarantor account, coverage, confidential-communication instructions, EHR link, demographic outbox, practice bank account register, payer deposit link, export batch, posting mode, accounting recipient profile and the BAA or attestation record.
+- **openHR connector:** verifies the Company on the configured site and returns its identifier for openPractice to save. Onboarding requires office and legal entity details.
 - **External contracts:** three contracts are fixed, with canonical schemas in `contracts/` (`SHA256SUMS` included).
 - **PHI exposure:** the default `summary-journal` destination receives category totals by payer class and no PHI. A `customer-detail` destination, an opt-in, receives PHI, limited by default to guarantor account numbers, guarantor names and billing addresses or contacts, dates of service, amounts and neutral labels. Any further field needs a versioned recipient profile (ruling 25). Each destination needs a security review and a risk-analysis entry under Principle II.
 - **Contract tests:** required at three boundaries, using synthetic fixtures only.
