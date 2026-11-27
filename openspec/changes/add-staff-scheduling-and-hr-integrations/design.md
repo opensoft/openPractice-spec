@@ -83,6 +83,26 @@ Bench (swap candidates): Deputy, Homebase, Connecteam (scheduling-first, disprop
 5. OrangeHRM / Horilla - open-source goodwill; low effort.
 6-10. ADP, BambooHR, Odoo, TimeTrex - built on adoption demand.
 
+### QuickBooks Time v1 adapter
+
+The adapter accepts an account-scoped OAuth bearer-token supplier. This keeps
+credential storage and refresh in application authorization plumbing and lets
+the Time API use its own authorization. LedgerLinc's authorization boundary
+is the design reference. QuickBooks Time v1 uses the documented TSheets
+origin. Intuit is rolling classic Time functionality into QuickBooks Online,
+so access to the documented endpoints needs confirmation on the target
+tenant. [QuickBooks Time API reference](https://tsheetsteam.github.io/api_docs/) ·
+[Intuit migration notice](https://quickbooks.intuit.com/learn-support/en-us/help-article/time-tracking/classic-quickbooks-time-moving-quickbooks-online/L5tnv0Sms_US_en_US)
+
+Use an explicit account, site calendar, workforce-to-job-code mapping and
+approval time zone for the roster series. Persist the published observation
+and later revisions locally. A posted shift starts as an unassigned draft
+and stays pending until the provider supplies published, eligible coverage.
+Use the worker's approval date and closed timecard times for attendance.
+The vendor approval date and timecard data come from separate documented
+fields. [Schedule events reference](https://tsheetsteam.github.io/api_docs/#schedule-events) ·
+[Timesheet object](https://tsheetsteam.github.io/api_docs/#the-timesheet-object)
+
 ## 6. Companion forks: openHR and openBooks
 
 License findings (verified from upstream repositories 2026-11-26):

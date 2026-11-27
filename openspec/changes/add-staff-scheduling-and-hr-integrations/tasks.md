@@ -24,10 +24,23 @@ The [provider contract and schema](../../../contracts/staff-schedule-provider/1.
 ## Adapters
 
 - [ ] T-11 openHR (Frappe HRMS REST) adapter - reference implementation for MVP.
-- [ ] T-12 QuickBooks Time API adapter (share auth/plumbing design with LedgerLinc).
+- [x] T-12 QuickBooks Time API adapter (share auth/plumbing design with LedgerLinc).
 - [ ] T-13 Microsoft Graph Shifts adapter (Schedule.Read.All / Schedule.ReadWrite.All; draft vs shared shift mapping; guard against known copied-shift userId API bug).
 - [ ] T-14 Gusto API adapter (document multi-EIN handling for MedxMSO clinic entities).
 - [ ] T-15 OrangeHRM REST adapter; T-16 Horilla adapter; T-17 ADP; T-18 BambooHR; T-19 Odoo; T-20 TimeTrex - built on adoption demand, in build order from design.md section 5.
+
+### T-12 QuickBooks Time validation evidence
+
+The adapter passed nine synthetic cases against a loopback HTTP fixture built
+from the documented QuickBooks Time v1 wire formats. The fixture ran the
+shared contract checks for workers, timed approved leave, clock events,
+roster revisions, attendance and open shifts. T-26 verified two qualified RNs
+and 20 RN-minutes of demand from 09:10 to 09:20. The callout left one qualified
+RN short for ten minutes. The draft and unqualified assignment kept the
+request pending. Publishing the eligible float preserved the frozen roster
+and closed the planned gap. Approving the closed 09:12 timecard left two
+RN-minutes short. The full 23-test regression passed, including both live
+openHR cases. QuickBooks Time tenant validation remains pending.
 
 ## Companion forks
 

@@ -36,3 +36,17 @@ The adapter boundary SHALL use the workforce-only message schema in `contracts/s
 - **GIVEN** raw clock events exist for a worker and the provider has no approved reconciliation for the current roster
 - **WHEN** the adapter reads the worker's clock and staffing evidence
 - **THEN** the clock events remain separate and the staffing record has no approved attendance
+
+### Requirement: QuickBooks Time publication and approval qualify staffing evidence
+
+The QuickBooks Time adapter SHALL normalize the documented Time v1 resources through the shared provider contract. The adapter SHALL freeze the first captured published roster for a configured series and append new observations as revisions. It SHALL post coverage requests as unassigned drafts and count only published assignments that meet the configured workforce qualification, interval and headcount. Approved attendance SHALL use closed, timed entries within the provider's worker approval date. Raw clock evidence SHALL remain available independently of approval.
+
+#### Scenario: QuickBooks Time publishes the replacement and later approves attendance
+
+- **GIVEN** the adapter has captured the published roster for two overlapping procedures and one qualified RN calls out
+- **WHEN** the adapter posts the coverage request as a draft or QuickBooks Time returns a draft replacement
+- **THEN** coverage stays pending with one qualified RN short from 09:10 to 09:20
+- **WHEN** QuickBooks Time publishes the eligible float's assignment
+- **THEN** the revised roster covers the gap and the original published roster stays frozen
+- **WHEN** QuickBooks Time approves the closed timecard with a 09:12 float arrival
+- **THEN** the shared attendance readback shows a two-RN-minute shortfall
