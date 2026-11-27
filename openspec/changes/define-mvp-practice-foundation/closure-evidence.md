@@ -52,7 +52,9 @@ This record collects acceptance evidence for OpenSpec change `define-mvp-practic
 | Existing group link | PO-01, PO-02 | Saved one office and one legal entity as Group, linked the existing openHR Company, and showed the same identifier after reload. The native Company record remained unchanged. |
 | Lost-response retry | PO-03 | The test dropped the response after openHR committed the create. New Practice showed the unresolved connection. Retry recovered the original Company identifier and showed it as connected after reload. Independent native openHR readback found **exactly one Company** by legal entity name and exactly one by stable request ID. Both matched the recovered identifier. |
 
-The connector unit test `test_an_unresolved_retry_does_not_issue_another_create` passed at the deployed source revision. It verifies that a retry makes no second create when reconciliation finds no Company. Acceptance evidence for two overlapping create submissions remains pending.
+**Overlapping create submissions passed (2026-11-27, PO-03).** Two authenticated requests for the same synthetic setup overlapped for 1.43 seconds over PracticeLab public HTTPS. Both original responses returned HTTP 200 and `Company connected` with Company ID `Synthetic Overlap 187bf62594c1 LLC`. The saved setup showed the same identifier. Independent native openHR readback found **exactly one Company** by legal entity name and exactly one by stable request ID. Both matched the identifier in the responses. The run used source `8cfd852c3a287557db18d6439f488e8d2e71b8a1` after Flux applied `27f305194781983c58acf77ec8ea5340fe8234c5` to the QA workloads. AKS command `fa76dd165fad422fbaf6f6fe3fca0b1a` captured the readback. [QA rollout](https://github.com/opensoft/Opensoft-Tenant/pull/479) · [Source commit](https://github.com/opensoft/openPractice-code/commit/8cfd852c3a287557db18d6439f488e8d2e71b8a1)
+
+The connector unit test `test_an_unresolved_retry_does_not_issue_another_create` passed at both deployed revisions. It verifies that a retry makes no second create when reconciliation finds no Company.
 
 ## Boundary and Merge Evidence
 

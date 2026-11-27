@@ -40,7 +40,7 @@ Each feature is gated on task 1.2 and is created from the assembly root `opensof
   - creating a Company for a new legal entity records the verified identifier, and linking an existing Company records its verified identifier without creating or modifying a Company;
   - concurrent submissions and a retry after a lost create response resolve to the original Company identifier and leave exactly one Company for the request. An unresolved result retains the setup and prevents another create until reconciliation can determine the outcome.
   - [x] **PracticeLab QA onboarding complete.** The public HTTPS browser run passed solo create, existing group link, and lost-response retry. Native openHR readback confirmed exactly one Company for the retry request. See [Feature 5 acceptance evidence](closure-evidence.md#feature-5--practice-onboarding).
-  - [ ] Record acceptance evidence for two overlapping submissions of the same create request.
+  - [x] **Overlapping submissions passed on PracticeLab QA.** Both public HTTPS responses returned the same openHR Company identifier. Native readback confirmed exactly one Company for the request. See [Feature 5 acceptance evidence](closure-evidence.md#feature-5--practice-onboarding).
 - [ ] 2.6 **Post-MVP: QuickBooks Online adapter, then Business Central adapter.** Each is a separate feature against `openpractice-accounting-integration/1.x` (same MAJOR). Each starts only after the vendor's authentication, API, rate limits, idempotency, data residency, line service dates, cash-basis reporting and BAA availability have been verified and recorded. Gate: task 1.2 and Feature 3 merged. These features are excluded from this change's closure.
 
 ## 3. Planning Gates For Every Feature
