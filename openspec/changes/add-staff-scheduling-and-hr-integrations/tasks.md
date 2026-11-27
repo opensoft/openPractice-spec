@@ -2,14 +2,14 @@
 
 ## Contract
 
-- [ ] T-01 Author `openpractice-staff-schedule-provider/1.0` contract and canonical schema in `contracts/` (workers+skills, leave, roster with revision state, clock events, open shifts, postOpenShift).
+- [ ] T-01 Author the `openpractice-staff-schedule-provider/1.0` contract and canonical schema in `contracts/` for workers and skills, leave, roster revisions, approved attendance, clock events and open shifts.
 - [ ] T-02 Define conformance test suite with synthetic fixtures every adapter must pass.
-- [ ] T-03 Specify revision tracking: roster read MUST support as-designed vs as-revised distinction or revisions-since-timestamp.
+- [ ] T-03 Specify revision tracking for the published baseline and confirmed revised assignments. Define the readback for HR-approved worked intervals and unresolved attendance.
 
 ## Coverage engine
 
 - [ ] T-04 Model visit-type resource requirements (duration per role, skill mix, equipment usage windows, room turnover, upfront work).
-- [ ] T-05 Compute coverage requirements per 30-minute interval per role and skill from the visit calendar.
+- [ ] T-05 Compute precise overlaps from the visit calendar's staff requirement windows (AP-10). Preserve peak simultaneous staffing and staff-minutes in the 30-minute views.
 - [ ] T-06 Define baseline + flexible-reserve staffing model (float pool, per-diem tiers).
 
 ## Variance and gap resolution
@@ -37,9 +37,28 @@
 
 ## Validation
 
-- [ ] T-26 End-to-end demo: visit book -> coverage requirements -> callout -> deficit -> open shift posted to openHR -> filled -> variance report.
+- [x] T-26 Run the AP-10 and AP-11 callout test through the adapter against the openHR fork with synthetic staff and appointments.
+  - Book two procedures at one site. Both require a procedure-qualified RN from 09:10 to 09:20. Verify a peak demand of two and twenty RN-minutes.
+  - Record one RN callout. Verify the exact ten-minute shortage, the affected procedures, and exclusion of an available RN who lacks the qualification. Post an open shift and verify the posting alone leaves coverage pending.
+  - Confirm an eligible float RN in openHR for 09:10 to 09:20. Read the revised roster through the adapter. Verify the planned gap closes and the as-designed roster shows the original two assignments.
+  - Reconcile the original RN's full interval and the replacement's 09:12 arrival in openHR. Read back the approved attendance through the adapter. Verify as-built records the replacement's 09:12 to 09:20 interval and the variance report shows one qualified RN short from 09:10 to 09:12, or two RN-minutes.
 - [ ] T-27 Microsoft Partner package evaluation (Core $925/yr) as Shifts/Graph integration testbed tenant.
 - [ ] T-28 Owner ratification (`owner-ratification.md`) after strict validation.
+
+### T-26 validation evidence
+
+**Passed on upstream Frappe HRMS on 2026-11-26.** The dedicated test site ran Frappe 15.122.0, ERPNext 15.121.6 and HRMS 15.64.3. The live `test_t26_against_openhr_test_site` case passed through Frappe REST with synthetic staff and appointments. The fixture submitted roster and attendance records to the scheduling DocTypes using a separate HR Manager account. [Acceptance test at adapter commit `dff8136`](https://github.com/opensoft/openPractice-code/blob/dff8136967e3493be46e2376ca980da471049b67/src/open_practice/tests/test_openhr_adapter.py#L224)
+
+**Passed on the openHR fork on 2026-11-26.** A separate test site built from `opensoft/openHR` at `v15.64.3` (`0a54d2c`) passed the same live test case with adapter revision `dff8136` and the same synthetic staff and appointments. The adapter read back the confirmed roster revision and approved attendance through the fork site's REST API. [Tested openHR revision](https://github.com/opensoft/openHR/commit/0a54d2c7b8b6043e2705b6f557b6ed65260670dd)
+
+**Passed with native openHR Shift Assignments and Attendance on 2026-11-26.** The same synthetic fixture ran on the openHR fork at `0a54d2c` with the `openhr_ext` companion app at version 0.1.0. The companion app fed the adapter from submitted native records. Posting the shift and saving the draft float assignment left coverage pending. Submitting the float's Shift Assignment closed the planned gap and preserved the published roster. Submitted Attendance showed the float arriving at 09:12, leaving a two-RN-minute shortfall. Canceling that Attendance withdrew the approval. Submitting a replacement Attendance record with the same times restored the two-minute result. [Native acceptance test at code commit `9949377`](https://github.com/opensoft/openPractice-code/blob/99493772675812edfddaff46b9dddc753cf3bf3e/src/open_practice/tests/test_openhr_native.py#L36)
+
+| Step | Verified on both sites |
+| --- | --- |
+| Two overlapping procedures from 09:10 to 09:20 | Peak demand was two procedure-qualified RNs and 20 RN-minutes. |
+| Callout, open-shift post and draft replacement | Both procedures were affected. The available RN without the qualification was excluded. The request stayed pending with one qualified RN short for the full ten minutes. |
+| HR Manager submitted the roster revision | The adapter read back the confirmed float and the planned gap closed. The published roster retained both original assignments. |
+| HR Manager approved the float's 09:12 arrival | The adapter read back the approved 09:12 to 09:20 interval. One qualified RN was short from 09:10 to 09:12, totaling two RN-minutes. |
 
 ## Seam and degraded operation
 
