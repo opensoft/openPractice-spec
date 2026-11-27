@@ -20,3 +20,19 @@ openHR SHALL own confirmation of workforce assignments and reconciliation of att
 - **GIVEN** the published roster is cached and an open-shift request awaits provider confirmation
 - **WHEN** the provider becomes unreachable and staff record provisional attendance
 - **THEN** openPractice shows the cached and provisional evidence with its status, keeps the request pending, and applies the confirmed revised assignment and approved attendance when openHR returns them
+
+### Requirement: Staff-schedule adapters use the versioned provider contract
+
+The adapter boundary SHALL use the workforce-only message schema in `contracts/staff-schedule-provider/1.0/schema.json`. The contract defines worker qualifications, approved leave, roster and reconciliation evidence, raw clock events, and open-shift requests and state. An adapter SHALL distinguish an unavailable feed from a successful read with no records. Provider-specific tests SHALL exercise the shared conformance checks with synthetic data for the feeds the adapter supplies.
+
+#### Scenario: A provider's open-shift readback conforms to the shared schema
+
+- **GIVEN** a provider has published a roster and accepts a synthetic open-shift request
+- **WHEN** openPractice reads the roster and shift state before and after the provider confirms the replacement
+- **THEN** both readbacks validate against the same versioned schema, the published snapshot stays frozen, and only the confirmed state refers to the revised roster
+
+#### Scenario: The adapter receives only raw clock events
+
+- **GIVEN** raw clock events exist for a worker and the provider has no approved reconciliation for the current roster
+- **WHEN** the adapter reads the worker's clock and staffing evidence
+- **THEN** the clock events remain separate and the staffing record has no approved attendance

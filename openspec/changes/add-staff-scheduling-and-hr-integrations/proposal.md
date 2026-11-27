@@ -44,7 +44,7 @@ The integration builds on the [AP-10 and AP-11 scheduler requirements](https://g
 
 ## Impact
 
-- **New external contract:** `openpractice-staff-schedule-provider/1.0` with canonical schema in `contracts/` when authored.
+- **New external contract:** `openpractice-staff-schedule-provider/1.0` with its [canonical schema](../../../contracts/staff-schedule-provider/1.0/schema.json).
 - **Data:** staff references link to the external system of record, with the minimum operational data cached under the seam rules. openPractice owns visit-type resource requirements.
 - **Licensing:** openHR and openBooks inherit upstream copyleft; fork-compliance obligations are listed in `design.md` and repeated in `tasks.md`.
 - **Runtime:** no runtime code is added by this change.

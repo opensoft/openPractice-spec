@@ -2,9 +2,11 @@
 
 ## Contract
 
-- [ ] T-01 Author the `openpractice-staff-schedule-provider/1.0` contract and canonical schema in `contracts/` for workers and skills, leave, roster revisions, approved attendance, clock events and open shifts.
-- [ ] T-02 Define conformance test suite with synthetic fixtures every adapter must pass.
+- [x] T-01 Author the `openpractice-staff-schedule-provider/1.0` contract and canonical schema in `contracts/` for workers and skills, leave, roster revisions, approved attendance, clock events and open shifts.
+- [x] T-02 Define conformance test suite with synthetic fixtures every adapter must pass.
 - [ ] T-03 Specify revision tracking for the published baseline and confirmed revised assignments. Define the readback for HR-approved worked intervals and unresolved attendance.
+
+The [provider contract and schema](../../../contracts/staff-schedule-provider/1.0/README.md) define the canonical workforce messages. The shared Python suite checks each feed's schema with synthetic examples. The T-26 loopback case uses the same conformance harness as the native openHR case.
 
 ## Coverage engine
 
@@ -52,6 +54,8 @@
 **Passed on the openHR fork on 2026-11-26.** A separate test site built from `opensoft/openHR` at `v15.64.3` (`0a54d2c`) passed the same live test case with adapter revision `dff8136` and the same synthetic staff and appointments. The adapter read back the confirmed roster revision and approved attendance through the fork site's REST API. [Tested openHR revision](https://github.com/opensoft/openHR/commit/0a54d2c7b8b6043e2705b6f557b6ed65260670dd)
 
 **Passed with native openHR Shift Assignments and Attendance on 2026-11-26.** The same synthetic fixture ran on the openHR fork at `0a54d2c` with the `openhr_ext` companion app at version 0.1.0. The companion app fed the adapter from submitted native records. Posting the shift and saving the draft float assignment left coverage pending. Submitting the float's Shift Assignment closed the planned gap and preserved the published roster. Submitted Attendance showed the float arriving at 09:12, leaving a two-RN-minute shortfall. Canceling that Attendance withdrew the approval. Submitting a replacement Attendance record with the same times restored the two-minute result. [Native acceptance test at code commit `9949377`](https://github.com/opensoft/openPractice-code/blob/99493772675812edfddaff46b9dddc753cf3bf3e/src/open_practice/tests/test_openhr_native.py#L36)
+
+**Shared provider conformance passed on the openHR fork on 2026-11-26.** The suite ran against a dedicated site rebuilt from openHR `0a54d2c` with Frappe 15.122.0, ERPNext 15.121.6, HRMS 15.64.3, and `openhr_ext` 0.1.0. All 14 tests passed, including the live projection and native T-26 cases. The native readbacks conformed to `openpractice-staff-schedule-provider/1.0` before and after float confirmation, during partial attendance reconciliation, and after attendance cancellation and correction. The roster stayed frozen and the approved 09:12 arrival left a two-RN-minute shortfall. Worker, leave, and raw clock-event messages were verified with synthetic schema fixtures.
 
 | Step | Verified on both sites |
 | --- | --- |

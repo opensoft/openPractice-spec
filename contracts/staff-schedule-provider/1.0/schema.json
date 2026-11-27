@@ -1,0 +1,569 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:opensoft:openpractice:staff-schedule-provider:1.0",
+  "title": "openPractice staff schedule provider 1.0",
+  "description": "Canonical provider adapter messages. Scope, revision ordering and approval rules are defined in the companion contract.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "kind",
+        "data"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-staff-schedule-provider/1.0"
+        },
+        "kind": {
+          "const": "workers"
+        },
+        "data": {
+          "$ref": "#/$defs/workers"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "kind",
+        "data"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-staff-schedule-provider/1.0"
+        },
+        "kind": {
+          "const": "leave"
+        },
+        "data": {
+          "$ref": "#/$defs/leave"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "kind",
+        "data"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-staff-schedule-provider/1.0"
+        },
+        "kind": {
+          "const": "staffing"
+        },
+        "data": {
+          "$ref": "#/$defs/staffing"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "kind",
+        "data"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-staff-schedule-provider/1.0"
+        },
+        "kind": {
+          "const": "clock_events"
+        },
+        "data": {
+          "$ref": "#/$defs/clock_events"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "kind",
+        "data"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-staff-schedule-provider/1.0"
+        },
+        "kind": {
+          "const": "open_shift_request"
+        },
+        "data": {
+          "$ref": "#/$defs/open_shift_request"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "kind",
+        "data"
+      ],
+      "properties": {
+        "contract": {
+          "const": "openpractice-staff-schedule-provider/1.0"
+        },
+        "kind": {
+          "const": "open_shift_state"
+        },
+        "data": {
+          "$ref": "#/$defs/open_shift_state"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "reference": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "instant": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlation_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$"
+    },
+    "worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "staff_id",
+        "roles",
+        "skills",
+        "certifications"
+      ],
+      "properties": {
+        "staff_id": {
+          "$ref": "#/$defs/reference"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reference"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "level"
+            ],
+            "properties": {
+              "code": {
+                "$ref": "#/$defs/reference"
+              },
+              "level": {
+                "$ref": "#/$defs/reference"
+              }
+            }
+          }
+        },
+        "certifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "expires_on"
+            ],
+            "properties": {
+              "code": {
+                "$ref": "#/$defs/reference"
+              },
+              "expires_on": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "workers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "location",
+        "starts_at",
+        "ends_at",
+        "records"
+      ],
+      "properties": {
+        "location": {
+          "$ref": "#/$defs/reference"
+        },
+        "starts_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "ends_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/worker"
+          }
+        }
+      }
+    },
+    "leave": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "location",
+        "starts_at",
+        "ends_at",
+        "approved"
+      ],
+      "properties": {
+        "location": {
+          "$ref": "#/$defs/reference"
+        },
+        "starts_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "ends_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "approved": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reference",
+              "staff_id",
+              "starts_at",
+              "ends_at"
+            ],
+            "properties": {
+              "reference": {
+                "$ref": "#/$defs/reference"
+              },
+              "staff_id": {
+                "$ref": "#/$defs/reference"
+              },
+              "starts_at": {
+                "$ref": "#/$defs/instant"
+              },
+              "ends_at": {
+                "$ref": "#/$defs/instant"
+              }
+            }
+          }
+        }
+      }
+    },
+    "assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "staff_id",
+        "location",
+        "role",
+        "qualification",
+        "starts_at",
+        "ends_at"
+      ],
+      "properties": {
+        "staff_id": {
+          "$ref": "#/$defs/reference"
+        },
+        "location": {
+          "$ref": "#/$defs/reference"
+        },
+        "role": {
+          "$ref": "#/$defs/reference"
+        },
+        "qualification": {
+          "$ref": "#/$defs/reference"
+        },
+        "starts_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "ends_at": {
+          "$ref": "#/$defs/instant"
+        }
+      }
+    },
+    "roster_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "recorded_at",
+        "recorded_by",
+        "reason",
+        "assignments"
+      ],
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/reference"
+        },
+        "recorded_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "recorded_by": {
+          "$ref": "#/$defs/reference"
+        },
+        "reason": {
+          "$ref": "#/$defs/reference"
+        },
+        "assignments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assignment"
+          }
+        }
+      }
+    },
+    "attendance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "roster_reference",
+        "worked_intervals",
+        "unresolved_exceptions"
+      ],
+      "properties": {
+        "roster_reference": {
+          "$ref": "#/$defs/reference"
+        },
+        "worked_intervals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assignment"
+          }
+        },
+        "unresolved_exceptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reference"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "staffing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "roster_series",
+        "published",
+        "revisions",
+        "attendance",
+        "coverage_links"
+      ],
+      "properties": {
+        "roster_series": {
+          "$ref": "#/$defs/reference"
+        },
+        "published": {
+          "$ref": "#/$defs/roster_snapshot"
+        },
+        "revisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/roster_snapshot"
+          }
+        },
+        "attendance": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/attendance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage_links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "correlation_id",
+              "assignment"
+            ],
+            "properties": {
+              "correlation_id": {
+                "$ref": "#/$defs/correlation_id"
+              },
+              "assignment": {
+                "$ref": "#/$defs/assignment"
+              }
+            }
+          }
+        }
+      }
+    },
+    "clock_events": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "location",
+        "starts_at",
+        "ends_at",
+        "records"
+      ],
+      "properties": {
+        "location": {
+          "$ref": "#/$defs/reference"
+        },
+        "starts_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "ends_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reference",
+              "staff_id",
+              "at",
+              "direction"
+            ],
+            "properties": {
+              "reference": {
+                "$ref": "#/$defs/reference"
+              },
+              "staff_id": {
+                "$ref": "#/$defs/reference"
+              },
+              "at": {
+                "$ref": "#/$defs/instant"
+              },
+              "direction": {
+                "enum": [
+                  "in",
+                  "out"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "open_shift_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "correlation_id",
+        "location",
+        "starts_at",
+        "ends_at",
+        "role",
+        "qualification",
+        "headcount"
+      ],
+      "properties": {
+        "correlation_id": {
+          "$ref": "#/$defs/correlation_id"
+        },
+        "location": {
+          "$ref": "#/$defs/reference"
+        },
+        "starts_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "ends_at": {
+          "$ref": "#/$defs/instant"
+        },
+        "role": {
+          "$ref": "#/$defs/reference"
+        },
+        "qualification": {
+          "$ref": "#/$defs/reference"
+        },
+        "headcount": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "open_shift_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request",
+        "status",
+        "roster_reference"
+      ],
+      "properties": {
+        "request": {
+          "$ref": "#/$defs/open_shift_request"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "confirmed"
+          ]
+        },
+        "roster_reference": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "if": {
+        "properties": {
+          "status": {
+            "const": "confirmed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "roster_reference": {
+            "$ref": "#/$defs/reference"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "roster_reference": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  }
+}
