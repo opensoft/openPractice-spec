@@ -1,0 +1,435 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:openpractice:contract:openpractice-thread:1.0",
+  "title": "openpractice-thread 1.0",
+  "description": "Canonical schema of the openPractice thread contract (change define-revenue-cycle-core, TH-11; FD-7). It defines a thread record, which is a derived snapshot, and a transition, which is the only way a thread changes. References are opaque identifiers; no record carries a name, a date of birth, contact details, a member identifier or clinical content (TH-14, TH-15). The legality of a move between stations is checked against TH-04, not by this schema; the schema does fix where each minting event starts a thread and which thread type it mints. Amounts follow BAB-18 (ruling 103): decimal text with two places and an ISO 4217 code, USD only in 1.0.",
+  "oneOf": [
+    { "$ref": "#/$defs/threadRecord" },
+    { "$ref": "#/$defs/transition" }
+  ],
+  "$defs": {
+    "contractVersion": {
+      "description": "Same-MAJOR compatibility: a 1.x reader reads every 1.x record (TH-11).",
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "opaqueRef": {
+      "description": "Opaque identifier of an openPractice record or roster entry. It carries no personal or account data.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9:_-]{1,128}$"
+    },
+    "timestamp": {
+      "description": "RFC 3339 date-time with an explicit offset or Z; a date-time with no offset is refused, because deadlines are turned into instants in the practice's time zone (CL-10).",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?(Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "money": {
+      "description": "Decimal amount as a string, never a JSON number, with exactly two decimal places; sign carried explicitly (BAB-18).",
+      "type": "string",
+      "pattern": "^-?[0-9]{1,13}\\.[0-9]{2}$"
+    },
+    "currency": {
+      "description": "ISO 4217 alphabetic code. 1.0 supports USD only (BAB-18).",
+      "type": "string",
+      "const": "USD"
+    },
+    "threadType": {
+      "description": "A visit thread or one of the enumerated non-visit case types (TH-01, TH-08). The reserved names unmatched_inbound_page, inbound_page_not_ours and payer_records_request are deliberately absent, so they are refused until a governed MINOR version adds them.",
+      "enum": ["visit", "credit_balance", "gfe_dispute", "recoupment", "enrollment_case", "old_system_balance"]
+    },
+    "station": {
+      "description": "One of the ten stations of TH-04. Visit threads use every station but intent; case threads use intent, claimed, remitted, banked and closed.",
+      "enum": ["intent", "booked", "ready", "arrived", "seen", "charged", "claimed", "remitted", "banked", "closed"]
+    },
+    "condition": {
+      "description": "TH-05. stuck is only ever derived, never written by a transition.",
+      "enum": ["moving", "held", "stuck", "disputed"]
+    },
+    "writableCondition": {
+      "description": "The conditions a transition may set. stuck is excluded because it is derived (TH-05).",
+      "enum": ["moving", "held", "disputed"]
+    },
+    "holdReason": {
+      "description": "The closed list of TH-06. Each reason is placed by one requirement, which also states its release condition and its deadline escape.",
+      "enum": [
+        "participation_not_effective",
+        "waiting_on_clinical_documentation",
+        "clinical_fact_retracted",
+        "identity_review",
+        "offering_route_unresolved",
+        "waiting_on_authorization",
+        "same_person_reconciliation"
+      ]
+    },
+    "releaseParameters": {
+      "description": "A structured release condition that a query can evaluate (TH-06). Its values are opaque references, coded values or dates, never free text.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9:._-]{1,128}$"
+      }
+    },
+    "hold": {
+      "description": "One hold on a thread (TH-05, TH-06). A thread may carry several at once, each with its own reason, release condition, owner and clock. hold_id is unique among a thread's holds (TH-06). The holds list refuses a hold listed twice; a schema cannot check that two different holds share an identifier.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hold_id", "reason", "release", "owner_ref"],
+      "properties": {
+        "hold_id": { "$ref": "#/$defs/opaqueRef" },
+        "reason": { "$ref": "#/$defs/holdReason" },
+        "release": { "$ref": "#/$defs/releaseParameters" },
+        "owner_ref": { "$ref": "#/$defs/opaqueRef" },
+        "clock": { "$ref": "#/$defs/clock" }
+      }
+    },
+    "linkType": {
+      "description": "TH-09. No link re-points threads between parties: PR-15 records that two parties are one person without moving anything.",
+      "enum": ["spawned_from", "replaces", "recoups", "offsets", "held_by"]
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["link_type", "target_thread_id"],
+      "properties": {
+        "link_type": { "$ref": "#/$defs/linkType" },
+        "target_thread_id": { "$ref": "#/$defs/opaqueRef" }
+      }
+    },
+    "mintingEvent": {
+      "description": "The only events that mint a thread (TH-02, TH-08).",
+      "enum": ["booking", "walk_in", "clinical_facts_unmatched", "manual_charge_unmatched", "case_event", "old_system_import"]
+    },
+    "fd5Tier": {
+      "description": "The FD-5 tier that governed a transition (TH-07). sign_off marks a gate decided by an explicit sign-off below tier 4.",
+      "enum": ["tier_1", "tier_2", "tier_3", "tier_4", "sign_off"]
+    },
+    "actorType": {
+      "description": "Actor types follow AM-01; an integration acts as a named integration identity.",
+      "enum": ["human", "agent", "integration", "shipped_rule"]
+    },
+    "factKind": {
+      "description": "The kind of dated fact that justified a transition (TH-07).",
+      "enum": [
+        "booking",
+        "arrival",
+        "disposition",
+        "readiness_result",
+        "clinical_facts",
+        "manual_charge",
+        "charge_finalization",
+        "claim_submission",
+        "claim_status",
+        "remittance",
+        "payment",
+        "coverage_change",
+        "participation_record",
+        "dispute",
+        "chargeback_or_return",
+        "case_event",
+        "person_decision",
+        "reversal"
+      ]
+    },
+    "counterpartyKind": {
+      "description": "SL-06. The counterparty is identified only by an opaque reference.",
+      "enum": ["guarantor_account", "payer_coverage", "unidentified", "practice"]
+    },
+    "disputeCounterpartyKind": {
+      "description": "A dispute names an outside counterparty only (TH-05): a guarantor account or a payer coverage, never the practice.",
+      "enum": ["guarantor_account", "payer_coverage"]
+    },
+    "amountAtRisk": {
+      "description": "Derived from ledger entries by the rule for the thread's station (TH-03); never stored as a balance.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount", "currency", "counterparty_kind"],
+      "properties": {
+        "amount": { "$ref": "#/$defs/money" },
+        "currency": { "$ref": "#/$defs/currency" },
+        "counterparty_kind": { "$ref": "#/$defs/counterpartyKind" },
+        "counterparty_ref": { "$ref": "#/$defs/opaqueRef" }
+      }
+    },
+    "clockKind": {
+      "description": "The deadline that sets a thread's clock (TH-03). Each is derived from dates and rules openPractice holds, never typed.",
+      "enum": [
+        "filing_deadline",
+        "authorization_expiry",
+        "gfe_issuance_deadline",
+        "gfe_dispute_window",
+        "statement_due",
+        "refund_obligation",
+        "payer_decide_by",
+        "legacy_limit",
+        "acknowledgment_window"
+      ]
+    },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "due_at"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/clockKind" },
+        "due_at": { "$ref": "#/$defs/timestamp" },
+        "next_kind": { "$ref": "#/$defs/clockKind" },
+        "next_due_at": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "threadRecord": {
+      "description": "A derived snapshot of one thread at a moment (TH-03). When more than one condition applies, condition shows the first of disputed, held and stuck (TH-05); holds stay listed while the thread is disputed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_kind",
+        "contract",
+        "contract_version",
+        "thread_id",
+        "thread_type",
+        "minted_under",
+        "minted_at",
+        "minting_event",
+        "station",
+        "condition",
+        "station_entered_at",
+        "owner_ref",
+        "as_of"
+      ],
+      "properties": {
+        "record_kind": { "const": "thread" },
+        "contract": { "const": "openpractice-thread" },
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "thread_id": { "$ref": "#/$defs/opaqueRef" },
+        "thread_type": { "$ref": "#/$defs/threadType" },
+        "minted_under": {
+          "description": "The contract version stamped at minting; it never changes (TH-11).",
+          "$ref": "#/$defs/contractVersion"
+        },
+        "minted_at": { "$ref": "#/$defs/timestamp" },
+        "minting_event": { "$ref": "#/$defs/mintingEvent" },
+        "station": { "$ref": "#/$defs/station" },
+        "condition": { "$ref": "#/$defs/condition" },
+        "station_entered_at": { "$ref": "#/$defs/timestamp" },
+        "holds": {
+          "description": "Every hold in force, each with its own reason, release condition, owner and clock (TH-06).",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/hold" }
+        },
+        "dispute_counterparty_kind": { "$ref": "#/$defs/disputeCounterpartyKind" },
+        "dispute_ref": {
+          "description": "The dispute case or appeal whose resolution ends the disputed condition (TH-05).",
+          "$ref": "#/$defs/opaqueRef"
+        },
+        "clock": { "$ref": "#/$defs/clock" },
+        "amount_at_risk": { "$ref": "#/$defs/amountAtRisk" },
+        "owner_ref": {
+          "description": "The roster entry who must act next (AM-06); never a payer, a patient or the system.",
+          "$ref": "#/$defs/opaqueRef"
+        },
+        "links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/link" }
+        },
+        "as_of": { "$ref": "#/$defs/timestamp" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "condition": { "const": "held" } }, "required": ["condition"] },
+          "then": {
+            "required": ["holds"],
+            "not": { "anyOf": [{ "required": ["dispute_counterparty_kind"] }, { "required": ["dispute_ref"] }] }
+          }
+        },
+        {
+          "if": { "properties": { "condition": { "const": "disputed" } }, "required": ["condition"] },
+          "then": { "required": ["dispute_counterparty_kind", "dispute_ref"] }
+        },
+        {
+          "if": { "properties": { "condition": { "enum": ["moving", "stuck"] } }, "required": ["condition"] },
+          "then": {
+            "not": { "anyOf": [{ "required": ["holds"] }, { "required": ["dispute_counterparty_kind"] }, { "required": ["dispute_ref"] }] }
+          }
+        },
+        {
+          "if": { "properties": { "thread_type": { "const": "visit" } }, "required": ["thread_type"] },
+          "then": { "properties": { "station": { "not": { "const": "intent" } } } },
+          "else": { "properties": { "station": { "not": { "enum": ["booked", "ready", "arrived", "seen"] } } } }
+        }
+      ]
+    },
+    "transition": {
+      "description": "The only way a thread changes (TH-07). It is appended, never edited; an undo is a new transition that names the one it reverses.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_kind",
+        "contract",
+        "contract_version",
+        "transition_id",
+        "thread_id",
+        "to_station",
+        "to_condition",
+        "effective_at",
+        "recorded_at",
+        "actor_ref",
+        "actor_type",
+        "justifying_fact",
+        "fd5_tier",
+        "left_building"
+      ],
+      "properties": {
+        "record_kind": { "const": "transition" },
+        "contract": { "const": "openpractice-thread" },
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "transition_id": { "$ref": "#/$defs/opaqueRef" },
+        "thread_id": { "$ref": "#/$defs/opaqueRef" },
+        "minting_event": {
+          "description": "Present only on the transition that mints the thread, which has no from_station.",
+          "$ref": "#/$defs/mintingEvent"
+        },
+        "thread_type": {
+          "description": "Present only on the minting transition, so a snapshot can be rebuilt from transitions alone.",
+          "$ref": "#/$defs/threadType"
+        },
+        "from_station": { "$ref": "#/$defs/station" },
+        "to_station": { "$ref": "#/$defs/station" },
+        "from_condition": { "$ref": "#/$defs/condition" },
+        "to_condition": {
+          "description": "The condition TH-05 derives once this transition applies, from the holds and dispute then in force; moving means neither (TH-07). stuck is derived on the snapshot and never written. A schema can refuse only what one transition shows to be wrong; whether a released hold was the last one is checked against the thread's holds.",
+          "$ref": "#/$defs/writableCondition"
+        },
+        "place_hold": {
+          "description": "A hold this transition places (TH-06).",
+          "$ref": "#/$defs/hold"
+        },
+        "release_hold_id": {
+          "description": "The hold this transition releases.",
+          "$ref": "#/$defs/opaqueRef"
+        },
+        "dispute_counterparty_kind": { "$ref": "#/$defs/disputeCounterpartyKind" },
+        "dispute_ref": { "$ref": "#/$defs/opaqueRef" },
+        "effective_at": { "$ref": "#/$defs/timestamp" },
+        "recorded_at": { "$ref": "#/$defs/timestamp" },
+        "actor_ref": { "$ref": "#/$defs/opaqueRef" },
+        "actor_type": { "$ref": "#/$defs/actorType" },
+        "principal_ref": { "$ref": "#/$defs/opaqueRef" },
+        "to_owner_ref": {
+          "description": "The owner after this transition (AM-06). Required when minting; present on any other transition only when the owner changes.",
+          "$ref": "#/$defs/opaqueRef"
+        },
+        "signer_role": {
+          "description": "The role under which a sign-off was given (define-practice-readiness SR-02), as a coded value.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "justifying_fact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "ref"],
+          "properties": {
+            "kind": { "$ref": "#/$defs/factKind" },
+            "ref": { "$ref": "#/$defs/opaqueRef" }
+          }
+        },
+        "fd5_tier": { "$ref": "#/$defs/fd5Tier" },
+        "left_building": {
+          "description": "Whether the effect left the building; after it has, the only correction is a replacement or a void (TH-07).",
+          "type": "boolean"
+        },
+        "reverses": {
+          "description": "The transition this one reverses, for an undo (TH-07).",
+          "$ref": "#/$defs/opaqueRef"
+        },
+        "matched_keys": {
+          "description": "For a re-association, the key names that matched (TH-10); names only, never values.",
+          "type": "array",
+          "items": {
+            "enum": ["patient_link", "registry_identity", "payer", "member_coverage", "date_of_service", "rendering_provider", "billed_amount", "encounter_ref", "appointment_ref", "payer_claim_control_number"]
+          },
+          "uniqueItems": true
+        },
+        "link": { "$ref": "#/$defs/link" }
+      },
+      "allOf": [
+        {
+          "if": { "not": { "required": ["from_station"] } },
+          "then": {
+            "required": ["minting_event", "thread_type", "to_owner_ref"],
+            "not": { "required": ["from_condition"] }
+          },
+          "else": {
+            "required": ["from_condition"],
+            "not": { "anyOf": [{ "required": ["minting_event"] }, { "required": ["thread_type"] }] }
+          }
+        },
+        {
+          "if": { "properties": { "minting_event": { "const": "booking" } }, "required": ["minting_event"] },
+          "then": { "properties": { "to_station": { "const": "booked" }, "thread_type": { "const": "visit" } } }
+        },
+        {
+          "if": { "properties": { "minting_event": { "const": "walk_in" } }, "required": ["minting_event"] },
+          "then": { "properties": { "to_station": { "const": "arrived" }, "thread_type": { "const": "visit" } } }
+        },
+        {
+          "if": { "properties": { "minting_event": { "const": "clinical_facts_unmatched" } }, "required": ["minting_event"] },
+          "then": { "properties": { "to_station": { "const": "seen" }, "thread_type": { "const": "visit" } } }
+        },
+        {
+          "if": { "properties": { "minting_event": { "const": "manual_charge_unmatched" } }, "required": ["minting_event"] },
+          "then": { "properties": { "to_station": { "const": "seen" }, "thread_type": { "const": "visit" } } }
+        },
+        {
+          "if": { "properties": { "minting_event": { "const": "case_event" } }, "required": ["minting_event"] },
+          "then": {
+            "properties": {
+              "to_station": { "const": "intent" },
+              "thread_type": { "enum": ["credit_balance", "gfe_dispute", "recoupment", "enrollment_case"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "minting_event": { "const": "old_system_import" } }, "required": ["minting_event"] },
+          "then": { "properties": { "to_station": { "const": "intent" }, "thread_type": { "const": "old_system_balance" } } }
+        },
+        {
+          "if": { "properties": { "to_condition": { "const": "held" } }, "required": ["to_condition"] },
+          "then": {
+            "anyOf": [
+              { "required": ["place_hold"] },
+              { "properties": { "from_condition": { "enum": ["held", "disputed"] } }, "required": ["from_condition"] }
+            ]
+          }
+        },
+        {
+          "if": { "properties": { "to_condition": { "const": "moving" } }, "required": ["to_condition"] },
+          "then": { "not": { "required": ["place_hold"] } }
+        },
+        {
+          "if": { "properties": { "to_condition": { "const": "moving" }, "from_condition": { "const": "held" } }, "required": ["to_condition", "from_condition"] },
+          "then": { "required": ["release_hold_id"] }
+        },
+        {
+          "if": { "required": ["release_hold_id"] },
+          "then": { "properties": { "from_condition": { "enum": ["held", "disputed"] } }, "required": ["from_condition"] }
+        },
+        {
+          "if": { "properties": { "to_condition": { "const": "disputed" } }, "required": ["to_condition"] },
+          "then": { "required": ["dispute_counterparty_kind", "dispute_ref"] },
+          "else": { "not": { "anyOf": [{ "required": ["dispute_counterparty_kind"] }, { "required": ["dispute_ref"] }] } }
+        },
+        {
+          "if": { "properties": { "fd5_tier": { "const": "sign_off" } }, "required": ["fd5_tier"] },
+          "then": { "required": ["signer_role"] }
+        }
+      ]
+    }
+  }
+}
