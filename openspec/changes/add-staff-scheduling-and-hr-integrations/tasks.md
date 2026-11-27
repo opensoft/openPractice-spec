@@ -34,13 +34,33 @@ The [provider contract and schema](../../../contracts/staff-schedule-provider/1.
 The adapter passed nine synthetic cases against a loopback HTTP fixture built
 from the documented QuickBooks Time v1 wire formats. The fixture ran the
 shared contract checks for workers, timed approved leave, clock events,
-roster revisions, attendance and open shifts. T-26 verified two qualified RNs
-and 20 RN-minutes of demand from 09:10 to 09:20. The callout left one qualified
+roster revisions, attendance and open shifts. The fixture reproduced the
+T-26 staffing scenario with demand for two qualified RNs and 20 RN-minutes
+from 09:10 to 09:20. The callout left one qualified
 RN short for ten minutes. The draft and unqualified assignment kept the
 request pending. Publishing the eligible float preserved the frozen roster
 and closed the planned gap. Approving the closed 09:12 timecard left two
 RN-minutes short. The full 23-test regression passed, including both live
-openHR cases. QuickBooks Time tenant validation remains pending.
+openHR cases.
+
+**Live QuickBooks Time v1 T-12 remains pending.** Run it on an authenticated
+Time v1 test tenant with synthetic staff. Verify that coverage stays pending
+until the provider publishes the qualified float, the published baseline
+retains the original assignments, and the approved 09:12 arrival leaves
+two RN-minutes short.
+
+### QuickBooks Online sandbox TimeActivity evidence
+
+**Passed on 2026-11-27.** The QA runner used Azure Key Vault credentials to
+refresh Intuit authorization, created one synthetic employee TimeActivity
+through the QuickBooks Online Accounting sandbox API, and fetched it by ID.
+The readback matched TimeActivity `1073741824`, dated 2026-11-27, with eight
+nonbillable minutes. A second run fetched the same ID, kept the original
+receipt intact, and made no second create request. The repository runner
+also passed the readback against that receipt. This verifies the Accounting
+API write and read of a time entry. Live staff scheduling and approved
+attendance still require the QuickBooks Time v1 test above.
+[Sandbox runner at code commit `a972395`](https://github.com/opensoft/openPractice-code/blob/a972395c031860313aa23c8e2ea5c8f1378f1ad7/scripts/qbo_sandbox/timeactivity_smoke.py)
 
 ## Companion forks
 
