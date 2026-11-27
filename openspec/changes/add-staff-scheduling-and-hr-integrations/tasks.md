@@ -51,6 +51,8 @@
 
 **Passed on the openHR fork on 2026-11-26.** A separate test site built from `opensoft/openHR` at `v15.64.3` (`0a54d2c`) passed the same live test case with adapter revision `dff8136` and the same synthetic staff and appointments. The adapter read back the confirmed roster revision and approved attendance through the fork site's REST API. [Tested openHR revision](https://github.com/opensoft/openHR/commit/0a54d2c7b8b6043e2705b6f557b6ed65260670dd)
 
+**Passed with native openHR Shift Assignments and Attendance on 2026-11-26.** The same synthetic fixture ran on the openHR fork at `0a54d2c` with the `openhr_ext` companion app at version 0.1.0. The companion app fed the adapter from submitted native records. Posting the shift and saving the draft float assignment left coverage pending. Submitting the float's Shift Assignment closed the planned gap and preserved the published roster. Submitted Attendance showed the float arriving at 09:12, leaving a two-RN-minute shortfall. Canceling that Attendance withdrew the approval. Submitting a replacement Attendance record with the same times restored the two-minute result. [Native acceptance test at code commit `9949377`](https://github.com/opensoft/openPractice-code/blob/99493772675812edfddaff46b9dddc753cf3bf3e/src/open_practice/tests/test_openhr_native.py#L36)
+
 | Step | Verified on both sites |
 | --- | --- |
 | Two overlapping procedures from 09:10 to 09:20 | Peak demand was two procedure-qualified RNs and 20 RN-minutes. |
