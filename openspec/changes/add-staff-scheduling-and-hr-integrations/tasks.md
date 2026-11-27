@@ -57,6 +57,8 @@ The [provider contract and schema](../../../contracts/staff-schedule-provider/1.
 
 **Shared provider conformance passed on the openHR fork on 2026-11-26.** The suite ran against a dedicated site rebuilt from openHR `0a54d2c` with Frappe 15.122.0, ERPNext 15.121.6, HRMS 15.64.3, and `openhr_ext` 0.1.0. All 14 tests passed, including the live projection and native T-26 cases. The native readbacks conformed to `openpractice-staff-schedule-provider/1.0` before and after float confirmation, during partial attendance reconciliation, and after attendance cancellation and correction. The roster stayed frozen and the approved 09:12 arrival left a two-RN-minute shortfall. Worker, leave, and raw clock-event messages were verified with synthetic schema fixtures.
 
+**Two-company T-26 isolation passed on the openHR fork on 2026-11-26.** The dedicated site ran all 15 conformance tests successfully, including the two-company case. Both synthetic companies used the same native shift location, shift type and work date. The second company's two submitted Shift Assignments and 20 approved RN-minutes from 09:10 to 09:20 left the first company's open shift pending and its ten-RN-minute planned gap unchanged. Submitting the first company's own float assignment closed that gap and preserved the published roster. The float's approved 09:12 arrival left the first company two RN-minutes short from 09:10 to 09:12. [Two-company acceptance test at code commit `6026e60`](https://github.com/opensoft/openPractice-code/blob/6026e6012e2a217cea45e83cd63999412c984577/src/open_practice/tests/test_openhr_native.py#L40)
+
 | Step | Verified on both sites |
 | --- | --- |
 | Two overlapping procedures from 09:10 to 09:20 | Peak demand was two procedure-qualified RNs and 20 RN-minutes. |
