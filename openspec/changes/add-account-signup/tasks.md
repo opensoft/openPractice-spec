@@ -4,7 +4,7 @@
 - [x] 1.2 Add Start now, email verification and a restricted queue for verified requests.
 - [x] 1.3 Issue the existing Frappe invitation from that queue and route first sign-in to New Practice.
 - [x] 1.4 Test verification, invitation, sign-in and authorization with a synthetic mailbox. Cover duplicate requests, expiry and reissue, replay, an existing User, and operator-only approval.
-- [ ] 1.5 Validate on the dedicated QA host with its outgoing mail path, using a controlled mailbox, and record proof that the invited administrator lands on New Practice.
+- [x] 1.5 Validate on the dedicated QA host with its outgoing mail path, using a controlled mailbox, and record proof that the invited administrator lands on New Practice.
 
 ### Acceptance evidence
 
@@ -18,7 +18,9 @@ On 2026-11-28, Spaceship DNS and verified HTTPS served `openpractice.opensoft.de
 
 The hosted Edge run `05113f0314` verified receipt of both Frappe-generated messages in the dedicated Microsoft 365 QA inbox using a mailbox-scoped Graph handoff for this test. The invitee completed native password setup, landed signed in at `/new-practice`, and saved a synthetic office.
 
-Task 1.5 remains open for automatic delivery. Frappe has `openpractice-qa@opensoft.one` configured as its default outgoing account. Exchange rejected the mailbox-scoped SMTP connection with `535 5.7.3`. Public signup was disabled again after the assisted test and `/start` returned HTTP 404.
+In the assisted run, Exchange rejected Frappe's mailbox-scoped SMTP connection with `535 5.7.3`. Public signup was disabled after that run.
+
+Later on 2026-11-28, the mailbox-scoped Exchange OAuth SMTP retry succeeded. The site-level Frappe scheduler was disabled, so it was enabled on PracticeLab. In hosted run `5add85e14e`, the scheduled Frappe email worker sent both the verification and welcome invite emails as `openpractice-qa@opensoft.one`. Both were read back from the dedicated QA inbox, at 13:36:33 and 13:44:34 La Paz time respectively. Both queue entries showed Sent. The invitee set their password, landed signed in on `/new-practice`, and saved a synthetic office. Public signup remained enabled and `/start` returned HTTP 200. Temporary inbox-reader permissions and the test reader identity were removed.
 
 ## 2. Future scope
 
