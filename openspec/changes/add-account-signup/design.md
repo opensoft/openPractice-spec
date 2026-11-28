@@ -1,100 +1,39 @@
-Status: draft
+# Account signup
 
-# Design: signup vs onboarding, and the account substrate
+## First release
 
-## 0. The split, stated once
-
-| | Signup (this change) | Onboarding (`add-practice-onboarding`) |
+| Step | Actor | Result |
 |---|---|---|
-| Question answered | Who can log in, who pays the SaaS bill | Is this a legitimate healthcare business, and can it bill payers |
-| Audience | A person | The business |
-| Duration | Minutes, self-serve | Days to weeks (payer-driven) |
-| Verification | Email, MFA | NPPES, IRS TIN, CAQH, primary-source licenses |
-| Output | Activated account in an empty workspace | Practice record at `billing-ready` |
-| Friction doctrine | Minimum — every field costs signups | Depth is expected — the customer already committed |
+| Start now | Guest | A work email is submitted and a verification email is queued when eligible |
+| Verify work email | Mailbox holder | An explicit confirmation marks the request verified |
+| Send practice invite | QA operator | Frappe creates a Website User with the existing Practice Administrator role and queues its native welcome email |
+| Set password | Invited administrator | Frappe signs the user in and opens New Practice |
+| Set up practice | Authorized administrator | Practice onboarding owns the office, legal entity, and openHR Company connection |
 
-Signup SHALL collect no field already collected by onboarding; the only crossover is that the sign-up email pre-populates the practice's primary admin contact if the user allows it.
+The form asks only for the work email. Mailbox verification proves control of an address. The operator decides whether it belongs to the intended practice administrator. The address is normalized consistently with Frappe's case-insensitive account lookup. Existing registered addresses receive the same public request response and are ineligible for a new invite through this path.
 
-## 1. Account record - capability `account-register`
+## Request and mail handling
 
-| Field | Type | Verified by | Notes |
-|---|---|---|---|
-| Account key | opaque id | system | join key everywhere |
-| Owner identity | person record: name, date of birth optional | none at signup | a person, not the business |
-| Email | string, unique | email verification link/code | required before any workspace use |
-| Credential | password hashed by documented KDF, or SSO reference (OIDC/SAML issuer + subject) | KDF parameters versioned | passwords stored only as hashes; SSO for enterprise/MSO |
-| MFA state | enum (none, totp, passkey), method refs | enrollment ceremony | `totp` or `passkey` REQUIRED before any workspace can reach non-synthetic data |
-| Plan | versioned plan ref | countersign/checkout record | SaaS billing of the subscription itself is owned by the finance function, not this change |
-| Invitations | list: email, role, expiry, inviter ref | email verification on accept | see 4 |
-| Lifecycle | `active`, `suspended`, `closed` + transitions | governed, FD-5 tiered per §7 | transitions tiered after FD-5 mapping reconciliation |
+The persistent request records the email, issuance time, verification outcome, and operator who issued the invite. Guest and practice-user roles have no direct read or write access to this register. The verification link expires after 30 minutes. A new message supersedes the previous link, with a two-minute resend interval and a five-per-24-hour window per address. The guest endpoints are also rate-limited.
 
-Signup form minimum: name, email, password or SSO, plan choice. Nothing else. Workspace display name defaults from email domain or practice guess and is editable.
+Use the configured QA origin in email links. A verification token is sent in the URL fragment and submitted in the body only after the user confirms. Store only the current token digest in the request record and clear it upon verification. Email queue access is operator-controlled. Opening or previewing the link does not consume it. Replaying a verified link or issuing an already-issued invite does not repeat the transition.
 
-## 2. Workspace - capability `workspace`
+Lock the request when changing verification or invite state. Use the existing native welcome email and standard password setup. An existing or concurrently created User follows the site's access process and retains its current roles. An invite and its request state must commit together. Delivery errors after a successful enqueue are retried through the existing mail queue.
 
-| Field | Type | Notes |
-|---|---|---|
-| Workspace key | opaque id | tenant boundary; this is the tenant `define-mvp-practice-foundation` assumes but never defines |
-| Region | enum from approved regions | data residency anchor |
-| Tenancy shape | `single-practice` or `multi-practice (MSO)` | decision D-2; frozen once the first practice record exists |
-| Data mode | `synthetic` until any linked practice is `intake-complete` | enforcement point for the repo's synthetic-only convention |
-| Created by / created at | refs | audit |
+## Activation boundary
 
-Everything created inside a workspace — patients, schedules, claims — belongs to that workspace; cross-workspace access is never implicit and, for patient data, requires the governed cross-reference mechanisms of `define-mvp-practice-foundation`, not this change.
+This release runs only on a dedicated site with synthetic practice and openHR data. The signup flag is disabled by default. Only the configured QA HTTPS origin or a local loopback site can enable it. The site must disable Frappe's unrestricted signup and configure its default outgoing account and email queue. A Frappe System Manager operates the QA invite queue. Production activation is outside this release. The only role assigned through signup is the existing openPractice practice administrator role. The first-run path uses the existing access checks for New Practice. Session desk, patient records, billing, and evidence roles are independently controlled. No practice, openHR Company, claim, or patient is created during signup.
 
-## 3. Account-practice link - capability `account-practice-link`
+The future activation gates are scoped separately. A practice's approved intake and applicable countersigned BAA govern access to that practice's real patient data. An authorized user's MFA and practice membership are additional requirements before such access. Billing readiness and payer enrollment are evaluated for the billing entity and payer. One practice reaching intake or a billing milestone grants no access to other practices in the same workspace.
 
-- **Create flow (self-serve):** account creates workspace at signup; the onboarding wizard starts a `prospect` practice record inside the workspace; the registrar relationship is the link.
-- **Claim flow (white-glove):** staff-created practices (MSO onboardings run by openPractice operations) are claimed by the owner account via signed invitation; claim acceptance carries a person confirmation, mirroring the `link_existing` precedent (tier-2) in `define-mvp-practice-foundation`.
-- **Shape:** exactly one owning account per practice; zero or more member accounts with roles (the role catalog itself is owned by `define-actors-agents-and-work-inbox`, not this change).
-- **Revocation:** audited, tiered per §7, with the work-inbox handoff so no human is stranded mid-task.
+## Later account and workspace decisions
 
-## 4. Users are not providers (and accounts are not actors)
+| Topic | Decision to resolve before that work |
+|---|---|
+| Account register (`account-register`) | Identity provider, MFA and recovery policies, lifecycle, staff invitations, and subscription ownership |
+| Workspace (`workspace`) | Tenant provisioning, region and residency, authorization across workspace and practice memberships, and the single-practice or MSO model raised in `add-practice-onboarding` O-3 |
+| Account-to-practice membership (`account-practice-link`) | Owner and member roles, explicit acceptance of assisted claims, transfer, revocation, and audit |
+| Activation | Binding rules between an authorized user, practice intake status, BAA coverage, and the entity and payer billing gate |
+| FD-5 | Review ownership transfer, account closure, suspension and assisted claims against the authentic approval tiers before implementing them |
 
-The repo now names four people-populations:
-
-| Population | Owning change | The person in that frame |
-|---|---|---|
-| Account (user) | this change | someone who authenticates |
-| Actor / agent | `define-actors-agents-and-work-inbox` | someone who performs governed work |
-| Provider | `add-practice-onboarding` (`provider-roster`) | someone who renders or supervises care |
-| Staff | `add-staff-scheduling-and-hr-integrations` | someone who occupies a schedule slot |
-
-- A user may hold no clinical credential (front desk) and may never be an actor record beyond authentication.
-- A credentialed provider may never log in (locum, referring provider) and never appear in Shifts.
-- A given person MAY be several of these at once; the representation is always cross-references between records, never merged tables.
-- Functions that need the authentication interpretation use the account; governance interpretation uses the actor; clinical interpretation uses the provider; scheduling interpretation uses staff.
-
-## 5. Gate chain
-
-| State | Unlocked | Blocked |
-|---|---|---|
-| Signed up, email not yet verified | nothing except verification | everything |
-| Email verified | synthetic demo workspace, plan management, invitations, starting the onboarding wizard | any non-synthetic record |
-| Practice `intake-complete` | real patient records, live scheduling and patient gateway | charge finalization, claims |
-| Billing entity `billing-ready` | charge finalization and claims per green enrollment trio (owned by `add-practice-onboarding`) | payers whose trio is not green |
-
-The BAA placement: clickwrap terms at signup; **countersigned BAA is an intake-gate requirement** of `add-practice-onboarding`. This change enforces the consequence — non-synthetic data entry is impossible before the intake gate — rather than the signature itself.
-
-## 6. Fraud and abuse notes
-
-- Email verification and the synthetic-only mode are the abuse boundary: junk signups can never see or create real data.
-- Workspace creation rate limits and invitation expiry are operational defaults, tunable per deployment.
-- Full account close keeps retention families from `add-reimbursement-retention-control`; clinical and financial records of a linked practice follow their own families, not the account's fate.
-
-## 7. FD-5 tier reconciliation (proposed, pending owner ruling)
-
-FD-5's principle is that reversible, delayed actions sit below the explicit sign-off tiers, while identity and release actions carry confirmations (`define-mvp-practice-foundation` lists: `link_existing` at tier 2, create-new and revocation requests, identity-review resolutions, export-batch release). Proposed mapping here:
-
-- Account suspension: reversible and delayed — proposal leaves it to the FD-5 handling of reversible actions, **not** an explicit tier; open for ruling. Account suspension of the owning account of a billing-ready practice is proposed tier-3 because it strands revenue operations.
-- Practice claim (white-glove): tier-2, by direct analogy to `link_existing`.
-- Owner change on an account: tier-3 (identity-bearing, hard to reverse cleanly).
-- Account close: tier-3 with retention handoff.
-- Workspace tenancy-shape freeze: automatic at first practice record; no sign-off, recorded in audit.
-
-## Open decisions
-
-- **D-1 BAA timing.** Proposal: terms clickwrap at signup; countersigned BAA at the intake gate. The alternative (moved fully to signup) would flip the synthetic-only enforcement to signup time. Owner rules.
-- **D-2 Tenancy shape (absorbs O-3 of `add-practice-onboarding`).** Proposal: `multi-practice` available at workspace creation, frozen once the first practice record exists; MSO accounts use one workspace with N practices unless the customer requests segregation.
-- **D-3 Invitation role catalog.** Roles referenced by invitations are placeholders until `define-actors-agents-and-work-inbox` publishes its role catalog; this change stores role references, never role definitions.
-- **D-4 FD-5 tier mapping.** The §7 proposal needs owner ruling before the specs are written.
+Accounts, workflow actors, credentialed providers and schedulable staff are distinct record types. The same person can appear in several of them, linked by stable identifiers appropriate to each system. Later work must define those links without assuming that a user credential implies staff eligibility, clinician credentials, or financial authority.
