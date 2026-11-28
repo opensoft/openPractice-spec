@@ -25,7 +25,7 @@ The [provider contract and schema](../../../contracts/staff-schedule-provider/1.
 
 - [ ] T-11 openHR (Frappe HRMS REST) adapter - reference implementation for MVP.
 - [x] T-12 QuickBooks Time API adapter (share auth/plumbing design with LedgerLinc).
-- [ ] T-13 Microsoft Graph Shifts adapter (Schedule.Read.All / Schedule.ReadWrite.All; draft vs shared shift mapping; guard against known copied-shift userId API bug).
+- [x] T-13 Microsoft Graph Shifts adapter (Schedule.Read.All / Schedule.ReadWrite.All; draft vs shared shift mapping; guard against known copied-shift userId API bug).
 - [ ] T-14 Gusto API adapter (document multi-EIN handling for MedxMSO clinic entities).
 - [ ] T-15 OrangeHRM REST adapter; T-16 Horilla adapter; T-17 ADP; T-18 BambooHR; T-19 Odoo; T-20 TimeTrex - built on adoption demand, in build order from design.md section 5.
 
@@ -61,6 +61,23 @@ also passed the readback against that receipt. This verifies the Accounting
 API write and read of a time entry. Live staff scheduling and approved
 attendance still require the QuickBooks Time v1 test above.
 [Sandbox runner at code commit `a972395`](https://github.com/opensoft/openPractice-code/blob/a972395c031860313aa23c8e2ea5c8f1378f1ad7/scripts/qbo_sandbox/timeactivity_smoke.py)
+
+### T-13 Microsoft Teams Shifts validation evidence
+
+**Local conformance passed** against a loopback fixture using Microsoft Graph
+v1.0 response shapes and the same synthetic three RNs as T-12. The two
+procedures needed two qualified RNs from 09:10 to 09:20, totaling 20 RN-minutes.
+The callout left a ten-minute gap. Posting the open shift and approving a
+claim with a draft assignment kept coverage pending. Sharing the float's
+assignment closed the planned gap and preserved the original published roster.
+The employee-confirmed float timecard was visible as raw clock evidence.
+Manager confirmation made the approved 09:12–09:20 interval available and left
+one RN short from 09:10 to 09:12, totaling two RN-minutes. The fixture also
+covered missing copied-shift assignees, an ambiguous acknowledgment, competing
+claims, and a recorded break.
+
+**Live acceptance is pending** against a Teams-licensed test team with Shifts
+and Time Clock enabled and authorized Microsoft Graph schedule access.
 
 ## Companion forks
 

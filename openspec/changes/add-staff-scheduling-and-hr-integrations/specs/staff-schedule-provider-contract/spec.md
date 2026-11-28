@@ -50,3 +50,17 @@ The QuickBooks Time adapter SHALL normalize the documented Time v1 resources thr
 - **THEN** the revised roster covers the gap and the original published roster stays frozen
 - **WHEN** QuickBooks Time approves the closed timecard with a 09:12 float arrival
 - **THEN** the shared attendance readback shows a two-RN-minute shortfall
+
+### Requirement: Microsoft Teams Shifts publication and manager confirmation qualify staffing evidence
+
+The Teams Shifts adapter SHALL scope roster readback to a configured team, scheduling group and workforce mapping. It SHALL freeze the first captured shared roster for the series and record subsequent shared assignments as revisions. The adapter SHALL post open coverage as a draft, and SHALL report a request as confirmed only when an approved claim for that open shift maps unambiguously to newly shared, qualified assignments that cover the requested interval and headcount. Shifts without a mapped assignee SHALL supply no coverage. A closed timecard SHALL count as approved attendance only when Graph reports manager confirmation, with recorded breaks removed from worked intervals. Raw clock punches SHALL remain separately available.
+
+#### Scenario: Teams Shifts publishes the float and confirms late attendance
+
+- **GIVEN** two overlapping procedures require two qualified RNs from 09:10 to 09:20 and the frozen shared roster contains the original two assignments
+- **WHEN** one RN calls out and the manager prepares the float's draft assignment
+- **THEN** the request stays pending with one qualified RN short from 09:10 to 09:20
+- **WHEN** the approved claim is reflected in a shared shift for the qualified float
+- **THEN** the revised roster closes the planned gap and the frozen roster retains the original two assignments
+- **WHEN** the manager confirms the original RN's 09:10 arrival and the float's 09:12 arrival on closed timecards ending at 09:20
+- **THEN** approved attendance shows one RN short from 09:10 to 09:12, totaling two RN-minutes
