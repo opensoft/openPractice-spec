@@ -12,6 +12,8 @@ On 2026-11-28, the disposable Frappe QA site used a synthetic mailbox and real S
 
 - [GitHub Actions signup acceptance for code revision 0158295](https://github.com/opensoft/openPractice-code/actions/runs/46140893501)
 
+The tested revision is staged in QA ACR as `apps/open-practice:signup-0158295` at digest `sha256:4749b39228ac51df45026b62fe01accd4ab34af2e1d77617b507d998a4a792fd`.
+
 The hosted acceptance in task 1.5 remains open. The target hostname is `openpractice.opensoft.dev` and the intended sender domain is `opensoft.one`. The hosted QA backend reached Microsoft 365 SMTP with TLS and OAuth advertised. A configured outgoing sender identity and working DNS and TLS routing for the target hostname are required for the hosted run.
 
 ## 2. Future scope
