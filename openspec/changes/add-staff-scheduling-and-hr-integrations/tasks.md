@@ -25,7 +25,7 @@ The [provider contract and schema](../../../contracts/staff-schedule-provider/1.
 
 - [ ] T-11 openHR (Frappe HRMS REST) adapter - reference implementation for MVP.
 - [x] T-12 QuickBooks Time API adapter (share auth/plumbing design with LedgerLinc).
-- [ ] T-13 Microsoft Graph Shifts adapter (Schedule.Read.All / Schedule.ReadWrite.All; draft vs shared shift mapping; guard against known copied-shift userId API bug).
+- [x] T-13 Microsoft Graph Shifts adapter and live QA acceptance (Schedule.Read.All / Schedule.ReadWrite.All, draft and shared shift mapping, and copied shifts without a user ID). [Validation evidence](#t-13-microsoft-teams-shifts-validation-evidence)
 - [ ] T-14 Gusto API adapter (document multi-EIN handling for MedxMSO clinic entities).
 - [ ] T-15 OrangeHRM REST adapter; T-16 Horilla adapter; T-17 ADP; T-18 BambooHR; T-19 Odoo; T-20 TimeTrex - built on adoption demand, in build order from design.md section 5.
 
@@ -61,6 +61,41 @@ also passed the readback against that receipt. This verifies the Accounting
 API write and read of a time entry. Live staff scheduling and approved
 attendance still require the QuickBooks Time v1 test above.
 [Sandbox runner at code commit `a972395`](https://github.com/opensoft/openPractice-code/blob/a972395c031860313aa23c8e2ea5c8f1378f1ad7/scripts/qbo_sandbox/timeactivity_smoke.py)
+
+### T-13 Microsoft Teams Shifts validation evidence
+
+**Local conformance passed** against a loopback fixture using Microsoft Graph
+v1.0 response shapes and the same synthetic three RNs as T-12. The two
+procedures needed two qualified RNs from 09:10 to 09:20, totaling 20 RN-minutes.
+The callout left a ten-minute gap. Posting the open shift and approving a
+claim with a draft assignment kept coverage pending. Sharing the float's
+assignment closed the planned gap and preserved the original published roster.
+The employee-confirmed float timecard was visible as raw clock evidence.
+Manager confirmation made the approved 09:12–09:20 interval available and left
+one RN short from 09:10 to 09:12, totaling two RN-minutes. The fixture also
+covered missing copied-shift assignees, an ambiguous acknowledgment, competing
+claims, and a recorded break.
+
+The QA roster fixture defines two VAs, two LVNs, three RNs, two NPs, and two MDs.
+Each run selects each participant's specialty and scheduled or float assignment.
+A second loopback case rotated the RN assignments and verified that publishing
+a float with the wrong specialty left coverage pending and the full ten-minute
+gap open. [QA roster and loopback tests](https://github.com/opensoft/openPractice-code/tree/3e83272547ab21a81fe530766facd15c74ff34ad/src/open_practice/tests)
+
+**Live T-13 passed on 2026-11-28.** The dedicated `openPracticeQA1` team had
+Shifts and Time Clock enabled. The test used Microsoft Graph v1.0, three
+synthetic accounts, and a 2026-11-26 fixture in the America/Denver time zone.
+
+| Check | Live result |
+| --- | --- |
+| Publish the original roster | RN-01 and RN-02 met peak demand of two procedure-qualified RNs from 09:10 to 09:20, totaling 20 RN-minutes. |
+| Publish the callout and post the open shift | The callout left a 10 RN-minute gap. Coverage stayed pending after the draft post and after RN-03 claimed the open shift with no published replacement assignment. |
+| Approve and publish the float assignment | Microsoft Graph returned the approved claim and published RN-03 assignment. Coverage became confirmed and the revised roster showed zero planned shortfall. The frozen roster retained RN-01 and RN-02, and the revised roster showed RN-01 and RN-03. |
+| Confirm attendance in Teams Shifts | Microsoft Graph returned `confirmedBy=manager` for the closed float timecard. The approved 09:12–09:20 interval left one qualified RN short from 09:10 to 09:12, totaling two RN-minutes. |
+
+The live receipt recorded a pass at 15:27:17 UTC under run
+`aa7db68b773042ca900ccff2499d4286`. Its SHA-256 digest is
+`5282c171ee59a0f848c485cd6778265ff8de7132f4bd293940af8595ceb5a149`.
 
 ## Companion forks
 
